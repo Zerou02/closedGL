@@ -10,29 +10,29 @@ import (
 )
 
 var vertices = []float32{
-	0, 0.5, 0, // top
-	-0.5, -0.5, 0, // left
-	0.5, -0.5, 0, // right
+	-0.5, -0.5, 0.0, // left
+	0.5, -0.5, 0.0, // right
+	0.0, 0.5, 0.0, // top
 }
 
 const width = 800
 const height = 600
-const vertexShaderSource = `
-    #version 410 core
-    layout (location = 0) in vec3 aPos;
+
+var vertexShaderSource = `
+    #version 410
+    in vec3 vp;
     void main() {
-        gl_Position = vec4(aPos, 1.0f);
+        gl_Position = vec4(vp, 1.0);
     }
 ` + "\x00"
 
-const fragmentShaderSource = `
+var fragmentShaderSource = `
     #version 410
     out vec4 frag_colour;
     void main() {
-        frag_colour = vec4(1.0f, 0.5f, 0.2f, 1.0f);
+        frag_colour = vec4(1, 1, 1, 1);
     }
 ` + "\x00"
-
 var window *glfw.Window
 
 var vbo uint32 = 0
@@ -46,50 +46,58 @@ func main() {
 
 	window = initGlfw()
 	initOpenGL()
-	gl.GenBuffers(1, &vbo)
-	gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
-	gl.BufferData(gl.ARRAY_BUFFER, len(vertices), gl.Ptr(vertices), gl.STATIC_DRAW)
 
-	vertexShader = gl.CreateShader(gl.VERTEX_SHADER)
-	var src, _ = gl.Strs(vertexShaderSource)
-	gl.ShaderSource(vertexShader, 1, src, nil)
-	gl.CompileShader(vertexShader)
+	//vertexShader = gl.CreateShader(gl.VERTEX_SHADER)
+	//var vertSrc, _ = gl.Strs(vertexShaderSource)
+	//gl.ShaderSource(vertexShader, 1, vertSrc, nil)
+	//gl.CompileShader(vertexShader)
+	//var success int32 = 0
+	//gl.GetShaderiv(vertexShader, gl.COMPILE_STATUS, &success)
+	//println("success:Vertex", success)
+	//
+	//fragmentShader = gl.CreateShader(gl.FRAGMENT_SHADER)
+	//var fragSrc, _ = gl.Strs(fragmentShaderSource)
+	//gl.ShaderSource(fragmentShader, 1, fragSrc, nil)
+	//gl.CompileShader(fragmentShader)
+	//var success_frag int32 = 0
+	//gl.GetShaderiv(vertexShader, gl.COMPILE_STATUS, &success_frag)
+	//println("success:Frag:", success_frag)
 
-	var succ int32 = 0
-	gl.GetShaderiv(vertexShader, gl.COMPILE_STATUS, &succ)
-	if succ != 1 {
-		println("ERRRO")
-		return
+	var err error
+	vertexShader, err = compileShader(vertexShaderSource, gl.VERTEX_SHADER)
+	fragmentShader, _ = compileShader(fragmentShaderSource, gl.FRAGMENT_SHADER)
+	if err != nil {
+		print("ERRR!!!")
 	}
-
-	fragmentShader = gl.CreateShader(gl.FRAGMENT_SHADER)
-	var fragSrc, _ = gl.Strs(fragmentShaderSource)
-	gl.ShaderSource(fragmentShader, 1, fragSrc, nil)
-	gl.CompileShader(fragmentShader)
-
 	shaderProg = gl.CreateProgram()
 	gl.AttachShader(shaderProg, vertexShader)
 	gl.AttachShader(shaderProg, fragmentShader)
-	//gl.DeleteShader(vertexShader)
-	//gl.DeleteShader(fragmentShader)
-
-	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 3*4, nil)
+	gl.LinkProgram(shaderProg)
+	gl.DeleteShader(vertexShader)
+	gl.DeleteShader(fragmentShader)
 
 	gl.GenVertexArrays(1, &vao)
+	gl.GenBuffers(1, &vbo)
+	gl.BindVertexArray(vao)
 	gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
 	gl.BufferData(gl.ARRAY_BUFFER, len(vertices), gl.Ptr(vertices), gl.STATIC_DRAW)
-	//var mao = createMao(triangle)
-
-	gl.LinkProgram(shaderProg)
-	gl.UseProgram(shaderProg)
-	gl.BindVertexArray(vao)
+	gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 12, nil)
 	gl.EnableVertexAttribArray(0)
+
+	gl.BindBuffer(gl.ARRAY_BUFFER, 0)
+	gl.BindVertexArray(0)
+
+	//gl.PolygonMode(gl.FRONT_AND_BACK,gl.LINE)
 
 	for !window.ShouldClose() {
 
 		process(window)
+		gl.ClearColor(0.2, 0.3, 0.3, 1.0)
+		gl.Clear(gl.COLOR_BUFFER_BIT)
+
+		gl.UseProgram(shaderProg)
+		gl.BindVertexArray(vao)
 		gl.DrawArrays(gl.TRIANGLES, 0, 3)
-		//	draw(mao, window, prog)
 
 		glfw.PollEvents()
 		window.SwapBuffers()
