@@ -1,7 +1,6 @@
 package main
 
 import (
-	"image"
 	_ "image/png"
 	"os"
 	"runtime"
@@ -11,12 +10,6 @@ import (
 	"github.com/go-gl/glfw/v3.2/glfw"
 	"neilpa.me/go-stbi"
 )
-
-var vertices = []float32{
-	-0.5, -0.5, 0.0,
-	0.5, -0.5, 0.0,
-	0.0, 0.5, 0.0,
-}
 
 var vertices2 = []float32{
 	//pos ;; col;;tex
@@ -29,14 +22,8 @@ var vertices2 = []float32{
 	1.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0,
 }
 
-/* var vertices2 = []float32{
-	//col ;; pso
-	1.0, 0.0, 0.0, -1.0, -1.0, 0.0,
-	0.0, 1.0, 0.0, -0.5, 0.0, 0.0,
-	0.0, 0.0, 1.0, -1.0, 1.0, 0.0,
-} */
-
 var vertices3 = []float32{
+	//pos x,y,z;;col r,g,b;;tex s,t
 	-0.5, -0.5, -0.5, 0.0, 0.0, 0.0, 0.0, 0.0,
 	0.5, -0.5, -0.5, 1.0, 0.0, 0.0, 0.0, 0.0,
 	0.5, 0.5, -0.5, 1.0, 1.0, 0.0, 0.0, 0.0,
@@ -96,44 +83,6 @@ var indices = []uint32{
 const width = 800
 const height = 600
 
-var vertexShaderSource = `
-    #version 410 core
-	layout (location = 0) in vec3 aPos;
-	layout (location = 1) in vec3 aColor;
-	layout (location = 2) in vec2 aTexCoord;
-	uniform vec2 offset;
-	uniform mat4 transform;
-	uniform mat4 model;
-	uniform mat4 view;
-	uniform mat4 projection;
-
-	out vec3 color;
-	out vec2 texCoord;
-
-    void main() {
-		gl_Position = projection * view * model * vec4(aPos,1.0f);
-        //gl_Position = vec4(aPos, 1.0f) + vec4(offset,0.0f,0.0f);
-		color = aColor;
-		texCoord = aTexCoord;
-	}
-` + "\x00"
-
-var fragmentShaderSource = `
-    #version 410 core
-    out vec4 fragColour;
-	in vec3 color;
-	in vec2 texCoord;
-
-	uniform sampler2D tex;
-	uniform sampler2D tex2;	
-    void main() {
-		fragColour = mix(texture(tex,texCoord),texture(tex2,texCoord),0.2f) * vec4(color,1.0f);
-		//fragColour = mix(texture(tex,texCoord),texture(tex2,texCoord),0.2f);
-		//fragColour = vec4(color,1.0f);
-
-    }
-` + "\x00"
-
 var cubePos = []glm.Vec3{
 	{1, 1, 1},
 	{2.0, 5.0, -15.0},
@@ -158,81 +107,38 @@ var window *glfw.Window
 type Vao = uint32
 type Vbo = uint32
 type Ebo = uint32
-type Shader = uint32
 type Prog = uint32
 type Texture = uint32
 
 var vbo Vbo
-var vertexShader Shader
-var fragmentShader Shader
+var vertexShader uint32
+var fragmentShader uint32
 var shaderProg Prog
 var vao Vao
 var ebo Ebo
 var texture Texture
 var texture2 Texture
 
-var cameraPos = glm.Vec3{0, 0, 3}
-var cameraUp = glm.Vec3{0, 1, 0}
-var cameraFront = glm.Vec3{0, 0, -1}
-
 var lastFrame float64 = 0
 var deltaTime float64 = 0
 
-var yaw float32 = -90
-var pitch float32 = 0
-var cameraDirection = glm.Vec3{0, 0, 0}
+var camera = CreateCamera()
 
-var lastPosX float64 = 400
-var lastPosY float64 = 300
-var fov float64 = 45
-var firstMouse = true
-
-func mouseCallback(w *glfw.Window, xpos float64, ypos float64) {
-	if firstMouse {
-		lastPosX = xpos
-		lastPosY = ypos
-		firstMouse = false
-	}
-	var offsetX = xpos - lastPosX
-	var offsetY = lastPosY - ypos
-	lastPosX = xpos
-	lastPosY = ypos
-	var sensitivity = 0.1
-	offsetX *= sensitivity
-	offsetY *= sensitivity
-
-	yaw += float32(offsetX)
-	pitch += float32(offsetY)
-	if pitch >= 89 {
-		pitch = 89
-	}
-	if pitch <= -89 {
-		pitch = -89
-	}
-	println("A")
-}
-
-func scrollCb(w *glfw.Window, xOffset float64, yOffset float64) {
-	println(fov)
-	fov -= yOffset
-	if fov < 1 {
-		fov = 1
-	} else if fov > 45 {
-		fov = 45
-	}
-}
 func main() {
 	runtime.LockOSThread()
+
+	var file, _ = os.ReadFile("./vertexShader.glsl")
+	var frag, _ = os.ReadFile("./fragShader.glsl")
 
 	window = initGlfw()
 	initOpenGL()
 	window.SetInputMode(glfw.CursorMode, glfw.CursorDisabled)
 	gl.Enable(gl.DEPTH_TEST)
-	window.SetCursorPosCallback(mouseCallback)
-	window.SetScrollCallback(scrollCb)
+	window.SetCursorPosCallback(camera.mouseCallback)
+	window.SetScrollCallback(camera.scrollCb)
 
-	vertexShader = compileShader(vertexShaderSource, true)
-	fragmentShader = compileShader(fragmentShaderSource, false)
+	vertexShader = compileShader(string(file), true)
+	fragmentShader = compileShader(string(frag), false)
 	shaderProg = createShaderProgram(vertexShader, fragmentShader)
 	var succ int32 = 0
 	gl.GetProgramiv(shaderProg, gl.LINK_STATUS, &succ)
@@ -318,8 +224,6 @@ func main() {
 	gl.Uniform1i(gl.GetUniformLocation(shaderProg, gl.Str("tex"+"\x00")), 0)
 	gl.Uniform1i(gl.GetUniformLocation(shaderProg, gl.Str("tex2"+"\x00")), 1)
 
-	var orthoProjection = glm.Ortho(0, 800, 0, 600, 0.1, 100)
-	_ = orthoProjection
 	_ = projectionLoc
 	var viewMat = glm.Ident4()
 	var viewTransMat = glm.Translate3D(0, 0, -3)
@@ -331,10 +235,6 @@ func main() {
 		lastFrame = currFrame
 		//fmt.Printf("%f \n", glfw.GetTime())
 		process(window)
-
-		var perspectiveProjection = glm.Perspective(glm.DegToRad(float32(fov)), width/height, 0.1, 100)
-		var a = cameraFront.Add(&cameraPos)
-		var lookAt = glm.LookAtV(&cameraPos, &a, &(cameraUp))
 
 		var modelMatrix = glm.Ident4()
 		var rotMatModelX = glm.HomogRotate3DX(float32(glfw.GetTime()) * glm.DegToRad(50))
@@ -353,8 +253,8 @@ func main() {
 		modelMatrix = modelMatrix.Mul4(&rotMatModelZ)
 
 		//	gl.UniformMatrix4fv(transformLoc, 1, false, &destMat[0])
-		gl.UniformMatrix4fv(viewLoc, 1, false, &lookAt[0])
-		gl.UniformMatrix4fv(projectionLoc, 1, false, &perspectiveProjection[0])
+		gl.UniformMatrix4fv(viewLoc, 1, false, &camera.lookAtMat[0])
+		gl.UniformMatrix4fv(projectionLoc, 1, false, &camera.perspective[0])
 		gl.UniformMatrix4fv(modelLoc, 1, false, &modelMatrix[0])
 
 		gl.ClearColor(0.2, 0.3, 0.3, 1.0)
@@ -407,13 +307,7 @@ func process(window *glfw.Window) {
 	if window.GetKey(glfw.KeyEscape) == glfw.Press {
 		window.SetShouldClose(true)
 	}
-	var speed float32 = 0.2
-	if window.GetKey(glfw.KeyW) == glfw.Press {
-		//var a = (cameraFront.Mul(speed))
-		//a = a.Mul(float32(deltaTime))
-		//cameraPos = cameraPos.Add(&a)
-		cameraPos = cameraFront.MulNP(speed).MulNP(float32(deltaTime))
-	}
+	camera.process(window)
 }
 
 func createShaderProgram(shader ...uint32) uint32 {
@@ -464,17 +358,4 @@ func compileShader(shaderSrc string, vertex bool) uint32 {
 		println("Shader successfully compiled")
 	}
 	return shader
-}
-
-func decodePNG(path string) (image.Image, []uint32) {
-	var reader, _ = os.Open(path)
-	var img, _, _ = image.Decode(reader)
-	var texel = []uint32{}
-	for y := 0; y < img.Bounds().Max.Y; y++ {
-		for x := 0; x < img.Bounds().Max.X; x++ {
-			var r, g, b, a = img.At(x, y).RGBA()
-			texel = append(texel, r, g, b, a)
-		}
-	}
-	return img, texel
 }
