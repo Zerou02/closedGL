@@ -89,3 +89,18 @@ func mulMat4Vec4(m glm.Mat4, vec glm.Vec4) glm.Vec4 {
 	retVec[2] = m.At(3, 0)*vec[0] + m.At(3, 1)*vec[1] + m.At(3, 2)*vec[2] + m.At(3, 3)*vec[3]
 	return retVec
 }
+
+func createTransformation(rot glm.Vec3, translation glm.Vec3, scale glm.Vec3) glm.Mat4 {
+	var retMat = glm.Ident4()
+	var rotX = glm.HomogRotate3DX(rot.X())
+	var rotY = glm.HomogRotate3DY(rot.Y())
+	var rotZ = glm.HomogRotate3DZ(rot.Z())
+	var trans = glm.Translate3D(translation[0], translation[1], translation[2])
+	var scaleMat = glm.Scale3D(scale[0], scale[1], scale[2])
+	retMat.Mul4With(&trans)
+	retMat.Mul4With(&rotX)
+	retMat.Mul4With(&rotY)
+	retMat.Mul4With(&rotZ)
+	retMat.Mul4With(&scaleMat)
+	return retMat
+}
