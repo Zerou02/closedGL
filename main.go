@@ -2,6 +2,7 @@ package main
 
 import (
 	_ "image/png"
+	"math"
 	"runtime"
 
 	"github.com/EngoEngine/glm"
@@ -54,12 +55,12 @@ var camera = CreateCamera()
 
 func main() {
 	runtime.LockOSThread()
-
+	camera.cameraPos = glm.Vec3{1, 0, 5}
 	window = initGlfw()
 	initOpenGL()
 	gl.Enable(gl.DEPTH_TEST)
-	var sunShader = initShader("./vertexShader.glsl", "./sunShader.glsl")
-	var objectShader = initShader("./vertexShader2.glsl", "./fragShader.glsl")
+	var sunShader = initShader("./base.vs", "./sun.fs")
+	var objectShader = initShader("./light.vs", "./light.fs")
 
 	window.SetInputMode(glfw.CursorMode, glfw.CursorDisabled)
 	window.SetCursorPosCallback(camera.mouseCallback)
@@ -92,13 +93,11 @@ func main() {
 
 	var containerVao Vao
 	var containerVbo Vbo
-	generateVBO(&containerVbo, cube)
-	generateVAO(&containerVao, []VertexInfo{{3, 0}, {3, 12}, {2, 24}})
+	generateVBO(&containerVbo, cubeNormals)
+	generateVAO(&containerVao, []VertexInfo{{3, 0}, {3, 12}})
 
 	var light = glm.Vec3{1, 1, 1}
 	var toyColour = glm.Vec3{1, 0.5, 0.31}
-	var result = light.ComponentProduct(&toyColour)
-	_ = result
 
 	for !window.ShouldClose() {
 		var currFrame = glfw.GetTime()
@@ -106,71 +105,40 @@ func main() {
 		lastFrame = currFrame
 		process(window)
 
-		var rotVec = glm.Vec3{
-			float32(glfw.GetTime()) * glm.DegToRad(50),
-			float32(glfw.GetTime()) * glm.DegToRad(50),
-			float32(glfw.GetTime()) * glm.DegToRad(50),
-		}
-		var modelMat = createTransformation(rotVec, glm.Vec3{1, 0, 0}, glm.Vec3{1, 1, 1})
-		modelMat = glm.Ident4()
 		//Draw
-
-		gl.ClearColor(0.2, 0.3, 0.3, 1.0)
+		gl.ClearColor(0.0, 0.0, 0.0, 1.0)
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 		gl.PolygonMode(gl.FRONT_AND_BACK, gl.FILL)
 		//	gl.PolygonMode(gl.FRONT_AND_BACK, gl.LINE)
+		/* gl.ActiveTexture(gl.TEXTURE0)
+		gl.BindTexture(gl.TEXTURE_2D, texture)
+		gl.ActiveTexture(gl.TEXTURE1)
+		gl.BindTexture(gl.TEXTURE_2D, texture2) */
 
 		gl.UseProgram(sunShader.prog)
 		sunShader.setUniformMatrix4("view", &camera.lookAtMat)
 		sunShader.setUniformMatrix4("projection", &camera.perspective)
-		sunShader.setUniformVec3("objectColour", &toyColour)
-		sunShader.setUniformVec3("lightColour", &light)
-		sunShader.setUniformUInt("tex", texture)
-		sunShader.setUniformUInt("tex2", texture2)
+		var sunPos = glm.Vec3{0, float32(math.Sin(glfw.GetTime())), 0}
+		var modelMat = createTransformation(glm.Vec3{0, 0, 0}, sunPos, glm.Vec3{0.2, 0.2, 0.2})
 		sunShader.setUniformMatrix4("model", &modelMat)
-		gl.ActiveTexture(gl.TEXTURE0)
-		gl.BindTexture(gl.TEXTURE_2D, texture)
-		gl.ActiveTexture(gl.TEXTURE1)
-		gl.BindTexture(gl.TEXTURE_2D, texture2)
 
 		gl.BindVertexArray(sunVao)
 		gl.DrawArrays(gl.TRIANGLES, 0, int32(len(cube)/3))
 
 		gl.UseProgram(objectShader.prog)
-		gl.ActiveTexture(gl.TEXTURE0)
-		gl.BindTexture(gl.TEXTURE_2D, texture)
-		gl.ActiveTexture(gl.TEXTURE1)
-		gl.BindTexture(gl.TEXTURE_2D, texture2)
 		modelMat = glm.Translate3D(2, 0, 0)
 		objectShader.setUniformMatrix4("view", &camera.lookAtMat)
 		objectShader.setUniformMatrix4("projection", &camera.perspective)
+		modelMat = createTransformation(glm.Vec3{float32(glfw.GetTime()), 0, 0}, glm.Vec3{2, 0, 0}, glm.Vec3{1, 1, 1})
 		objectShader.setUniformMatrix4("model", &modelMat)
 		objectShader.setUniformVec3("objectColour", &toyColour)
 		objectShader.setUniformVec3("lightColour", &light)
-		objectShader.setUniformUInt("tex", texture)
-		objectShader.setUniformUInt("tex2", texture2)
+		objectShader.setUniformVec3("lightPos", &sunPos)
+		objectShader.setUniformVec3("viewPos", &camera.cameraPos)
 
 		gl.BindVertexArray(containerVao)
 		gl.DrawArrays(gl.TRIANGLES, 0, int32(len(cube)/3))
-		//gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, quadEbo)
-		//gl.BindVertexArray(quadVao)
-		//gl.DrawElements(gl.TRIANGLES, int32(len(indicesCube24)), gl.UNSIGNED_INT, nil)
-		//
-		//gl.BindVertexArray(doubleTriangleVao)
-		//gl.DrawArrays(gl.TRIANGLES, 0, int32(len(doubleTriangle)/3))
-		/*
-			gl.BindVertexArray(vao2)
-			gl.DrawArrays(gl.TRIANGLES, 0, int32(len(doubleTriangle)/3))
-				gl.DrawArrays(gl.TRIANGLES, 0, 36)
 
-				gl.BindVertexArray(vao)
-								for i := 0; i < 10; i++ {
-									var angle float32 = 20.0 * (float32(i) + 1)
-									var modelMat = createTransformation(glm.Vec3{angle, angle, angle}, glm.Vec3{cubePos[i].X(), cubePos[i].Y(), cubePos[i].Z()}, glm.Vec3{1, 1, 1})
-									shader.setUniformMatrix4("model", &modelMat)
-									gl.DrawArrays(gl.TRIANGLES, 0, 36)
-								}
-		*/
 		glfw.PollEvents()
 		window.SwapBuffers()
 	}
@@ -191,7 +159,7 @@ func initGlfw() *glfw.Window {
 	glfw.WindowHint(glfw.ContextVersionMinor, 1)
 	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
 	glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
-	var window, _ = glfw.CreateWindow(width, height, "Nggght", nil, nil)
+	var window, _ = glfw.CreateWindow(width, height, "light - i hate packages", nil, nil)
 	window.MakeContextCurrent()
 	return window
 }

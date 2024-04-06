@@ -49,6 +49,13 @@ func (c *Camera) process(w *glfw.Window) {
 	if w.GetKey(glfw.KeyF) == glfw.Press {
 		c.isOrtho = !c.isOrtho
 	}
+	if w.GetKey(glfw.KeyQ) == glfw.Press {
+		c.cameraPos.AddWith(&glm.Vec3{0, 0.01 * speed, 0})
+	}
+	if w.GetKey(glfw.KeyE) == glfw.Press {
+		c.cameraPos.AddWith(&glm.Vec3{0, -0.01 * speed, 0})
+
+	}
 	var a = c.cameraFront.AddNP(c.cameraPos)
 	c.lookAtMat = glm.LookAtV(&c.cameraPos, &a, &(c.cameraUp))
 
