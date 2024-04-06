@@ -21,11 +21,10 @@ func initShader(vertPath, fragPath string) Shader {
 	var vertS = shader.compileShader(string(vert)+"\x00", true)
 	var fragS = shader.compileShader(string(frag)+"\x00", false)
 
-	shader.prog = gl.CreateProgram()
 	gl.AttachShader(shader.prog, vertS)
 	gl.AttachShader(shader.prog, fragS)
-	gl.DeleteShader(vertS)
-	gl.DeleteShader(fragS)
+	//	gl.DeleteShader(vertS)
+	//	gl.DeleteShader(fragS)
 	gl.LinkProgram(shader.prog)
 	var succ int32 = 0
 	gl.GetProgramiv(shader.prog, gl.LINK_STATUS, &succ)
@@ -63,13 +62,16 @@ func (s *Shader) parseUniforms(shader string) {
 }
 
 func (s *Shader) setUniformUInt(name string, value uint32) {
-	gl.Uniform1ui(shader.uniforms[name], value)
+	gl.Uniform1ui(s.uniforms[name], value)
 
 }
 func (s *Shader) setUniformMatrix4(name string, value *glm.Mat4) {
-	gl.UniformMatrix4fv(shader.uniforms[name], 1, false, &value[0])
+	gl.UniformMatrix4fv(s.uniforms[name], 1, false, &value[0])
 }
 
+func (s *Shader) setUniformVec3(name string, value *glm.Vec3) {
+	gl.Uniform3f(s.uniforms[name], value[0], value[1], value[2])
+}
 func parseLiteral(shader string, ip *int) string {
 	var found = false
 	var retStr = ""

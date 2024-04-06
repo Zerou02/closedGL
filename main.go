@@ -40,10 +40,10 @@ type Ebo = uint32
 type Prog = uint32
 type Texture = uint32
 
-var vbo Vbo
+var cubeVbo Vbo
+var cubeVao Vao
+var cubeEbo Ebo
 
-var vao Vao
-var ebo Ebo
 var texture Texture
 var texture2 Texture
 
@@ -52,33 +52,53 @@ var deltaTime float64 = 0
 
 var camera = CreateCamera()
 
-var shader Shader
-
 func main() {
 	runtime.LockOSThread()
 
 	window = initGlfw()
 	initOpenGL()
 	gl.Enable(gl.DEPTH_TEST)
-	shader = initShader("./vertexShader.glsl", "./fragShader.glsl")
+	var sunShader = initShader("./vertexShader.glsl", "./sunShader.glsl")
+	var objectShader = initShader("./vertexShader2.glsl", "./fragShader.glsl")
+
 	window.SetInputMode(glfw.CursorMode, glfw.CursorDisabled)
 	window.SetCursorPosCallback(camera.mouseCallback)
 	window.SetScrollCallback(camera.scrollCb)
 
-	loadImage(&texture, "./container.jpg", gl.RGBA)
+	loadImage(&texture, "./test.png", gl.RGBA)
 	loadImage(&texture2, "./awesomeface.png", gl.RGBA)
 
-	var vao2 Vao
-	var vbo2 Vbo
-	generateVBO(&vbo2, doubleTriangle)
-	generateVAO(&vao2, []VertexInfo{{3, 0}, {3, 12}, {2, 24}})
+	var doubleTriangleVao Vao
+	var doubleTriangleVbo Vbo
+	generateVBO(&doubleTriangleVbo, doubleTriangle)
+	generateVAO(&doubleTriangleVao, []VertexInfo{{3, 0}, {3, 12}, {2, 24}})
 
-	generateVBO(&vbo, cube)
-	generateEBO(&ebo, indicesQuad)
-	generateVAO(&vao, []VertexInfo{{3, 0}, {3, 12}, {2, 24}})
+	generateVBO(&cubeVbo, cube)
+	generateEBO(&cubeEbo, indicesQuad)
+	generateVAO(&cubeVao, []VertexInfo{{3, 0}, {3, 12}, {2, 24}})
 
-	shader.setUniformUInt("tex", texture)
-	shader.setUniformUInt("tex2", texture2)
+	var quadVao Vao
+	var quadVBO Vbo
+	var quadEbo Ebo
+
+	generateVBO(&quadVBO, cube24)
+	generateEBO(&quadEbo, indicesCube24)
+	generateVAO(&quadVao, []VertexInfo{{3, 0}, {3, 12}, {2, 24}})
+
+	var sunVao Vao
+	var sunVbo Vbo
+	generateVBO(&sunVbo, cube)
+	generateVAO(&sunVao, []VertexInfo{{3, 0}, {3, 12}, {2, 24}})
+
+	var containerVao Vao
+	var containerVbo Vbo
+	generateVBO(&containerVbo, cube)
+	generateVAO(&containerVao, []VertexInfo{{3, 0}, {3, 12}, {2, 24}})
+
+	var light = glm.Vec3{1, 1, 1}
+	var toyColour = glm.Vec3{1, 0.5, 0.31}
+	var result = light.ComponentProduct(&toyColour)
+	_ = result
 
 	for !window.ShouldClose() {
 		var currFrame = glfw.GetTime()
@@ -92,33 +112,65 @@ func main() {
 			float32(glfw.GetTime()) * glm.DegToRad(50),
 		}
 		var modelMat = createTransformation(rotVec, glm.Vec3{1, 0, 0}, glm.Vec3{1, 1, 1})
-		shader.setUniformMatrix4("view", &camera.lookAtMat)
-		shader.setUniformMatrix4("projection", &camera.perspective)
-		shader.setUniformMatrix4("model", &modelMat)
-
+		modelMat = glm.Ident4()
 		//Draw
+
 		gl.ClearColor(0.2, 0.3, 0.3, 1.0)
-		gl.UseProgram(shader.prog)
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
-		gl.DrawArrays(gl.TRIANGLES, 0, 36)
-
 		gl.PolygonMode(gl.FRONT_AND_BACK, gl.FILL)
-		gl.UseProgram(shader.prog)
-		gl.BindVertexArray(vao2)
-		gl.DrawArrays(gl.TRIANGLES, 0, int32(len(doubleTriangle)/3))
-
 		//	gl.PolygonMode(gl.FRONT_AND_BACK, gl.LINE)
+
+		gl.UseProgram(sunShader.prog)
+		sunShader.setUniformMatrix4("view", &camera.lookAtMat)
+		sunShader.setUniformMatrix4("projection", &camera.perspective)
+		sunShader.setUniformVec3("objectColour", &toyColour)
+		sunShader.setUniformVec3("lightColour", &light)
+		sunShader.setUniformUInt("tex", texture)
+		sunShader.setUniformUInt("tex2", texture2)
+		sunShader.setUniformMatrix4("model", &modelMat)
 		gl.ActiveTexture(gl.TEXTURE0)
 		gl.BindTexture(gl.TEXTURE_2D, texture)
 		gl.ActiveTexture(gl.TEXTURE1)
 		gl.BindTexture(gl.TEXTURE_2D, texture2)
-		gl.BindVertexArray(vao)
-		for i := 0; i < 10; i++ {
-			var angle float32 = 20.0 * (float32(i) + 1)
-			var modelMat = createTransformation(glm.Vec3{angle, angle, angle}, glm.Vec3{cubePos[i].X(), cubePos[i].Y(), cubePos[i].Z()}, glm.Vec3{1, 1, 1})
-			shader.setUniformMatrix4("model", &modelMat)
-			gl.DrawArrays(gl.TRIANGLES, 0, 36)
-		}
+
+		gl.BindVertexArray(sunVao)
+		gl.DrawArrays(gl.TRIANGLES, 0, int32(len(cube)/3))
+
+		gl.UseProgram(objectShader.prog)
+		gl.ActiveTexture(gl.TEXTURE0)
+		gl.BindTexture(gl.TEXTURE_2D, texture)
+		gl.ActiveTexture(gl.TEXTURE1)
+		gl.BindTexture(gl.TEXTURE_2D, texture2)
+		modelMat = glm.Translate3D(2, 0, 0)
+		objectShader.setUniformMatrix4("view", &camera.lookAtMat)
+		objectShader.setUniformMatrix4("projection", &camera.perspective)
+		objectShader.setUniformMatrix4("model", &modelMat)
+		objectShader.setUniformVec3("objectColour", &toyColour)
+		objectShader.setUniformVec3("lightColour", &light)
+		objectShader.setUniformUInt("tex", texture)
+		objectShader.setUniformUInt("tex2", texture2)
+
+		gl.BindVertexArray(containerVao)
+		gl.DrawArrays(gl.TRIANGLES, 0, int32(len(cube)/3))
+		//gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, quadEbo)
+		//gl.BindVertexArray(quadVao)
+		//gl.DrawElements(gl.TRIANGLES, int32(len(indicesCube24)), gl.UNSIGNED_INT, nil)
+		//
+		//gl.BindVertexArray(doubleTriangleVao)
+		//gl.DrawArrays(gl.TRIANGLES, 0, int32(len(doubleTriangle)/3))
+		/*
+			gl.BindVertexArray(vao2)
+			gl.DrawArrays(gl.TRIANGLES, 0, int32(len(doubleTriangle)/3))
+				gl.DrawArrays(gl.TRIANGLES, 0, 36)
+
+				gl.BindVertexArray(vao)
+								for i := 0; i < 10; i++ {
+									var angle float32 = 20.0 * (float32(i) + 1)
+									var modelMat = createTransformation(glm.Vec3{angle, angle, angle}, glm.Vec3{cubePos[i].X(), cubePos[i].Y(), cubePos[i].Z()}, glm.Vec3{1, 1, 1})
+									shader.setUniformMatrix4("model", &modelMat)
+									gl.DrawArrays(gl.TRIANGLES, 0, 36)
+								}
+		*/
 		glfw.PollEvents()
 		window.SwapBuffers()
 	}
@@ -155,9 +207,10 @@ func loadImage(texture *uint32, path string, format uint32) {
 	gl.BindTexture(gl.TEXTURE_2D, *texture)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT)
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
-	gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 512, 512, 0, format, gl.UNSIGNED_BYTE, gl.Ptr(img.Pix))
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
+	println(img.Bounds().Max.X)
+	gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RGBA, int32(img.Bounds().Max.X), int32(img.Bounds().Max.Y), 0, format, gl.UNSIGNED_BYTE, gl.Ptr(img.Pix))
 	gl.GenerateMipmap(gl.TEXTURE_2D)
 }
 
