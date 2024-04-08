@@ -9,12 +9,11 @@ import (
 )
 
 type Shader struct {
-	prog     uint32
-	uniforms map[string]int32
+	prog uint32
 }
 
 func initShader(vertPath, fragPath string) Shader {
-	var shader = Shader{0, map[string]int32{}}
+	var shader = Shader{0}
 	shader.prog = gl.CreateProgram()
 	var vert, _ = os.ReadFile(vertPath)
 	var frag, _ = os.ReadFile(fragPath)
@@ -37,92 +36,29 @@ func initShader(vertPath, fragPath string) Shader {
 		println("Shader successfully linked")
 	}
 
-	shader.parseUniforms(string(vert))
-	shader.parseUniforms(string(frag))
 	return shader
 }
 
-func (s *Shader) parseUniforms(shader string) {
-	var ip = 0
-	for ip < len(shader) {
-		var c = shader[ip]
-		if c == 'u' {
-			if checkIsText(shader, ip, "uniform") {
-				ip += len("uniform")
-				parseUniformType(shader, &ip)
-				var name = parseLiteral(shader, &ip)
-				s.uniforms[name] = (gl.GetUniformLocation(s.prog, gl.Str(name+"\x00")))
-			} else {
-				ip++
-			}
-		} else {
-			ip++
-		}
-	}
-}
-
-func (s *Shader) setUniformUInt(name string, value uint32) {
-	gl.Uniform1ui(s.uniforms[name], value)
-
-}
 func (s *Shader) setUniformMatrix4(name string, value *glm.Mat4) {
-	gl.UniformMatrix4fv(s.uniforms[name], 1, false, &value[0])
+	var location = gl.GetUniformLocation(s.prog, gl.Str(name+"\x00"))
+	gl.UniformMatrix4fv(location, 1, false, &value[0])
 }
 
 func (s *Shader) setUniformVec3(name string, value *glm.Vec3) {
-	gl.Uniform3f(s.uniforms[name], value[0], value[1], value[2])
-}
-func parseLiteral(shader string, ip *int) string {
-	var found = false
-	var retStr = ""
-	for !found {
-		var c = shader[*ip]
-		if c == ' ' {
-			*ip += 1
-		} else {
-			for !found {
-				c = shader[*ip]
-				if c == ' ' || c == ';' {
-					found = true
-				} else {
-					retStr += string(c)
-					*ip += 1
-				}
-			}
-		}
-	}
-	return retStr
-}
-func parseUniformType(shader string, ip *int) {
-	var found = false
-	for !found {
-		var c = shader[*ip]
-		if c == ' ' {
-			*ip += 1
-		} else {
-			for !found {
-				if c == ' ' {
-					found = true
-				} else {
-					c = shader[*ip]
-					*ip += 1
-				}
-			}
-		}
-	}
+	var location = gl.GetUniformLocation(s.prog, gl.Str(name+"\x00"))
+	gl.Uniform3f(location, value[0], value[1], value[2])
+
 }
 
-func checkIsText(text string, offset int, word string) bool {
-	var isCorrect = true
-	for i := 0; i < len(word); i++ {
-		if word[i] != text[offset+i] {
-			isCorrect = false
-			break
-		}
-	}
-	return isCorrect
+func (s *Shader) setUniform1i(name string, value int32) {
+	var location = gl.GetUniformLocation(s.prog, gl.Str(name+"\x00"))
+	gl.Uniform1i(location, value)
 }
 
+func (s *Shader) setUniform1f(name string, value float32) {
+	var location = gl.GetUniformLocation(s.prog, gl.Str(name+"\x00"))
+	gl.Uniform1f(location, value)
+}
 func (s *Shader) compileShader(shaderSrc string, vertex bool) uint32 {
 	var stype uint32 = gl.FRAGMENT_SHADER
 	if vertex {

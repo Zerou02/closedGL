@@ -45,9 +45,6 @@ var cubeVbo Vbo
 var cubeVao Vao
 var cubeEbo Ebo
 
-var texture Texture
-var texture2 Texture
-
 var lastFrame float64 = 0
 var deltaTime float64 = 0
 
@@ -66,8 +63,13 @@ func main() {
 	window.SetCursorPosCallback(camera.mouseCallback)
 	window.SetScrollCallback(camera.scrollCb)
 
-	loadImage(&texture, "./test.png", gl.RGBA)
-	loadImage(&texture2, "./awesomeface.png", gl.RGBA)
+	var texture Texture
+	var texture2 Texture
+	var texture3 Texture
+
+	loadImage(&texture, "./3d_artists_call_it_diffuse_map.png", gl.RGBA)
+	loadImage(&texture2, "./specular_map.png", gl.RGBA)
+	loadImage(&texture3, "./emission_map.jpg", gl.RGBA)
 
 	var doubleTriangleVao Vao
 	var doubleTriangleVbo Vbo
@@ -93,11 +95,10 @@ func main() {
 
 	var containerVao Vao
 	var containerVbo Vbo
-	generateVBO(&containerVbo, cubeNormals)
-	generateVAO(&containerVao, []VertexInfo{{3, 0}, {3, 12}})
+	generateVBO(&containerVbo, diffuseCube)
+	generateVAO(&containerVao, []VertexInfo{{3, 0}, {3, 12}, {2, 24}})
 
-	var light = glm.Vec3{1, 1, 1}
-	var toyColour = glm.Vec3{1, 0.5, 0.31}
+	var light = glm.Vec3{1.0, 1.0, 1.0}
 
 	for !window.ShouldClose() {
 		var currFrame = glfw.GetTime()
@@ -110,19 +111,27 @@ func main() {
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 		gl.PolygonMode(gl.FRONT_AND_BACK, gl.FILL)
 		//	gl.PolygonMode(gl.FRONT_AND_BACK, gl.LINE)
-		/* gl.ActiveTexture(gl.TEXTURE0)
+
+		gl.ActiveTexture(gl.TEXTURE0)
 		gl.BindTexture(gl.TEXTURE_2D, texture)
 		gl.ActiveTexture(gl.TEXTURE1)
-		gl.BindTexture(gl.TEXTURE_2D, texture2) */
+		gl.BindTexture(gl.TEXTURE_2D, texture2)
+		gl.ActiveTexture(gl.TEXTURE2)
+		gl.BindTexture(gl.TEXTURE_2D, texture3)
 
 		gl.UseProgram(sunShader.prog)
 		sunShader.setUniformMatrix4("view", &camera.lookAtMat)
 		sunShader.setUniformMatrix4("projection", &camera.perspective)
-		var sunPos = glm.Vec3{0, float32(math.Sin(glfw.GetTime())), 0}
+		var sunPos = glm.Vec3{0, 0, 0}
 		var modelMat = createTransformation(glm.Vec3{0, 0, 0}, sunPos, glm.Vec3{0.2, 0.2, 0.2})
 		sunShader.setUniformMatrix4("model", &modelMat)
 
 		gl.BindVertexArray(sunVao)
+		gl.DrawArrays(gl.TRIANGLES, 0, int32(len(cube)/3))
+		var secondPos = sunPos.Add(&glm.Vec3{4, 0, 0})
+		modelMat = createTransformation(glm.Vec3{0, 0, 0}, secondPos, glm.Vec3{0.2, 0.2, 0.2})
+
+		sunShader.setUniformMatrix4("model", &modelMat)
 		gl.DrawArrays(gl.TRIANGLES, 0, int32(len(cube)/3))
 
 		gl.UseProgram(objectShader.prog)
@@ -131,10 +140,49 @@ func main() {
 		objectShader.setUniformMatrix4("projection", &camera.perspective)
 		modelMat = createTransformation(glm.Vec3{float32(glfw.GetTime()), 0, 0}, glm.Vec3{2, 0, 0}, glm.Vec3{1, 1, 1})
 		objectShader.setUniformMatrix4("model", &modelMat)
-		objectShader.setUniformVec3("objectColour", &toyColour)
 		objectShader.setUniformVec3("lightColour", &light)
 		objectShader.setUniformVec3("lightPos", &sunPos)
 		objectShader.setUniformVec3("viewPos", &camera.cameraPos)
+
+		objectShader.setUniformVec3("dirLight.direction", &glm.Vec3{0.0, -1.0, 0.0})
+		objectShader.setUniformVec3("dirLight.ambient", &glm.Vec3{0.05, 0.05, 0.05})
+		objectShader.setUniformVec3("dirLight.diffuse", &glm.Vec3{0.4, 0.4, 0.4})
+		objectShader.setUniformVec3("dirLight.specular", &glm.Vec3{0.5, 0.5, 0.5})
+
+		objectShader.setUniformVec3("pointLights[0].position", &sunPos)
+		objectShader.setUniformVec3("pointLights[0].ambient", &glm.Vec3{0.05, 0.05, 0.05})
+		objectShader.setUniformVec3("pointLights[0].diffuse", &glm.Vec3{0.8, 0.8, 0.8})
+		objectShader.setUniformVec3("pointLights[0].specular", &glm.Vec3{1.0, 1.0, 1.0})
+		objectShader.setUniform1f("pointLights[0].constant", 1.0)
+		objectShader.setUniform1f("pointLights[0].linear", 0.09)
+		objectShader.setUniform1f("pointLights[0].quadratic", 0.032)
+
+		/* 	objectShader.setUniformVec3("pointLights[1].position", &secondPos)
+		objectShader.setUniformVec3("pointLights[1].ambient", &glm.Vec3{0.05, 0.05, 0.05})
+		objectShader.setUniformVec3("pointLights[1].diffuse", &glm.Vec3{0.8, 0.8, 0.8})
+		objectShader.setUniformVec3("pointLights[1].specular", &glm.Vec3{1.0, 1.0, 1.0})
+		objectShader.setUniform1f("pointLights[1].constant", 1.0)
+		objectShader.setUniform1f("pointLights[1].linear", 0.09)
+		objectShader.setUniform1f("pointLights[1].quadratic", 0.032) */
+
+		objectShader.setUniformVec3("material.ambient", &glm.Vec3{1, 0.5, 0.31})
+		objectShader.setUniform1i("material.diffuse", 0)
+		objectShader.setUniform1i("material.specular", 1)
+		objectShader.setUniform1i("material.emission", 2)
+		objectShader.setUniform1i("material.shininess", 32)
+
+		objectShader.setUniformVec3("spotLight.position", &camera.cameraPos)
+		println(camera.cameraFront[2])
+		var test = camera.cameraFront.Add(&glm.Vec3{-0.25, 0, 0})
+		objectShader.setUniformVec3("spotLight.direction", &test)
+		objectShader.setUniformVec3("spotLight.ambient", &glm.Vec3{0.0, 0.0, 0.0})
+		objectShader.setUniformVec3("spotLight.diffuse", &glm.Vec3{1.0, 1.0, 1.0})
+		objectShader.setUniformVec3("spotLight.specular", &glm.Vec3{1.0, 1.0, 1.0})
+		objectShader.setUniform1f("spotLight.constant", 1.0)
+		objectShader.setUniform1f("spotLight.linear", 0.09)
+		objectShader.setUniform1f("spotLight.quadratic", 0.032)
+		objectShader.setUniform1f("spotLight.cutOff", float32(math.Cos(float64(glm.DegToRad(5)))))
+		objectShader.setUniform1f("spotLight.outerCutOff", float32(math.Cos(float64(glm.DegToRad(7.5)))))
 
 		gl.BindVertexArray(containerVao)
 		gl.DrawArrays(gl.TRIANGLES, 0, int32(len(cube)/3))
@@ -177,7 +225,6 @@ func loadImage(texture *uint32, path string, format uint32) {
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
-	println(img.Bounds().Max.X)
 	gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RGBA, int32(img.Bounds().Max.X), int32(img.Bounds().Max.Y), 0, format, gl.UNSIGNED_BYTE, gl.Ptr(img.Pix))
 	gl.GenerateMipmap(gl.TEXTURE_2D)
 }
