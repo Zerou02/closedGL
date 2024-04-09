@@ -94,8 +94,8 @@ func main() {
 	generateVAO(&sunVao, []VertexInfo{{3, 0}, {3, 12}, {2, 24}})
 
 	var containerVao Vao
-	var containerVbo Vbo
-	generateVBO(&containerVbo, diffuseCube)
+	//var containerVbo Vbo
+	//generateVBO(&containerVbo, diffuseCube)
 	generateVAO(&containerVao, []VertexInfo{{3, 0}, {3, 12}, {2, 24}})
 
 	var light = glm.Vec3{1.0, 1.0, 1.0}
