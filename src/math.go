@@ -6,6 +6,15 @@ import (
 	"github.com/EngoEngine/glm"
 )
 
+type Direction int32
+
+const (
+	UP Direction = iota
+	RIGHT
+	DOWN
+	LEFT
+)
+
 type Vec4 struct {
 	x, y, z, w float32
 }
@@ -97,10 +106,31 @@ func createTransformation(rot glm.Vec3, translation glm.Vec3, scale glm.Vec3) gl
 	var rotZ = glm.HomogRotate3DZ(rot.Z())
 	var trans = glm.Translate3D(translation[0], translation[1], translation[2])
 	var scaleMat = glm.Scale3D(scale[0], scale[1], scale[2])
-	retMat.Mul4With(&trans)
 	retMat.Mul4With(&rotX)
 	retMat.Mul4With(&rotY)
 	retMat.Mul4With(&rotZ)
+	retMat.Mul4With(&trans)
 	retMat.Mul4With(&scaleMat)
 	return retMat
+}
+
+func vectorDirection(target glm.Vec2) Direction {
+	var compass = []glm.Vec2{
+		glm.Vec2{0, 1},
+		glm.Vec2{1, 0},
+		glm.Vec2{0, -1},
+		glm.Vec2{-1, 0},
+	}
+	var max = 0.0
+	var bestMatch = -1
+
+	for i := 0; i < 4; i++ {
+		var normalized = target.Normalized()
+		var angle = normalized.Dot(&compass[i])
+		if float64(angle) > max {
+			max = float64(angle)
+			bestMatch = i
+		}
+	}
+	return Direction(bestMatch)
 }

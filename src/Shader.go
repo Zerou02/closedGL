@@ -47,7 +47,11 @@ func (s *Shader) setUniformMatrix4(name string, value *glm.Mat4) {
 func (s *Shader) setUniformVec3(name string, value *glm.Vec3) {
 	var location = gl.GetUniformLocation(s.prog, gl.Str(name+"\x00"))
 	gl.Uniform3f(location, value[0], value[1], value[2])
+}
 
+func (s *Shader) setUniformVec4(name string, value *glm.Vec4) {
+	var location = gl.GetUniformLocation(s.prog, gl.Str(name+"\x00"))
+	gl.Uniform4f(location, value[0], value[1], value[2], value[3])
 }
 
 func (s *Shader) setUniform1i(name string, value int32) {
@@ -78,4 +82,8 @@ func (s *Shader) compileShader(shaderSrc string, vertex bool) uint32 {
 		println("Shader successfully compiled")
 	}
 	return shader
+}
+
+func (s *Shader) use() {
+	gl.UseProgram(s.prog)
 }

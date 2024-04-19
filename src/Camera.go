@@ -25,7 +25,7 @@ func CreateCamera() Camera {
 	}
 }
 
-func (c *Camera) process(w *glfw.Window) {
+func (c *Camera) process(w *glfw.Window, deltaTime float32) {
 	c.cameraDir[0] = float32(math.Cos(float64((glm.DegToRad(c.yaw))))) * float32(math.Cos(float64(glm.DegToRad(c.pitch))))
 	c.cameraDir[1] = float32(math.Sin(float64(glm.DegToRad(c.pitch))))
 	c.cameraDir[2] = float32(math.Sin(float64((glm.DegToRad(c.yaw))))) * float32(math.Cos(float64(glm.DegToRad(c.pitch))))
