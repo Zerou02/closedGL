@@ -14,20 +14,10 @@ type Sprite2D struct {
 	visible       bool
 }
 
-func newSprite2D(s *Shader, tex *uint32, pos, size glm.Vec2, tint glm.Vec4, fullTex bool) Sprite2D {
+func newSprite2D(s *Shader, tex *uint32, pos, size glm.Vec2, tint glm.Vec4) Sprite2D {
 	var sprite = Sprite2D{shader: s, texture: tex, pos: pos, size: size, tint: tint, visible: true}
-	sprite.init(fullTex)
+	generateBuffers(&sprite.vao, &sprite.vbo, &sprite.ebo, fullQuad, 0, indicesQuad, []VertexInfo{{3, 0}, {2, 12}})
 	return sprite
-}
-
-func (this *Sprite2D) init(fullTex bool) {
-	if fullTex {
-		generateVBO(&this.vbo, fullQuad)
-	} else {
-		generateVBO(&this.vbo, quad)
-	}
-	generateEBO(&this.ebo, indicesQuad)
-	generateVAO(&this.vao, []VertexInfo{{3, 0}, {2, 12}})
 }
 
 func (this *Sprite2D) process(delta float32) {
@@ -45,9 +35,9 @@ func (this *Sprite2D) draw() {
 	gl.BindTexture(gl.TEXTURE_2D, *this.texture)
 	this.shader.setUniform1i("tex", 0)
 
-	gl.BindBuffer(gl.ARRAY_BUFFER, this.vbo)
-	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.ebo)
 	gl.BindVertexArray(this.vao)
+	//gl.BindBuffer(gl.ARRAY_BUFFER, this.vbo)
+	//gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.ebo)
 	gl.DrawElements(gl.TRIANGLES, 6, gl.UNSIGNED_INT, nil)
 }
 

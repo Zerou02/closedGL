@@ -70,7 +70,7 @@ var indicesQuad = []uint32{
 }
 
 var fullQuad = []float32{
-	//pos;;col;;tex
+	//pos;;tex
 	1, 0, 0, 1.0, 0.0, // top right
 	1, 1, 0, 1.0, 1.0, // bottom right
 	0, 1, 0, 0.0, 1.0, // bottom left

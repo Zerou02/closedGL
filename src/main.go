@@ -30,6 +30,12 @@ func main() {
 	var view = glm.Ident4()
 
 	var textShader = initShader("./shader/text.vs", "./shader/text.fs")
+	_ = textShader
+
+	var pointShader = initShader("./shader/points.vs", "./shader/points.fs")
+	_ = pointShader
+	var textTex = loadImage("./assets/lower_letters.png", gl.RGBA)
+	var ballTex = loadImage("./assets/ball.png", gl.RGBA)
 
 	gl.PolygonMode(gl.FRONT_AND_BACK, gl.FILL)
 	gl.UseProgram(shader.prog)
@@ -39,15 +45,50 @@ func main() {
 	var delta = 0.0
 	_ = delta
 	var lastFrame = 0.0
+	var a = newCharacter(CharacterInfo{tex: textTex}, &textShader, 0, 0, width, height, glm.Vec4{1, 0, 0, 1}, &projection)
+	var ball = newSprite2D(&shader, ballTex, glm.Vec2{100, 100}, glm.Vec2{40, 40}, glm.Vec4{1, 1, 1, 1})
+	/* var p2 = newPoint(&pointShader, glm.Vec2{200, 200}, glm.Vec3{0, 0, 1}, &projection)
+	var p = newPoint(&pointShader, glm.Vec2{250, 250}, glm.Vec3{1, 0, 0}, &projection)
+	var p3 = newPoint(&pointShader, glm.Vec2{200, 250}, glm.Vec3{0, 1, 0}, &projection) */
+	var rect = newRect(&pointShader, &projection, glm.Vec4{300, 300, 300, 300}, glm.Vec3{0, 0, 1})
 
+	/* var line = newLine(&pointShader, &projection)
+	line.addPoint(p)
+	line.addPoint(p2)
+	line.addPoint(p3)
+
+	var start = glm.Vec2{20, 400}
+	var end = glm.Vec2{500, 100}
+	var control = glm.Vec2{400, 500}
+	var points = []*Point{}
+	var line2 = newLine(&pointShader, &projection)
+	var res float32 = 30
+	for i := 0; i < int(res); i++ {
+		var t = float32(i+1) / res
+		var pos = bezierLerp(start, control, end, t)
+		fmt.Printf("t:%f, x:%f, y:%f\n", t, pos[0], pos[1])
+		var p = newPoint(&pointShader, pos, glm.Vec3{t, t, t}, &projection)
+		points = append(points, &p)
+		line2.addPoint(p)
+	} */
+
+	gl.PolygonMode(gl.FRONT_AND_BACK, gl.FILL)
 	for !window.ShouldClose() {
+
 		var currFrame = glfw.GetTime()
 		delta = currFrame - lastFrame
 		lastFrame = currFrame
 
-		gl.ClearColor(0.0, 0.0, 1.0, 1.0)
+		gl.ClearColor(0.0, 0.0, 0.0, 1.0)
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
-
+		a.draw()
+		ball.draw()
+		line.draw()
+		rect.draw()
+		/* for _, x := range points {
+			x.draw()
+		} */
+		line2.draw()
 		process(window)
 		glfw.PollEvents()
 		window.SwapBuffers()
@@ -83,18 +124,22 @@ func initOpenGL() {
 	gl.Viewport(0, 0, width, height)
 	gl.Enable(gl.DEPTH_TEST)
 	gl.Enable(gl.BLEND)
+	gl.Enable(gl.PROGRAM_POINT_SIZE)
+	gl.PointSize(1)
 	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
 }
 
-func loadImage(texture *uint32, path string, format uint32) {
+func loadImage(path string, format uint32) *uint32 {
 	var img, _ = stbi.Load(path)
-	gl.GenTextures(1, texture)
-	gl.BindTexture(gl.TEXTURE_2D, *texture)
+	var texPtr uint32
+	gl.GenTextures(1, &texPtr)
+	gl.BindTexture(gl.TEXTURE_2D, texPtr)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
 	gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RGBA, int32(img.Bounds().Max.X), int32(img.Bounds().Max.Y), 0, format, gl.UNSIGNED_BYTE, gl.Ptr(img.Pix))
+	return &texPtr
 }
 
 func generateVBO(vbo *uint32, vertices []float32) {
@@ -103,10 +148,53 @@ func generateVBO(vbo *uint32, vertices []float32) {
 	gl.BufferData(gl.ARRAY_BUFFER, 4*len(vertices), gl.Ptr(vertices), gl.STATIC_DRAW)
 }
 
+func generateDynVBO(vbo *uint32, bytesLen int) {
+	gl.GenBuffers(1, vbo)
+	gl.BindBuffer(gl.ARRAY_BUFFER, *vbo)
+	gl.BufferData(gl.ARRAY_BUFFER, bytesLen, gl.Ptr(nil), gl.DYNAMIC_DRAW)
+}
 func generateEBO(ebo *uint32, indices []uint32) {
 	gl.GenBuffers(1, ebo)
 	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, *ebo)
 	gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, 4*len(indices), gl.Ptr(indices), gl.STATIC_DRAW)
+}
+
+func generateBuffers(vao, vbo, ebo *uint32, vertices []float32, vboByteLen int, indices []uint32, vertexInfo []VertexInfo) {
+
+	//vbo
+	gl.GenBuffers(1, vbo)
+	gl.GenVertexArrays(1, vao)
+	gl.BindVertexArray(*vao)
+	gl.BindBuffer(gl.ARRAY_BUFFER, *vbo)
+
+	if vertices != nil {
+		gl.BufferData(gl.ARRAY_BUFFER, 4*len(vertices), gl.Ptr(vertices), gl.STATIC_DRAW)
+	} else {
+		gl.BufferData(gl.ARRAY_BUFFER, vboByteLen, gl.Ptr(nil), gl.DYNAMIC_DRAW)
+	}
+
+	//vao
+	gl.BindVertexArray(*vao)
+	var stride = 0
+	for i := 0; i < len(vertexInfo); i++ {
+		stride += int(vertexInfo[i].amountBytes)
+	}
+	for i := 0; i < len(vertexInfo); i++ {
+		var info = vertexInfo[i]
+		gl.VertexAttribPointerWithOffset(uint32(i), int32(info.amountBytes), gl.FLOAT, false, int32(stride*4), info.offset)
+		gl.EnableVertexAttribArray(uint32(i))
+	}
+
+	//ebo
+	if ebo != nil {
+		gl.GenBuffers(1, ebo)
+		gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, *ebo)
+		gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, 4*len(indices), gl.Ptr(indices), gl.STATIC_DRAW)
+	}
+	gl.BindVertexArray(0)
+	gl.BindBuffer(gl.ARRAY_BUFFER, 0)
+	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, 0)
+
 }
 
 type VertexInfo struct {

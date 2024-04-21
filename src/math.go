@@ -134,3 +134,17 @@ func vectorDirection(target glm.Vec2) Direction {
 	}
 	return Direction(bestMatch)
 }
+
+func lerp(a, b, t float32) float32 {
+	return a + (b-a)*t
+}
+
+func lerpVec2(a, b glm.Vec2, t float32) glm.Vec2 {
+	return glm.Vec2{lerp(a[0], b[0], t), lerp(a[1], b[1], t)}
+}
+
+func bezierLerp(a, b, c glm.Vec2, t float32) glm.Vec2 {
+	var r = lerpVec2(a, b, t)
+	var s = lerpVec2(b, c, t)
+	return lerpVec2(r, s, t)
+}
