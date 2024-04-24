@@ -1,10 +1,12 @@
 package main
 
 import (
+	"fmt"
 	_ "image/png"
 	"math"
 	"os"
 	"runtime"
+	"time"
 
 	"github.com/EngoEngine/glm"
 	"github.com/go-gl/gl/v4.1-core/gl"
@@ -48,12 +50,12 @@ func main() {
 	var size, amount = 30, 16
 
 	var rectHolder = [][]Rectangle{}
-	for i := 0; i < 256; i++ {
+	for i := 0; i < 128; i++ {
 		rectHolder = append(rectHolder, generateGrid(size, amount, &pointShader, &projection))
 	}
 
 	var _, info = deserializeIglbmf("default", &rectHolder)
-	var text = newText(info, &textShader, 0, 0, 1, 1, glm.Vec3{1, 0, 1}, &projection)
+	var text = newText(info, &textShader, 0, 500, 1, 1, glm.Vec3{1, 0, 1}, &projection)
 	var currentIdx = 0
 	var lines = []Line{}
 	for y := 0; y < amount+1; y++ {
@@ -77,6 +79,8 @@ func main() {
 	var pPressed = false
 	var ePressed = false
 	var qPressed = false
+	var rPressed = false
+	var tPressed = false
 
 	println(text.charInfo[0].asciicode)
 	for !window.ShouldClose() {
@@ -133,6 +137,33 @@ func main() {
 			qPressed = false
 		}
 
+		if window.GetKey(glfw.KeyR) == glfw.Press {
+			if !rPressed {
+				currentIdx -= 10
+				if currentIdx < 0 {
+					currentIdx = 0
+				}
+				println(currentIdx, string(rune(currentIdx)))
+				rPressed = true
+			}
+		}
+		if window.GetKey(glfw.KeyR) == glfw.Release {
+			rPressed = false
+		}
+
+		if window.GetKey(glfw.KeyT) == glfw.Press {
+			if !tPressed {
+				currentIdx += 10
+				if currentIdx > 127 {
+					currentIdx = 127
+				}
+				println(currentIdx, string(rune(currentIdx)))
+				tPressed = true
+			}
+		}
+		if window.GetKey(glfw.KeyT) == glfw.Release {
+			tPressed = false
+		}
 		gl.ClearColor(0.0, 0.0, 0.0, 1.0)
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 		gl.Disable(gl.DEPTH_TEST)
@@ -143,7 +174,7 @@ func main() {
 		for _, x := range lines {
 			x.draw()
 		}
-		text.draw("A")
+		text.draw("Hello,World!")
 		gl.Enable(gl.DEPTH_TEST)
 
 		process(window)
@@ -160,7 +191,10 @@ func process(window *glfw.Window) {
 }
 
 func deserializeIglbmf(path string, grid *[][]Rectangle) (*Texture, []CharacterInfo) {
+	var start = time.Now()
 	var file, _ = os.ReadFile("./font/" + path + "combined.iglbmf")
+	var end = time.Now()
+
 	var charInfo = []CharacterInfo{}
 	var texData = []byte{}
 	var texPtr uint32
@@ -216,6 +250,8 @@ func deserializeIglbmf(path string, grid *[][]Rectangle) (*Texture, []CharacterI
 		}
 	}
 
+	start = time.Now()
+
 	gl.GenTextures(1, &texPtr)
 	gl.BindTexture(gl.TEXTURE_2D, texPtr)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_R, gl.REPEAT)
@@ -223,6 +259,9 @@ func deserializeIglbmf(path string, grid *[][]Rectangle) (*Texture, []CharacterI
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
 	gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RGBA, int32(imgLenPx), int32(imgLenPx), 0, gl.RGBA, gl.UNSIGNED_BYTE, gl.Ptr(texData))
+
+	end = time.Now()
+	fmt.Printf("other:%f", end.Sub(start).Seconds())
 	return &texPtr, charInfo
 }
 

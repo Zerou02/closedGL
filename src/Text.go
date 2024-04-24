@@ -39,8 +39,8 @@ func (this *Character) draw(text string) {
 	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.ebo)
 	var posX = this.x
 	var posY = this.y
-	var letterWidth float32 = 100
-	var letterHeight float32 = 100
+	var letterWidth float32 = 20
+	var letterHeight float32 = 30
 	var spacing = 10
 	for _, x := range text {
 		var info = this.charInfo[0]
@@ -51,13 +51,7 @@ func (this *Character) draw(text string) {
 		var startY float32 = 1 / (float32(info.texH) / (float32(info.charY + info.offsetY)))
 		var endX float32 = 1 / (float32(info.texW) / (float32(info.charX+info.offsetX) + float32(info.charW)))
 		var endY float32 = 1 / (float32(info.texH) / (float32(info.charY+info.offsetY) + float32(info.charH)))
-		_, _, _, _ = startX, startY, endX, endY
 		var vertices = []float32{
-
-			/* posX + letterWidth, posY, 1, 0,
-			posX + letterWidth, posY + letterHeight, 1, 1,
-			posX, posY + letterHeight, 0, 1,
-			posX, posY, 0, 0, */
 			posX + letterWidth, posY, endX, startY,
 			posX + letterWidth, posY + letterHeight, endX, endY,
 			posX, posY + letterHeight, startX, endY,
