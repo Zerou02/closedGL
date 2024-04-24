@@ -6,9 +6,9 @@ import (
 )
 
 type CharacterInfo struct {
-	tex                                    *uint32
-	texW, texH, charX, charY, charW, charH uint32
-	asciicode                              byte
+	tex                                                      *uint32
+	texW, texH, offsetX, offsetY, charX, charY, charW, charH uint32
+	asciicode                                                byte
 }
 
 type Character struct {
@@ -26,7 +26,7 @@ func newText(charInfo []CharacterInfo, shader *Shader, x, y, w, h float32, tint 
 	return char
 }
 
-func (this *Character) draw() {
+func (this *Character) draw(text string) {
 	this.shader.use()
 	this.shader.setUniformMatrix4("projection", this.projection)
 	this.shader.setUniformVec3("colour", &this.tint)
@@ -37,28 +37,31 @@ func (this *Character) draw() {
 	gl.BindVertexArray(this.vao)
 	gl.BindBuffer(gl.ARRAY_BUFFER, this.vbo)
 	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.ebo)
-	var string = "aabb"
 	var posX = this.x
 	var posY = this.y
 	var letterWidth float32 = 100
 	var letterHeight float32 = 100
 	var spacing = 10
-	for _, x := range string {
-		_ = x
-		/* var startX float32 = 1 / (float32(this.charInfo.texW) / (float32(this.charInfo.charX))) */
-		/* var startY float32 = 1 / (float32(this.charInfo.texH) / (float32(this.charInfo.charY))) */
-		/* var endX float32 = 1 / (float32(this.charInfo.texW) / (float32(this.charInfo.charX) + float32(this.charInfo.charW))) */
-		/* var endY float32 = 1 / (float32(this.charInfo.texH) / (float32(this.charInfo.charY) + float32(this.charInfo.charH))) */
+	for _, x := range text {
+		var info = this.charInfo[0]
+		if int(byte(x)) < len(this.charInfo) {
+			info = this.charInfo[byte(x)]
+		}
+		var startX float32 = 1 / (float32(info.texW) / (float32(info.charX + info.offsetX)))
+		var startY float32 = 1 / (float32(info.texH) / (float32(info.charY + info.offsetY)))
+		var endX float32 = 1 / (float32(info.texW) / (float32(info.charX+info.offsetX) + float32(info.charW)))
+		var endY float32 = 1 / (float32(info.texH) / (float32(info.charY+info.offsetY) + float32(info.charH)))
+		_, _, _, _ = startX, startY, endX, endY
 		var vertices = []float32{
 
-			posX + letterWidth, posY, 1, 0,
+			/* posX + letterWidth, posY, 1, 0,
 			posX + letterWidth, posY + letterHeight, 1, 1,
 			posX, posY + letterHeight, 0, 1,
-			posX, posY, 0, 0,
-			/* 			posX + letterWidth, posY, endX, startY,
-			   			posX + letterWidth, posY + letterHeight, endX, endY,
-			   			posX, posY + letterHeight, startX, endY,
-			   			posX, posY, startX, startY, */
+			posX, posY, 0, 0, */
+			posX + letterWidth, posY, endX, startY,
+			posX + letterWidth, posY + letterHeight, endX, endY,
+			posX, posY + letterHeight, startX, endY,
+			posX, posY, startX, startY,
 		}
 		posX += letterWidth + float32(spacing)
 		gl.BufferSubData(gl.ARRAY_BUFFER, 0, 4*len(vertices), gl.Ptr(vertices))

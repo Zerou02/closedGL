@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math"
 
 	"github.com/EngoEngine/glm"
 )
@@ -151,4 +152,43 @@ func bezierLerp(a, b, c glm.Vec2, t float32) glm.Vec2 {
 
 func idxToGridPos(idx, w, h int) (int, int) {
 	return idx % h, idx / w
+}
+
+func clamp(val, min, max float32) float32 {
+	return float32(math.Max(float64(min), math.Min(float64(max), float64(val))))
+}
+
+func ssVectorOriginCol(ssVel, ssWall glm.Vec2) glm.Vec2 {
+
+	var esVel = ssVel.ComponentProduct(&glm.Vec2{1, -1})
+	var angle = glm.RadToDeg(float32(math.Acos(float64(ssWall.Dot(&esVel) / (esVel.Len() * ssWall.Len())))))
+	var rotangle = 2 * angle
+	if angle == 0 {
+		rotangle = 180
+	}
+	var rotMat = glm.Rotate2D(glm.DegToRad(360 - rotangle))
+	var newAngle = rotMat.Mul2x1(&esVel)
+	newAngle.Normalize()
+	return newAngle.ComponentProduct(&glm.Vec2{1, -1})
+}
+func aabbAabbCol(b1, b2 glm.Vec4) bool {
+	var colX = b1.X()+b1.Z() >= b2[0] && b2[0]+b2[2] >= b1[0]
+	var colY = b1[1]+b1[3] >= b2[1] && b2[1]+b2[3] >= b1[1]
+	return colX && colY
+}
+
+func aabbCircleCol(circle glm.Vec3, aabb glm.Vec4) (bool, Direction, glm.Vec2) {
+	var centre = glm.Vec2{circle[0] + circle[2], circle[1] + circle[2]}
+	var aabbHalf = glm.Vec2{aabb[2] / 2, aabb[3] / 2}
+	var aabbCentre = glm.Vec2{aabb[0] + aabb[2]/2, aabb[1] + aabb[3]/2}
+	var diff = centre.Sub(&aabbCentre)
+	var clamped = glm.Vec2{glm.Clamp(diff[0], -aabbHalf[0], aabbHalf[0]), glm.Clamp(diff[1], -aabbHalf[1], aabbHalf[1])}
+	var closest = aabbCentre.Add(&clamped)
+	diff = closest.Sub(&centre)
+	if diff.Len() < circle[2] {
+		return true, vectorDirection(diff), diff
+	} else {
+		return false, UP, glm.Vec2{0, 0}
+	}
+
 }
