@@ -148,3 +148,7 @@ func bezierLerp(a, b, c glm.Vec2, t float32) glm.Vec2 {
 	var s = lerpVec2(b, c, t)
 	return lerpVec2(r, s, t)
 }
+
+func idxToGridPos(idx, w, h int) (int, int) {
+	return idx % h, idx / w
+}

@@ -3,6 +3,7 @@ package main
 import (
 	_ "image/png"
 	"math"
+	"os"
 	"runtime"
 
 	"github.com/EngoEngine/glm"
@@ -36,7 +37,7 @@ func main() {
 	_ = pointShader
 	var textTex = loadImage("./assets/lower_letters.png", gl.RGBA)
 	var ballTex = loadImage("./assets/ball.png", gl.RGBA)
-
+	_ = ballTex
 	gl.PolygonMode(gl.FRONT_AND_BACK, gl.FILL)
 	gl.UseProgram(shader.prog)
 	shader.setUniformMatrix4("projection", &projection)
@@ -45,50 +46,109 @@ func main() {
 	var delta = 0.0
 	_ = delta
 	var lastFrame = 0.0
-	var a = newCharacter(CharacterInfo{tex: textTex}, &textShader, 0, 0, width, height, glm.Vec4{1, 0, 0, 1}, &projection)
-	var ball = newSprite2D(&shader, ballTex, glm.Vec2{100, 100}, glm.Vec2{40, 40}, glm.Vec4{1, 1, 1, 1})
-	/* var p2 = newPoint(&pointShader, glm.Vec2{200, 200}, glm.Vec3{0, 0, 1}, &projection)
-	var p = newPoint(&pointShader, glm.Vec2{250, 250}, glm.Vec3{1, 0, 0}, &projection)
-	var p3 = newPoint(&pointShader, glm.Vec2{200, 250}, glm.Vec3{0, 1, 0}, &projection) */
-	var rect = newRect(&pointShader, &projection, glm.Vec4{300, 300, 300, 300}, glm.Vec3{0, 0, 1})
+	var a = newCharacter(CharacterInfo{tex: textTex}, &textShader, 0, 0, width, height, glm.Vec3{1, 0, 0}, &projection)
+	_ = a
 
-	/* var line = newLine(&pointShader, &projection)
-	line.addPoint(p)
-	line.addPoint(p2)
-	line.addPoint(p3)
+	var size, amount = 30, 16
+	var rects = generateGrid(size, amount, &pointShader, &projection)
+	loadData(&rects, "a")
+	var rects2 = generateGrid(size, amount, &pointShader, &projection)
+	loadData(&rects2, "b")
+	var rects3 = generateGrid(size, amount, &pointShader, &projection)
 
-	var start = glm.Vec2{20, 400}
-	var end = glm.Vec2{500, 100}
-	var control = glm.Vec2{400, 500}
-	var points = []*Point{}
-	var line2 = newLine(&pointShader, &projection)
-	var res float32 = 30
-	for i := 0; i < int(res); i++ {
-		var t = float32(i+1) / res
-		var pos = bezierLerp(start, control, end, t)
-		fmt.Printf("t:%f, x:%f, y:%f\n", t, pos[0], pos[1])
-		var p = newPoint(&pointShader, pos, glm.Vec3{t, t, t}, &projection)
-		points = append(points, &p)
-		line2.addPoint(p)
-	} */
+	var igl, char = loadIglbmf("a")
+	char.tex = igl
+	var ball = newCharacter(char, &textShader, 0, 0, 1, 1, glm.Vec3{1, 0, 1}, &projection)
+	var rectHolder = [][]Rectangle{rects, rects2, rects3}
+	var letters = []rune{'a', 'b', 'c'}
+	var currentIdx = 0
+	var lines = []Line{}
+	for y := 0; y < amount+1; y++ {
+		var p1 = newPoint(&pointShader, glm.Vec2{1, float32(y * size)}, glm.Vec3{1, 0, 0}, &projection)
+		var p2 = newPoint(&pointShader, glm.Vec2{1 + float32(size)*float32(amount), float32(y * size)}, glm.Vec3{0, 0, 1}, &projection)
+		var line = newLine(&pointShader, &projection)
+		line.addPoint(p1)
+		line.addPoint(p2)
+		lines = append(lines, line)
+	}
+	for x := 0; x < amount+1; x++ {
+		var p1 = newPoint(&pointShader, glm.Vec2{1 + float32(x*size), 0}, glm.Vec3{1, 0, 0}, &projection)
+		var p2 = newPoint(&pointShader, glm.Vec2{1 + float32(x*size), float32(size) * float32(amount)}, glm.Vec3{0, 0, 1}, &projection)
+		var line = newLine(&pointShader, &projection)
+		line.addPoint(p1)
+		line.addPoint(p2)
+		lines = append(lines, line)
+	}
 
 	gl.PolygonMode(gl.FRONT_AND_BACK, gl.FILL)
+	var pPressed = false
+	var ePressed = false
+	var qPressed = false
+
 	for !window.ShouldClose() {
 
 		var currFrame = glfw.GetTime()
 		delta = currFrame - lastFrame
 		lastFrame = currFrame
 
+		var mouseX, mouseY = window.GetCursorPos()
+		if mouseX > 0 && mouseX < float64(size*amount) && mouseY > 0 && mouseY < float64(size*amount) {
+			var gridX, gridY int = int(mouseX) / size, int(mouseY) / size
+			var idx = gridY*amount + gridX
+			if window.GetMouseButton(glfw.MouseButton1) == glfw.Press {
+				rectHolder[currentIdx][idx].visible = true
+			}
+			if window.GetMouseButton(glfw.MouseButton2) == glfw.Press {
+				rectHolder[currentIdx][idx].visible = false
+			}
+		}
+		if window.GetKey(glfw.KeyP) == glfw.Press {
+			if !pPressed {
+				serializeLetterGrid(rectHolder[currentIdx], string(letters[currentIdx]))
+				pPressed = true
+			}
+		}
+		if window.GetKey(glfw.KeyP) == glfw.Release {
+			pPressed = false
+		}
+
+		if window.GetKey(glfw.KeyE) == glfw.Press {
+			if !ePressed {
+				if currentIdx < len(rectHolder)-1 {
+					currentIdx += 1
+				}
+				ePressed = true
+			}
+		}
+		if window.GetKey(glfw.KeyE) == glfw.Release {
+			ePressed = false
+		}
+
+		if window.GetKey(glfw.KeyQ) == glfw.Press {
+			if !qPressed {
+				if currentIdx > 0 {
+					currentIdx -= 1
+				}
+				qPressed = true
+			}
+		}
+		if window.GetKey(glfw.KeyQ) == glfw.Release {
+			qPressed = false
+		}
+
 		gl.ClearColor(0.0, 0.0, 0.0, 1.0)
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
-		a.draw()
-		ball.draw()
-		line.draw()
-		rect.draw()
-		/* for _, x := range points {
+		gl.Disable(gl.DEPTH_TEST)
+		for _, x := range rectHolder[currentIdx] {
 			x.draw()
-		} */
-		line2.draw()
+		}
+
+		for _, x := range lines {
+			x.draw()
+		}
+		ball.draw()
+		gl.Enable(gl.DEPTH_TEST)
+
 		process(window)
 		glfw.PollEvents()
 		window.SwapBuffers()
@@ -142,6 +202,34 @@ func loadImage(path string, format uint32) *uint32 {
 	return &texPtr
 }
 
+func loadIglbmf(path string) (*Texture, CharacterInfo) {
+	var file, _ = os.ReadFile("./font/" + path + "alt.iglbmf")
+	var buffer = []byte{}
+	var c = CharacterInfo{tex: nil, texW: uint32(file[0]), texH: uint32(file[0]), charX: uint32(file[1]), charY: uint32(file[2]), charW: uint32(file[3]), charH: uint32(file[4]), asciicode: file[5]}
+	var dataOffset = int(file[6])
+	for i := dataOffset; i < len(file); i++ {
+		if file[i] == 0x01 {
+			buffer = append(buffer, 0x00)
+			buffer = append(buffer, 0xFF)
+			buffer = append(buffer, 0x00)
+			buffer = append(buffer, 0xFF)
+		} else {
+			buffer = append(buffer, 0x00)
+			buffer = append(buffer, 0x00)
+			buffer = append(buffer, 0x00)
+			buffer = append(buffer, 0xFF)
+		}
+	}
+	var texPtr uint32
+	gl.GenTextures(1, &texPtr)
+	gl.BindTexture(gl.TEXTURE_2D, texPtr)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_R, gl.REPEAT)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
+	gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RGBA, int32(16), int32(16), 0, gl.RGBA, gl.UNSIGNED_BYTE, gl.Ptr(buffer))
+	return &texPtr, c
+}
 func generateVBO(vbo *uint32, vertices []float32) {
 	gl.GenBuffers(1, vbo)
 	gl.BindBuffer(gl.ARRAY_BUFFER, *vbo)
@@ -247,4 +335,75 @@ func ssVectorOrigionCol(ssVel, ssWall glm.Vec2) glm.Vec2 {
 	var newAngle = rotMat.Mul2x1(&esVel)
 	newAngle.Normalize()
 	return newAngle.ComponentProduct(&glm.Vec2{1, -1})
+}
+
+func gridToChunk(grid []Rectangle, asciicode byte) []byte {
+	var chunk = make([]byte, len(grid)+7)
+
+	var topmostY, bottommostY, rightmostX, leftmostX int = 16, 0, 0, 16
+	for i := 0; i < len(grid); i++ {
+		if grid[i].visible {
+			var gridX, gridY = idxToGridPos(i, 16, 16)
+			if gridX < leftmostX {
+				leftmostX = gridX
+			}
+			if gridX > rightmostX {
+				rightmostX = gridX
+			}
+			if gridY < topmostY {
+				topmostY = gridY
+			}
+			if gridY > bottommostY {
+				bottommostY = gridY
+			}
+		}
+	}
+	//gridSize,[4]charDim,asciicode,dataOffset
+	chunk[0] = byte(math.Sqrt(float64(len(grid))))
+	chunk[1] = byte(leftmostX)
+	chunk[2] = byte(topmostY)
+	chunk[3] = byte(rightmostX) - byte(leftmostX) + 1
+	chunk[4] = byte(bottommostY) - byte(topmostY) + 1
+	chunk[5] = asciicode
+	chunk[6] = 7
+
+	for i, x := range grid {
+		if x.visible {
+			chunk[i+int(chunk[6])] = 1
+		} else {
+			chunk[i+int(chunk[6])] = 0
+		}
+	}
+	return chunk
+}
+
+func serializeLetterGrid(grid []Rectangle, path string) {
+	var chunk = gridToChunk(grid, 'a')
+	var file, _ = os.Create("./font/" + path + "alt.iglbmf")
+	file.Write(chunk)
+	file.Close()
+}
+
+func loadData(grid *[]Rectangle, path string) {
+	var content, _ = os.ReadFile("./font/" + path + "alt.iglbmf")
+	var dataOffset = int(content[6])
+	for i := dataOffset; i < len(content); i++ {
+		if content[i] == 0x01 {
+			(*grid)[i-dataOffset].visible = true
+		} else {
+			(*grid)[i-dataOffset].visible = false
+		}
+	}
+	// var file, _ = os.Open("./font/" + path + ".iglbmf")
+	// (*grid)[0]
+}
+
+func generateGrid(size, amount int, shader *Shader, projection *glm.Mat4) []Rectangle {
+	var rects = []Rectangle{}
+	for y := 0; y < amount; y++ {
+		for x := 0; x < amount; x++ {
+			rects = append(rects, newRect(shader, projection, glm.Vec4{float32(x * size), float32(y * size), float32(size), float32(size)}, glm.Vec3{0, 1, 0}))
+		}
+	}
+	return rects
 }

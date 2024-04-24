@@ -10,6 +10,7 @@ type Rectangle struct {
 	shader        *Shader
 	projection    *glm.Mat4
 	colour        glm.Vec3
+	visible       bool
 	vao, vbo, ebo uint32
 }
 
@@ -26,6 +27,9 @@ func newRect(shader *Shader, projection *glm.Mat4, dim glm.Vec4, colour glm.Vec3
 }
 
 func (this *Rectangle) draw() {
+	if !this.visible {
+		return
+	}
 	this.shader.use()
 	this.shader.setUniformMatrix4("projection", this.projection)
 	gl.BindVertexArray(this.vao)
