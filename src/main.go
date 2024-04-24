@@ -21,6 +21,8 @@ type Ebo = uint32
 type Prog = uint32
 type Texture = uint32
 
+var idxToCharMap = []byte{'a', 'b', 'c'}
+
 func main() {
 	runtime.LockOSThread()
 	var window = initGlfw()
@@ -35,7 +37,6 @@ func main() {
 
 	var pointShader = initShader("./shader/points.vs", "./shader/points.fs")
 	_ = pointShader
-	var textTex = loadImage("./assets/lower_letters.png", gl.RGBA)
 	var ballTex = loadImage("./assets/ball.png", gl.RGBA)
 	_ = ballTex
 	gl.PolygonMode(gl.FRONT_AND_BACK, gl.FILL)
@@ -46,20 +47,15 @@ func main() {
 	var delta = 0.0
 	_ = delta
 	var lastFrame = 0.0
-	var a = newCharacter(CharacterInfo{tex: textTex}, &textShader, 0, 0, width, height, glm.Vec3{1, 0, 0}, &projection)
-	_ = a
 
 	var size, amount = 30, 16
 	var rects = generateGrid(size, amount, &pointShader, &projection)
-	loadData(&rects, "a")
 	var rects2 = generateGrid(size, amount, &pointShader, &projection)
-	loadData(&rects2, "b")
 	var rects3 = generateGrid(size, amount, &pointShader, &projection)
 
-	var igl, char = loadIglbmf("a")
-	char.tex = igl
-	var ball = newCharacter(char, &textShader, 0, 0, 1, 1, glm.Vec3{1, 0, 1}, &projection)
 	var rectHolder = [][]Rectangle{rects, rects2, rects3}
+	var _, info = deserializeIglbmf("a", &rectHolder)
+	var ball = newText(info, &textShader, 0, 0, 1, 1, glm.Vec3{1, 0, 1}, &projection)
 	var letters = []rune{'a', 'b', 'c'}
 	var currentIdx = 0
 	var lines = []Line{}
@@ -104,7 +100,7 @@ func main() {
 		}
 		if window.GetKey(glfw.KeyP) == glfw.Press {
 			if !pPressed {
-				serializeLetterGrid(rectHolder[currentIdx], string(letters[currentIdx]))
+				serializeIglbmf(rectHolder, string(letters[currentIdx]))
 				pPressed = true
 			}
 		}
@@ -230,6 +226,82 @@ func loadIglbmf(path string) (*Texture, CharacterInfo) {
 	gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RGBA, int32(16), int32(16), 0, gl.RGBA, gl.UNSIGNED_BYTE, gl.Ptr(buffer))
 	return &texPtr, c
 }
+
+func deserializeIglbmf(path string, grid *[][]Rectangle) (*Texture, []CharacterInfo) {
+	var file, _ = os.ReadFile("./font/" + path + "combined.iglbmf")
+	var charInfo = []CharacterInfo{}
+	var texData = []byte{}
+	var texPtr uint32
+
+	var chunkW = int(file[0])
+	var dataOffset = int(file[6])
+	var chunkSize = chunkW*chunkW + dataOffset
+	var amountChunks = len(file) / chunkSize
+	var texRowLen = int(math.Ceil(math.Sqrt(float64(amountChunks))))
+	var texRowHeight = texRowLen
+	var chunksPerRow = texRowLen
+	//inklusiv, exklusiv
+
+	var imgLenPx = texRowLen * chunkW
+	var texRowHeightPx = chunkW
+	var chunkPxW = imgLenPx / texRowLen
+
+	for texLine := 0; texLine < texRowHeight; texLine++ {
+		var chunks = [][]byte{}
+		for i := 0; i < chunksPerRow; i++ {
+			var chunk = []byte{}
+			var idx = (i + texLine*chunksPerRow)
+			if idx*chunkSize >= len(file) {
+				chunk = make([]byte, chunkSize)
+			} else {
+				chunk = file[idx*chunkSize : (idx+1)*chunkSize]
+			}
+			if idx < len(*grid) {
+				loadChunkInRect(&(*grid)[idx], chunk)
+				var info = CharacterInfo{tex: &texPtr, texW: uint32(imgLenPx), texH: uint32(imgLenPx), asciicode: chunk[5], charX: uint32(chunk[1]), charY: uint32(chunk[2]), charW: uint32(chunk[3]), charH: uint32(chunk[4])}
+				charInfo = append(charInfo, info)
+			}
+			chunks = append(chunks, chunk)
+		}
+		for y := 0; y < texRowHeightPx; y++ {
+			for i := 0; i < chunksPerRow; i++ {
+				var currChunkData = chunks[i][y*chunkPxW+dataOffset : (y+1)*chunkPxW+dataOffset]
+				for j := 0; j < chunkPxW; j++ {
+					texData = append(texData, 0x00)
+					if currChunkData[j] == 0x01 {
+						texData = append(texData, 0xFF)
+					} else {
+						texData = append(texData, 0x00)
+					}
+					texData = append(texData, 0x00)
+					texData = append(texData, 0xFF)
+				}
+			}
+		}
+	}
+
+	gl.GenTextures(1, &texPtr)
+	gl.BindTexture(gl.TEXTURE_2D, texPtr)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_R, gl.REPEAT)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
+	gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RGBA, int32(imgLenPx), int32(imgLenPx), 0, gl.RGBA, gl.UNSIGNED_BYTE, gl.Ptr(texData))
+	return &texPtr, charInfo
+}
+
+func printlnTexData(texData []byte) {
+	for i := 0; i < 16*32*4*2; i += 4 {
+		if texData[i+1] == 0xFF {
+			print("1")
+		} else {
+			print("0")
+		}
+		if i%128 == 0 {
+			println()
+		}
+	}
+}
 func generateVBO(vbo *uint32, vertices []float32) {
 	gl.GenBuffers(1, vbo)
 	gl.BindBuffer(gl.ARRAY_BUFFER, *vbo)
@@ -339,7 +411,6 @@ func ssVectorOrigionCol(ssVel, ssWall glm.Vec2) glm.Vec2 {
 
 func gridToChunk(grid []Rectangle, asciicode byte) []byte {
 	var chunk = make([]byte, len(grid)+7)
-
 	var topmostY, bottommostY, rightmostX, leftmostX int = 16, 0, 0, 16
 	for i := 0; i < len(grid); i++ {
 		if grid[i].visible {
@@ -377,13 +448,27 @@ func gridToChunk(grid []Rectangle, asciicode byte) []byte {
 	return chunk
 }
 
-func serializeLetterGrid(grid []Rectangle, path string) {
-	var chunk = gridToChunk(grid, 'a')
-	var file, _ = os.Create("./font/" + path + "alt.iglbmf")
-	file.Write(chunk)
+func serializeIglbmf(grid [][]Rectangle, path string) {
+	var arr = []byte{}
+	for i, x := range grid {
+		var chunk = gridToChunk(x, idxToCharMap[i])
+		arr = append(arr, chunk...)
+	}
+	var file, _ = os.Create("./font/" + path + "combined.iglbmf")
+	file.Write(arr)
 	file.Close()
 }
 
+func loadChunkInRect(grid *[]Rectangle, chunk []byte) {
+	var dataOffset = int(chunk[6])
+	for i := dataOffset; i < len(chunk); i++ {
+		if chunk[i] == 0x01 {
+			(*grid)[i-dataOffset].visible = true
+		} else {
+			(*grid)[i-dataOffset].visible = false
+		}
+	}
+}
 func loadData(grid *[]Rectangle, path string) {
 	var content, _ = os.ReadFile("./font/" + path + "alt.iglbmf")
 	var dataOffset = int(content[6])

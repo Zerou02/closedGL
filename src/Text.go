@@ -15,12 +15,12 @@ type Character struct {
 	shader        *Shader
 	x, y, w, h    float32
 	tint          glm.Vec3
-	charInfo      CharacterInfo
+	charInfo      []CharacterInfo
 	vao, vbo, ebo uint32
 	projection    *glm.Mat4
 }
 
-func newCharacter(charInfo CharacterInfo, shader *Shader, x, y, w, h float32, tint glm.Vec3, projection *glm.Mat4) Character {
+func newText(charInfo []CharacterInfo, shader *Shader, x, y, w, h float32, tint glm.Vec3, projection *glm.Mat4) Character {
 	var char = Character{shader, x, y, w, h, tint, charInfo, 0, 0, 0, projection}
 	generateBuffers(&char.vao, &char.vbo, &char.ebo, nil, 4*4*4, indicesQuad, []VertexInfo{{4, 0}})
 	return char
@@ -31,7 +31,7 @@ func (this *Character) draw() {
 	this.shader.setUniformMatrix4("projection", this.projection)
 	this.shader.setUniformVec3("colour", &this.tint)
 	gl.ActiveTexture(gl.TEXTURE0)
-	gl.BindTexture(gl.TEXTURE_2D, *this.charInfo.tex)
+	gl.BindTexture(gl.TEXTURE_2D, *this.charInfo[0].tex)
 	this.shader.setUniform1i("text", 0)
 
 	gl.BindVertexArray(this.vao)
@@ -45,15 +45,20 @@ func (this *Character) draw() {
 	var spacing = 10
 	for _, x := range string {
 		_ = x
-		var startX float32 = 1 / (float32(this.charInfo.texW) / (float32(this.charInfo.charX)))
-		var startY float32 = 1 / (float32(this.charInfo.texH) / (float32(this.charInfo.charY)))
-		var endX float32 = 1 / (float32(this.charInfo.texW) / (float32(this.charInfo.charX) + float32(this.charInfo.charW)))
-		var endY float32 = 1 / (float32(this.charInfo.texH) / (float32(this.charInfo.charY) + float32(this.charInfo.charH)))
+		/* var startX float32 = 1 / (float32(this.charInfo.texW) / (float32(this.charInfo.charX))) */
+		/* var startY float32 = 1 / (float32(this.charInfo.texH) / (float32(this.charInfo.charY))) */
+		/* var endX float32 = 1 / (float32(this.charInfo.texW) / (float32(this.charInfo.charX) + float32(this.charInfo.charW))) */
+		/* var endY float32 = 1 / (float32(this.charInfo.texH) / (float32(this.charInfo.charY) + float32(this.charInfo.charH))) */
 		var vertices = []float32{
-			posX + letterWidth, posY, endX, startY,
-			posX + letterWidth, posY + letterHeight, endX, endY,
-			posX, posY + letterHeight, startX, endY,
-			posX, posY, startX, startY,
+
+			posX + letterWidth, posY, 1, 0,
+			posX + letterWidth, posY + letterHeight, 1, 1,
+			posX, posY + letterHeight, 0, 1,
+			posX, posY, 0, 0,
+			/* 			posX + letterWidth, posY, endX, startY,
+			   			posX + letterWidth, posY + letterHeight, endX, endY,
+			   			posX, posY + letterHeight, startX, endY,
+			   			posX, posY, startX, startY, */
 		}
 		posX += letterWidth + float32(spacing)
 		gl.BufferSubData(gl.ARRAY_BUFFER, 0, 4*len(vertices), gl.Ptr(vertices))
