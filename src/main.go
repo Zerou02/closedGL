@@ -36,8 +36,6 @@ func main() {
 
 	var pointShader = initShader("./shader/points.vs", "./shader/points.fs")
 	_ = pointShader
-	var ballTex = loadImage("./assets/ball.png", gl.RGBA)
-	_ = ballTex
 	gl.PolygonMode(gl.FRONT_AND_BACK, gl.FILL)
 	gl.UseProgram(shader.prog)
 	shader.setUniformMatrix4("projection", &projection)
