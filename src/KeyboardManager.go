@@ -2,19 +2,53 @@ package main
 
 import "github.com/go-gl/glfw/v3.2/glfw"
 
+type keyboardFun func()
+
+type KeyInfo struct {
+	pressed bool
+}
+
 type KeyBoardManager struct {
-	window *glfw.Window
+	window             *glfw.Window
+	registeredKeysDown map[glfw.Key]bool
+	currKeyDown        glfw.Key
 }
 
 func newKeyBoardManager(window *glfw.Window) KeyBoardManager {
-	var manager = KeyBoardManager{window: window}
+	var manager = KeyBoardManager{window: window, registeredKeysDown: map[glfw.Key]bool{}}
+
 	return manager
 }
 
 func (this *KeyBoardManager) isDown(key glfw.Key) bool {
-	return this.window.GetKey(key) == glfw.Action(glfw.KeyDown)
+	return this.window.GetKey(key) == glfw.Press
 }
 
-func (this *KeyBoardManager) process() {
+func (this *KeyBoardManager) registerKey(key glfw.Key) {
+	var isDown = this.isDown(key)
+	this.registeredKeysDown[key] = isDown
 
+}
+func (this *KeyBoardManager) process() {
+	if this.currKeyDown != 0 {
+		this.registeredKeysDown[this.currKeyDown] = this.isDown(this.currKeyDown)
+		this.currKeyDown = 0
+	}
+	for x, y := range this.registeredKeysDown {
+		var isDown = this.isDown(x)
+		if isDown && !y {
+			this.currKeyDown = x
+		} else {
+			this.registeredKeysDown[x] = isDown
+		}
+	}
+}
+
+func (this *KeyBoardManager) isPressed(key glfw.Key) bool {
+	var _, isInMap = this.registeredKeysDown[key]
+	if !isInMap {
+		this.registeredKeysDown[key] = this.isDown(key)
+		return false
+	}
+	return this.currKeyDown == key
 }

@@ -23,8 +23,9 @@ type Text struct {
 	projection    *glm.Mat4
 }
 
-func newText(charInfo []CharacterInfo, shader *Shader, x, y, w, h float32, tint glm.Vec3, projection *glm.Mat4) Text {
-	var text = Text{shader, x, y, w, h, tint, charInfo, 0, 0, 0, projection}
+func newText(font string, shader *Shader, x, y, w, h float32, tint glm.Vec3, projection *glm.Mat4) Text {
+	var text = Text{shader: shader, x: x, y: y, w: w, h: h, tint: tint, projection: projection}
+	text.deserializeIglbmf(font)
 	generateBuffers(&text.vao, &text.vbo, &text.ebo, nil, 4*4*4, indicesQuad, []VertexInfo{{4, 0}})
 	return text
 }
@@ -68,7 +69,7 @@ func (this *Text) draw(text string) {
 	}
 }
 
-func deserializeIglbmf(path string) (*Texture, []CharacterInfo) {
+func (this *Text) deserializeIglbmf(path string) {
 	var file, _ = os.ReadFile("font/" + path + ".iglbmt")
 	var texLen = 147456
 	var texData = file[0:texLen]
@@ -97,5 +98,5 @@ func deserializeIglbmf(path string) (*Texture, []CharacterInfo) {
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
 	gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RGBA, int32(192), int32(192), 0, gl.RGBA, gl.UNSIGNED_BYTE, gl.Ptr(texData))
-	return &texPtr, charInfo
+	this.charInfo = charInfo
 }

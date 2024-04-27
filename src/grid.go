@@ -41,7 +41,6 @@ func newGrid(cellSize, width int, cellShader *Shader, projection *glm.Mat4) Grid
 }
 
 func (this *Grid) draw() {
-	startTime()
 	this.shader.use()
 	this.shader.setUniformMatrix4("projection", this.projection)
 	gl.BindVertexArray(this.vao)
@@ -59,7 +58,6 @@ func (this *Grid) draw() {
 	if this.lineArr != nil {
 		this.lineArr.draw()
 	}
-	// endTime("vertices")
 }
 
 func generateGrid(size, amount int, shader *Shader, projection *glm.Mat4) []Rectangle {
