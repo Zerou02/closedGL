@@ -88,15 +88,15 @@ func main() {
 			var idx = gridY*amount + gridX
 			_ = idx
 			if window.GetMouseButton(glfw.MouseButton1) == glfw.Press {
-				fc.grids[currentIdx].cells[idx].visible = true
+				fc.grids[currentIdx].cells[idx].colour = glm.Vec4{0, 1, 1, 1}
 			}
 			if window.GetMouseButton(glfw.MouseButton2) == glfw.Press {
-				fc.grids[currentIdx].cells[idx].visible = false
+				fc.grids[currentIdx].cells[idx].colour = glm.Vec4{0, 0, 0, 1}
 			}
 		}
 		if window.GetKey(glfw.KeyP) == glfw.Press {
 			if !pPressed {
-				text.serializeIglbmf(fc.grids, "default")
+				fc.serializeIglbmf(fc.grids, "default")
 				pPressed = true
 			}
 		}
@@ -170,7 +170,7 @@ func main() {
 		//	endTime("lineRender: ")
 		text.x = 0
 		text.y = 450
-		text.draw("1234567890")
+		text.draw("0")
 		text.y = 500
 
 		if elapsed >= 0.5 {
@@ -179,7 +179,7 @@ func main() {
 			fpsSum = 0
 			fpsAmount = 0
 		}
-		text.draw("FPS: " + strconv.FormatInt(int64(fpsAverage), 10))
+		text.draw("FPS: " + strconv.FormatInt(int64(fpsAverage), 10) + "!")
 
 		gl.Enable(gl.DEPTH_TEST)
 
@@ -197,7 +197,7 @@ func process(window *glfw.Window) {
 }
 
 func gridToChunk(grid []Rectangle, asciicode byte) []byte {
-	var chunk = make([]byte, len(grid)+7)
+	var chunk = make([]byte, len(grid)*4+7)
 	var topmostY, bottommostY, rightmostX, leftmostX int = 16, 0, 0, 16
 	for i := 0; i < len(grid); i++ {
 		if grid[i].visible {
@@ -226,11 +226,14 @@ func gridToChunk(grid []Rectangle, asciicode byte) []byte {
 	chunk[6] = 7
 
 	for i, x := range grid {
-		if x.visible {
-			chunk[i+int(chunk[6])] = 1
-		} else {
-			chunk[i+int(chunk[6])] = 0
-		}
+		var r = byte(lerp(0, 255, x.colour[0]))
+		var g = byte(lerp(0, 255, x.colour[1]))
+		var b = byte(lerp(0, 255, x.colour[2]))
+		var a = byte(lerp(0, 255, x.colour[3]))
+		chunk[(i*4)+int(chunk[6])] = r
+		chunk[(i*4)+int(chunk[6])+1] = g
+		chunk[(i*4)+int(chunk[6])+2] = b
+		chunk[(i*4)+int(chunk[6])+3] = a
 	}
 	return chunk
 }
@@ -240,12 +243,12 @@ func loadChunkInRect(grid *[]Rectangle, chunk []byte) {
 	if dataOffset == 0 {
 		dataOffset = 7
 	}
-	for i := dataOffset; i < len(chunk); i++ {
-		if chunk[i] == 0x01 {
-			(*grid)[i-dataOffset].visible = true
-		} else {
-			(*grid)[i-dataOffset].visible = false
-		}
+	for i := dataOffset; i < len(chunk); i += 4 {
+		var rect = &(*grid)[(i-dataOffset)/4]
+		rect.colour[0] = float32(chunk[i] / 255)
+		rect.colour[1] = float32(chunk[i+1] / 255)
+		rect.colour[2] = float32(chunk[i+2] / 255)
+		rect.colour[3] = float32(chunk[i+3] / 255)
 	}
 }
 

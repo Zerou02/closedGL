@@ -43,7 +43,7 @@ func (this *LineArr) draw() {
 	gl.DrawArrays(gl.LINES, 0, int32(len(this.points)/5))
 }
 
-func (this *LineArr) addPoint(pos glm.Vec2, colour glm.Vec3) {
+func (this *LineArr) addPoint(pos glm.Vec2, colour glm.Vec4) {
 	this.points = append(this.points, pos[0])
 	this.points = append(this.points, pos[1])
 	this.points = append(this.points, colour[0])

@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/EngoEngine/glm"
 	"github.com/go-gl/gl/v4.1-core/gl"
 )
@@ -19,8 +21,8 @@ func newGrid(cellSize, width int, cellShader *Shader, projection *glm.Mat4) Grid
 
 	var cells = generateGrid(cellSize, width, cellShader, projection)
 	var line = newLineArr(cellShader, projection)
-	var p1Colour = glm.Vec3{1, 0, 0}
-	var p2Colour = glm.Vec3{0, 0, 1}
+	var p1Colour = glm.Vec4{1, 0, 0, 1}
+	var p2Colour = glm.Vec4{0, 0, 1, 1}
 	for y := 0; y < width+1; y++ {
 		var p1Pos = glm.Vec2{1, float32(y * cellSize)}
 		var p2Pos = glm.Vec2{1 + float32(cellSize)*float32(width), float32(y * cellSize)}
@@ -64,20 +66,35 @@ func generateGrid(size, amount int, shader *Shader, projection *glm.Mat4) []Rect
 	var rects = []Rectangle{}
 	for y := 0; y < amount; y++ {
 		for x := 0; x < amount; x++ {
-			rects = append(rects, newRect(shader, projection, glm.Vec4{float32(x * size), float32(y * size), float32(size), float32(size)}, glm.Vec3{0, 1, 0}))
+			rects = append(rects, newRect(shader, projection, glm.Vec4{float32(x * size), float32(y * size), float32(size), float32(size)}, glm.Vec4{0, 0, 0, 0}))
 		}
 	}
 	return rects
 }
 
 func (this *Grid) optimize() {
-
 	this.shader = this.cells[0].shader
 	this.projection = this.cells[0].projection
-	this.vertices = make([]float32, 30*len(this.cells))
-	generateBuffers(&this.vao, &this.vbo, nil, nil, 6*(2+3)*4*len(this.cells), nil, []VertexInfo{{2, 0}, {3, 8}})
+	var singleGridVerticesLen = len(this.cells[0].vertices)
+	this.vertices = make([]float32, singleGridVerticesLen*len(this.cells))
+	generateBuffers(&this.vao, &this.vbo, nil, nil, singleGridVerticesLen*4*len(this.cells), nil, []VertexInfo{{2, 0}, {4, 8}})
 	for _, x := range this.cells {
 		x.deleteBuffers()
 	}
+}
 
+func (this *Grid) debugPrint() {
+	for i, x := range this.cells {
+		if i%this.width == 0 {
+			println()
+		}
+
+		var c = x.colour
+		var r = byte(lerp(0, 255, c[0]))
+		var g = byte(lerp(0, 255, c[1]))
+		var b = byte(lerp(0, 255, c[2]))
+		var a = byte(lerp(0, 255, c[3]))
+		fmt.Printf("%x%x%x%x ", r, g, b, a)
+
+	}
 }

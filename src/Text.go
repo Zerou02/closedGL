@@ -1,10 +1,7 @@
 package main
 
 import (
-	"fmt"
-	"math"
 	"os"
-	"time"
 
 	"github.com/EngoEngine/glm"
 	"github.com/go-gl/gl/v4.1-core/gl"
@@ -53,10 +50,12 @@ func (this *Text) draw(text string) {
 		if int(byte(x)) < len(this.charInfo) {
 			info = this.charInfo[byte(x)]
 		}
-		var startX float32 = 1 / (float32(info.texW) / (float32((uint32)(info.charX) + info.offsetX)))
-		var startY float32 = 1 / (float32(info.texH) / (float32((uint32)(info.charY) + info.offsetY)))
-		var endX float32 = 1 / (float32(info.texW) / (float32(uint32(info.charX)+info.offsetX) + float32(info.charW)))
-		var endY float32 = 1 / (float32(info.texH) / (float32(uint32(info.charY)+info.offsetY) + float32(info.charH)))
+
+		var startX = float32((uint32(info.charX) + info.offsetX)) / float32(info.texW)
+		var startY = float32((uint32(info.charY) + info.offsetY)) / float32(info.texH)
+		var endX = float32((uint32(info.charX) + info.offsetX + uint32(info.charW))) / float32(info.texW)
+		var endY = float32((uint32(info.charY) + info.offsetY + uint32(info.charH))) / float32(info.texH)
+
 		var vertices = []float32{
 			posX + letterWidth, posY, endX, startY,
 			posX + letterWidth, posY + letterHeight, endX, endY,
@@ -67,74 +66,6 @@ func (this *Text) draw(text string) {
 		gl.BufferSubData(gl.ARRAY_BUFFER, 0, 4*len(vertices), gl.Ptr(vertices))
 		gl.DrawElements(gl.TRIANGLES, 6, gl.UNSIGNED_INT, nil)
 	}
-}
-
-func (this *Text) iglbmfToIglbmt(iglbmf []byte, path string) {
-	var start = time.Now()
-	var file = iglbmf
-	var end = time.Now()
-	var readTime = end.Sub(start).Seconds()
-	_ = readTime
-	fmt.Printf("fileRead:,%f\n", readTime)
-	var charInfo = []CharacterInfo{}
-	var texData = []byte{}
-	var texPtr uint32
-
-	var chunkW = int(file[0])
-	var dataOffset = int(file[6])
-	var chunkSize = chunkW*chunkW + dataOffset
-	var amountChunks = len(file) / chunkSize
-	var texRowLen = int(math.Ceil(math.Sqrt(float64(amountChunks))))
-	var texRowHeight = texRowLen
-	var chunksPerRow = texRowLen
-	var imgLenPx = texRowLen * chunkW
-	var texRowHeightPx = chunkW
-	var chunkPxW = imgLenPx / texRowLen
-
-	for texLine := 0; texLine < texRowHeight; texLine++ {
-		var chunks = [][]byte{}
-		for i := 0; i < chunksPerRow; i++ {
-			var chunk = []byte{}
-			var idx = (i + texLine*chunksPerRow)
-			if idx*chunkSize >= len(file) {
-				chunk = make([]byte, chunkSize)
-			} else {
-				chunk = file[idx*chunkSize : (idx+1)*chunkSize]
-			}
-			if idx < 128 {
-				var posX, posY = idxToGridPos(idx, texRowLen, texRowLen)
-				var info = CharacterInfo{
-					tex: &texPtr, texW: uint32(imgLenPx), texH: uint32(imgLenPx),
-					asciicode: chunk[5], charX: byte(chunk[1]), charY: byte(chunk[2]),
-					charW: byte(chunk[3]), charH: byte(chunk[4]),
-					offsetX: uint32(posX) * uint32(chunkW), offsetY: uint32(posY) * uint32(chunkPxW),
-				}
-				charInfo = append(charInfo, info)
-			}
-			chunks = append(chunks, chunk)
-		}
-		for y := 0; y < texRowHeightPx; y++ {
-			for i := 0; i < chunksPerRow; i++ {
-				var currChunkData = chunks[i][y*chunkPxW+dataOffset : (y+1)*chunkPxW+dataOffset]
-				for j := 0; j < chunkPxW; j++ {
-					texData = append(texData, 0x00)
-					if currChunkData[j] == 0x01 {
-						texData = append(texData, 0xFF)
-					} else {
-						texData = append(texData, 0x00)
-					}
-					texData = append(texData, 0x00)
-					texData = append(texData, 0xFF)
-				}
-			}
-		}
-	}
-	for _, x := range charInfo {
-		var bytes = []byte{byte(x.texW), byte(x.charX), byte(x.charY), byte(x.charW), byte(x.charH), byte(x.offsetX), byte(x.offsetY), x.asciicode}
-		texData = append(texData, bytes...)
-	}
-	var outFile, _ = os.Create("font/" + path + ".iglbmt")
-	outFile.Write(texData)
 }
 
 func deserializeIglbmf(path string) (*Texture, []CharacterInfo) {

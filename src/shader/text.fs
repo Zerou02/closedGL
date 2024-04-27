@@ -8,5 +8,5 @@ uniform vec3 colour;
 void main()
 {    
     vec4 sampled = texture(text, TexCoords);
-    Colour = vec4(0,0,1,sampled.g);
+    Colour = vec4(sampled);
 }
