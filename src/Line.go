@@ -14,8 +14,18 @@ type Line struct {
 
 func newLine(shader *Shader, projection *glm.Mat4) Line {
 	var line = Line{shader: shader, projection: projection}
-	generateBuffers(&line.vao, &line.vbo, nil, nil, 2*4*5, nil, []VertexInfo{{2, 0}, {3, 8}})
+	line.generateBuffers()
 	return line
+}
+
+func (this *Line) deleteBuffers() {
+	gl.DeleteBuffers(1, &this.vao)
+	gl.DeleteBuffers(1, &this.vbo)
+}
+
+func (this *Line) generateBuffers() {
+	this.deleteBuffers()
+	generateBuffers(&this.vao, &this.vbo, nil, this.points, 0, nil, []VertexInfo{{2, 0}, {3, 8}})
 }
 
 func (this *Line) draw() {
@@ -27,11 +37,7 @@ func (this *Line) draw() {
 	gl.BindVertexArray(this.vao)
 	gl.BindBuffer(gl.ARRAY_BUFFER, this.vbo)
 
-	for i := 0; i < len(this.points)/5-1; i++ {
-		var slice = this.points[i*5 : i*5+5]
-		gl.BufferSubData(gl.ARRAY_BUFFER, 0, 2*4*5, gl.Ptr(slice))
-		gl.DrawArrays(gl.LINES, 0, 2)
-	}
+	gl.DrawArrays(gl.LINES, 0, int32(len(this.points)/5))
 }
 
 func (this *Line) addPoint(p Point) {
@@ -40,4 +46,5 @@ func (this *Line) addPoint(p Point) {
 	this.points = append(this.points, p.colour[0])
 	this.points = append(this.points, p.colour[1])
 	this.points = append(this.points, p.colour[2])
+	this.generateBuffers()
 }
