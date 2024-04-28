@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/EngoEngine/glm"
@@ -18,6 +19,9 @@ type FontCreator struct {
 	window              *glfw.Window
 	currentIdx          int
 	currColour          glm.Vec4
+	previewRect         Rectangle
+	slider              [4]*Slider
+	autoUpdate          bool
 }
 
 func newFontCreator(cellSize, gridWidth int, gridShader *Shader, projection *glm.Mat4, keyboardManger *KeyBoardManager, window *glfw.Window) FontCreator {
@@ -26,14 +30,33 @@ func newFontCreator(cellSize, gridWidth int, gridShader *Shader, projection *glm
 		grids = append(grids, newGrid(cellSize, gridWidth, gridShader, projection))
 	}
 	var fc = FontCreator{
-		grids: grids, keyBoardManager: keyboardManger, window: window, cellSize: cellSize, gridWidth: gridWidth, currentIdx: 0, currColour: glm.Vec4{0, 1, 1, 1},
+		grids: grids, keyBoardManager: keyboardManger, window: window,
+		cellSize: cellSize, gridWidth: gridWidth, currentIdx: 0, currColour: glm.Vec4{0, 1, 1, 1},
+		previewRect: factory.newRect(glm.Vec4{600, 200, 100, 100}, glm.Vec4{0, 1, 1, 1}),
+		slider:      [4]*Slider{},
+		autoUpdate:  false,
 	}
 	fc.loadFont("default")
+
+	var slider1 = newSlider(window, glm.Vec4{550, 340, 200, 10}, glm.Vec4{1, 0, 0, 1}, glm.Vec4{650, 340, 10, 10}, glm.Vec4{0, 0, 1, 1}, 0, 1, 0, 0.01, "r: ")
+	var slider2 = newSlider(window, glm.Vec4{550, 390, 200, 10}, glm.Vec4{1, 0, 0, 1}, glm.Vec4{650, 390, 10, 10}, glm.Vec4{0, 0, 1, 1}, 0, 1, 1, 0.01, "g: ")
+	var slider3 = newSlider(window, glm.Vec4{550, 440, 200, 10}, glm.Vec4{1, 0, 0, 1}, glm.Vec4{650, 440, 10, 10}, glm.Vec4{0, 0, 1, 1}, 0, 1, 1, 0.01, "b: ")
+	var slider4 = newSlider(window, glm.Vec4{550, 490, 200, 10}, glm.Vec4{1, 0, 0, 1}, glm.Vec4{650, 490, 10, 10}, glm.Vec4{0, 0, 1, 1}, 0, 1, 1, 0.01, "a: ")
+
+	fc.slider[0] = &slider1
+	fc.slider[1] = &slider2
+	fc.slider[2] = &slider3
+	fc.slider[3] = &slider4
 
 	return fc
 }
 
 func (this *FontCreator) process() {
+	for i, x := range this.slider {
+		x.process()
+		this.currColour[i] = x.curr
+	}
+
 	var mouseX, mouseY = this.window.GetCursorPos()
 	if mouseX > 0 && mouseX < float64(this.cellSize*this.gridWidth) && mouseY > 0 && mouseY < float64(this.cellSize*this.gridWidth) {
 		var gridX, gridY int = int(mouseX) / this.cellSize, int(mouseY) / this.cellSize
@@ -41,9 +64,17 @@ func (this *FontCreator) process() {
 		_ = idx
 		if this.window.GetMouseButton(glfw.MouseButton1) == glfw.Press {
 			this.grids[this.currentIdx].cells[idx].colour = this.currColour
+			if this.autoUpdate {
+				this.serializeIglbmf("default")
+				text.deserializeIglbmf("default")
+			}
 		}
 		if this.window.GetMouseButton(glfw.MouseButton2) == glfw.Press {
 			this.grids[this.currentIdx].cells[idx].colour = glm.Vec4{0, 0, 0, 0}
+			if this.autoUpdate {
+				this.serializeIglbmf("default")
+				text.deserializeIglbmf("default")
+			}
 		}
 	}
 	if this.keyBoardManager.isPressed(glfw.KeyQ) {
@@ -78,6 +109,7 @@ func (this *FontCreator) process() {
 	if this.keyBoardManager.isPressed(glfw.KeyS) {
 		this.serializeIglbmf("default")
 	}
+	this.previewRect.colour = this.currColour
 }
 
 func (this *FontCreator) printIdx() {
@@ -111,6 +143,15 @@ func (this *FontCreator) moveIdx(offset int) {
 func (this *FontCreator) draw() {
 	gl.Disable(gl.DEPTH_TEST)
 	this.grids[this.currentIdx].draw()
+	for _, x := range this.slider {
+		x.draw()
+	}
+	this.previewRect.draw()
+	text.x = 500
+	text.y = 100
+	text.draw("preview: " + string(rune(this.currentIdx)))
+	text.y = 50
+	text.draw("current index: " + strconv.FormatInt(int64(this.currentIdx), 10))
 	gl.Enable(gl.DEPTH_TEST)
 
 }
@@ -142,7 +183,7 @@ func (this *FontCreator) gridToChunk(grid []Rectangle, asciicode byte) []byte {
 	var chunk = make([]byte, len(grid)*4+7)
 	var topmostY, bottommostY, rightmostX, leftmostX int = 16, 0, 0, 16
 	for i := 0; i < len(grid); i++ {
-		if grid[i].visible {
+		if grid[i].colour[3] != 0 {
 			var gridX, gridY = idxToGridPos(i, 16, 16)
 			if gridX < leftmostX {
 				leftmostX = gridX
@@ -219,12 +260,6 @@ func (this *FontCreator) iglbmfToIglbmt(iglbmf []byte, path string) {
 					charW: byte(chunk[3]), charH: byte(chunk[4]),
 					offsetX: uint32(posX) * uint32(chunkW), offsetY: uint32(posY) * uint32(chunkPxW),
 				}
-				//TODO: Besser machen
-				info.charX = 0
-				info.charY = 0
-				info.charW = 16
-				info.charH = 16
-				//TODO: End
 				charInfo = append(charInfo, info)
 			}
 			chunks = append(chunks, chunk)
@@ -256,9 +291,9 @@ func (this *FontCreator) loadChunkInRect(grid *[]Rectangle, chunk []byte) {
 	}
 	for i := dataOffset; i < len(chunk); i += 4 {
 		var rect = &(*grid)[(i-dataOffset)/4]
-		rect.colour[0] = float32(chunk[i] / 255)
-		rect.colour[1] = float32(chunk[i+1] / 255)
-		rect.colour[2] = float32(chunk[i+2] / 255)
-		rect.colour[3] = float32(chunk[i+3] / 255)
+		rect.colour[0] = float32(chunk[i]) / 255.0
+		rect.colour[1] = float32(chunk[i+1]) / 255.0
+		rect.colour[2] = float32(chunk[i+2]) / 255.0
+		rect.colour[3] = float32(chunk[i+3]) / 255.0
 	}
 }

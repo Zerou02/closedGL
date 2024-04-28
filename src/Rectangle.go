@@ -37,13 +37,21 @@ func (this *Rectangle) deleteBuffers() {
 
 func (this *Rectangle) createVertices() {
 	var colour = this.colour
-	for i := 0; i < 6; i++ {
+	this.vertices = []float32{
+		this.dim[0] + this.dim[2], this.dim[1], colour[0], colour[1], colour[2], colour[3], //top r
+		this.dim[0] + this.dim[2], this.dim[1] + this.dim[3], colour[0], colour[1], colour[2], colour[3], // bottom r
+		this.dim[0], this.dim[1], this.colour[0], colour[1], colour[2], colour[3], // top l
+		this.dim[0] + this.dim[2], this.dim[1] + this.dim[3], colour[0], colour[1], colour[2], colour[3], // bottom r
+		this.dim[0], this.dim[1] + this.dim[3], colour[0], colour[1], colour[2], colour[3], // bottom l
+		this.dim[0], this.dim[1], this.colour[0], colour[1], colour[2], colour[3], // top l
+	}
+	/* for i := 0; i < 6; i++ {
 		this.vertices[(i*6)+2] = colour[0]
 		this.vertices[(i*6)+3] = colour[1]
 		this.vertices[(i*6)+4] = colour[2]
 		this.vertices[(i*6)+5] = colour[3]
 
-	}
+	} */
 }
 
 func (this *Rectangle) draw() {

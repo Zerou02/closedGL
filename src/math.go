@@ -190,5 +190,18 @@ func aabbCircleCol(circle glm.Vec3, aabb glm.Vec4) (bool, Direction, glm.Vec2) {
 	} else {
 		return false, UP, glm.Vec2{0, 0}
 	}
+}
 
+func isPointInRect(p glm.Vec2, rect glm.Vec4) bool {
+	return p[0] >= rect[0] && p[0] <= rect[0]+rect[2] && p[1] >= rect[1] && p[1] <= rect[1]+rect[3]
+}
+
+func neededDecimalPlacesToNextInt(x float64) int {
+	var y = x
+	var retVal = 0
+	for y < 0.99999999 {
+		y *= 10
+		retVal += 1
+	}
+	return retVal
 }

@@ -15,18 +15,20 @@ type CharacterInfo struct {
 }
 
 type Text struct {
-	shader        *Shader
-	x, y, w, h    float32
-	tint          glm.Vec3
-	charInfo      []CharacterInfo
-	vao, vbo, ebo uint32
-	projection    *glm.Mat4
+	shader     *Shader
+	x, y, w, h float32
+	tint       glm.Vec3
+	charInfo   []CharacterInfo
+	vao, vbo   uint32
+	projection *glm.Mat4
+	vertices   []float32
 }
 
 func newText(font string, shader *Shader, x, y, w, h float32, tint glm.Vec3, projection *glm.Mat4) Text {
 	var text = Text{shader: shader, x: x, y: y, w: w, h: h, tint: tint, projection: projection}
 	text.deserializeIglbmf(font)
-	generateBuffers(&text.vao, &text.vbo, &text.ebo, nil, 4*4*4, indicesQuad, []VertexInfo{{4, 0}})
+	text.vertices = make([]float32, 4*6*64)
+	generateBuffers(&text.vao, &text.vbo, nil, nil, len(text.vertices)*4, nil, []VertexInfo{{4, 0}})
 	return text
 }
 
@@ -40,33 +42,37 @@ func (this *Text) draw(text string) {
 
 	gl.BindVertexArray(this.vao)
 	gl.BindBuffer(gl.ARRAY_BUFFER, this.vbo)
-	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.ebo)
 	var posX = this.x
 	var posY = this.y
-	var letterWidth float32 = 20
-	var letterHeight float32 = 30
-	var spacing = 10
-	for _, x := range text {
-		var info = this.charInfo[0]
-		if int(byte(x)) < len(this.charInfo) {
-			info = this.charInfo[byte(x)]
-		}
+	var letterWidth float32 = 10
+	var letterHeight float32 = 10
+	var spacing = 3
+	var amountLetters = len(text)
+	_ = amountLetters
+	for i, x := range text {
+		posX += letterWidth + float32(spacing)
+
+		var info = this.charInfo[byte(x)]
 
 		var startX = float32((uint32(info.charX) + info.offsetX)) / float32(info.texW)
 		var startY = float32((uint32(info.charY) + info.offsetY)) / float32(info.texH)
 		var endX = float32((uint32(info.charX) + info.offsetX + uint32(info.charW))) / float32(info.texW)
 		var endY = float32((uint32(info.charY) + info.offsetY + uint32(info.charH))) / float32(info.texH)
 
-		var vertices = []float32{
-			posX + letterWidth, posY, endX, startY,
-			posX + letterWidth, posY + letterHeight, endX, endY,
-			posX, posY + letterHeight, startX, endY,
-			posX, posY, startX, startY,
+		var newVertices = []float32{
+			posX + letterWidth, posY, endX, startY, //tr
+			posX + letterWidth, posY + letterHeight, endX, endY, //br
+			posX, posY, startX, startY, //tl
+			posX, posY, startX, startY, //tl
+			posX + letterWidth, posY + letterHeight, endX, endY, //br
+			posX, posY + letterHeight, startX, endY, //bl
 		}
-		posX += letterWidth + float32(spacing)
-		gl.BufferSubData(gl.ARRAY_BUFFER, 0, 4*len(vertices), gl.Ptr(vertices))
-		gl.DrawElements(gl.TRIANGLES, 6, gl.UNSIGNED_INT, nil)
+		for j := 0; j < len(newVertices); j++ {
+			this.vertices[i*6*4+j] = newVertices[j]
+		}
 	}
+	gl.BufferSubData(gl.ARRAY_BUFFER, 0, len(this.vertices)*4, gl.Ptr(this.vertices))
+	gl.DrawArrays(gl.TRIANGLES, 0, int32(amountLetters)*6)
 }
 
 func (this *Text) deserializeIglbmf(path string) {
@@ -91,6 +97,7 @@ func (this *Text) deserializeIglbmf(path string) {
 		}
 		charInfo = append(charInfo, info)
 	}
+	gl.DeleteTextures(1, &texPtr)
 	gl.GenTextures(1, &texPtr)
 	gl.BindTexture(gl.TEXTURE_2D, texPtr)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_R, gl.REPEAT)

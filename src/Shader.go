@@ -35,8 +35,11 @@ func initShader(vertPath, fragPath string) Shader {
 	} else {
 		println("Shader successfully linked")
 	}
-
 	return shader
+}
+
+func initShaderFromName(name string) Shader {
+	return initShader("./shader/"+name+".vs", "./shader/"+name+".fs")
 }
 
 func (s *Shader) setUniformMatrix4(name string, value *glm.Mat4) {
