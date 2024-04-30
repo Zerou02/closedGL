@@ -23,6 +23,7 @@ func initOpenGL() {
 	gl.Viewport(0, 0, width, height)
 	gl.Enable(gl.DEPTH_TEST)
 	gl.Enable(gl.BLEND)
+	gl.Enable(gl.CULL_FACE)
 	gl.Enable(gl.PROGRAM_POINT_SIZE)
 	gl.PointSize(1)
 	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
@@ -58,7 +59,7 @@ func generateEBO(ebo *uint32, indices []uint32) {
 	gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, 4*len(indices), gl.Ptr(indices), gl.STATIC_DRAW)
 }
 
-func generateBuffers(vao, vbo, ebo *uint32, vertices []float32, vboByteLen int, indices []uint32, vertexInfo []VertexInfo) {
+func generateBuffers(vao, vbo, ebo *uint32, vertices []float32, vboByteLen int, indices []uint32, vertexAttribBytes []int) {
 
 	//vbo
 	gl.GenBuffers(1, vbo)
@@ -75,13 +76,14 @@ func generateBuffers(vao, vbo, ebo *uint32, vertices []float32, vboByteLen int, 
 	//vao
 	gl.BindVertexArray(*vao)
 	var stride = 0
-	for i := 0; i < len(vertexInfo); i++ {
-		stride += int(vertexInfo[i].amountBytes)
+	for i := 0; i < len(vertexAttribBytes); i++ {
+		stride += int(vertexAttribBytes[i])
 	}
-	for i := 0; i < len(vertexInfo); i++ {
-		var info = vertexInfo[i]
-		gl.VertexAttribPointerWithOffset(uint32(i), int32(info.amountBytes), gl.FLOAT, false, int32(stride*4), info.offset)
+	var currOffset = 0
+	for i := 0; i < len(vertexAttribBytes); i++ {
+		gl.VertexAttribPointerWithOffset(uint32(i), int32(vertexAttribBytes[i]), gl.FLOAT, false, int32(stride*4), uintptr(currOffset)*4)
 		gl.EnableVertexAttribArray(uint32(i))
+		currOffset += vertexAttribBytes[i]
 	}
 
 	//ebo

@@ -1,13 +1,10 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
 	_ "image/png"
-	"os"
 	"runtime"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/EngoEngine/glm"
@@ -32,56 +29,69 @@ func main() {
 	runtime.LockOSThread()
 	var window = initGlfw()
 	initOpenGL()
-	factory = newPrimitiveFactory2D(width, height)
+	var c = CreateCamera()
+	c.cameraPos = glm.Vec3{0, 3, 18}
+
+	factory = newPrimitiveFactory2D(width, height, &c)
 	var keyboardManger = newKeyBoardManager(window)
 	var fpsCounter = newFPSCounter()
-	var fc = newFontCreator(30, 16, factory.shadermap["points"], &factory.projectionMatrix, &keyboardManger, window)
 	text = newText("default", factory.shadermap["text"], 0, 500, 1, 1, glm.Vec3{1, 0, 1}, &factory.projectionMatrix)
+	var dirtTex = loadImage("assets/dirt_side.jpg", gl.RGBA)
+	var vao, vbo uint32 = 0, 0
+	generateBuffers(&vao, &vbo, nil, cube, 0, nil, []int{3, 3, 2})
+	//projection = glm.Ident4()
+	var chunk = newChunk(glm.Vec3{16, 16, 16}, dirtTex)
+	var singleCube = factory.newCube(glm.Vec3{0, 3, 17}, dirtTex)
+	_, _ = singleCube, chunk
 
-	var file, _ = os.Open("assets/config.ini")
-	var sc = bufio.NewScanner(file)
-	for sc.Scan() {
-		var line = sc.Text()
-		if !strings.HasPrefix(line, "[") {
-			var splitted = strings.Split(line, "=")
-			if splitted[0] == "free_fps" {
-				if splitted[1] == "false" {
-					glfw.SwapInterval(1)
-				} else {
-					glfw.SwapInterval(0)
-				}
-			} else if splitted[0] == "potato-friendliness" {
-				fc.autoUpdate = !stringToBool(splitted[1])
-				println(fc.autoUpdate)
-			} else if splitted[0] == "default_font" {
-				fc.loadFont(splitted[1])
-				text.deserializeIglbmf(splitted[1])
-			}
-		}
+	window.SetScrollCallback(c.scrollCb)
+	window.SetCursorPosCallback(c.mouseCallback)
+	window.SetInputMode(glfw.CursorMode, glfw.CursorDisabled)
+	gl.PolygonMode(gl.FRONT_AND_BACK, gl.FILL)
+
+	for i := 0; i < 27; i++ {
+		var vec = idxToPos3(i, glm.Vec3{3, 3, 3})
+		var idx = pos3ToIdx(glm.Vec3{vec[1], vec[2], vec[0]}, glm.Vec3{3, 3, 3})
+		fmt.Printf("%d: %f %f %f;; %d\n", i, vec[0], vec[1], vec[2], idx)
 	}
 
-	endTime("startup")
+	println()
+	for i := 0; i < 9; i++ {
+		var x, y = idxToGridPos(i, 3, 3)
+		var idx = gridPosToIdx(x, y, 3)
+		fmt.Printf("%d: x:%d, y:%d, idx:%d\n", i, x, y, idx)
+	}
 
-	fmt.Printf("%0x", byte(lerp(0, 255, 0.85)))
+	var isWireframeMode = false
 	for !window.ShouldClose() {
-		fpsCounter.process()
-		keyboardManger.process()
-		fc.process()
-
 		gl.ClearColor(0.0, 0.0, 0.0, 1.0)
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
-		fc.draw()
+		fpsCounter.process()
+		c.process(window, float32(fpsCounter.delta))
 
+		keyboardManger.process()
+		if keyboardManger.isPressed(glfw.KeyF) {
+			isWireframeMode = !isWireframeMode
+			if isWireframeMode {
+				gl.PolygonMode(gl.FRONT_AND_BACK, gl.FILL)
+			} else {
+				gl.PolygonMode(gl.FRONT_AND_BACK, gl.LINE)
+			}
+		}
+		/* 		if keyboardManger.isPressed(glfw.KeyP) {
+		   			cube.position[0] += 0.1
+		   		}
+		   		if keyboardManger.isPressed(glfw.KeyO) {
+		   			cube.position[0] += -0.1
+		   		} */
+		chunk.draw()
+		singleCube.draw()
 		text.x = 0
-		text.y = 500
+		text.y = 0
 		text.draw("FPS: " + strconv.FormatInt(int64(fpsCounter.fpsAverage), 10) + "!")
 
-		text.x = 0
-		text.y = 550
-		text.draw("the quick brown fox jumps over the lazy dog. 0123456789")
-		text.y = 570
-		text.draw("THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG")
+		glfw.SwapInterval(0)
 
 		if fpsCounter.elapsed >= 0.5 {
 			fpsCounter.calcAverage()

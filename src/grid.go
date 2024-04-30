@@ -75,7 +75,7 @@ func (this *Grid) optimize() {
 	this.projection = this.cells[0].projection
 	var singleGridVerticesLen = len(this.cells[0].vertices)
 	this.vertices = make([]float32, singleGridVerticesLen*len(this.cells))
-	generateBuffers(&this.vao, &this.vbo, nil, nil, singleGridVerticesLen*4*len(this.cells), nil, []VertexInfo{{2, 0}, {4, 8}})
+	generateBuffers(&this.vao, &this.vbo, nil, nil, singleGridVerticesLen*4*len(this.cells), nil, []int{2, 4})
 	for _, x := range this.cells {
 		x.deleteBuffers()
 	}

@@ -154,6 +154,10 @@ func idxToGridPos(idx, w, h int) (int, int) {
 	return idx % h, idx / w
 }
 
+func gridPosToIdx(posX, posY, w int) int {
+	return posY*w + posX
+}
+
 func clamp(val, min, max float32) float32 {
 	return float32(math.Max(float64(min), math.Min(float64(max), float64(val))))
 }
@@ -204,4 +208,20 @@ func neededDecimalPlacesToNextInt(x float64) int {
 		retVal += 1
 	}
 	return retVal
+}
+
+func idxToPos3(idx int, dim glm.Vec3) glm.Vec3 {
+	var y int = idx / int(dim[0]*dim[1])
+	var normalizedXIdx = idx - y*int(dim[0]*dim[1])
+	var x, z = idxToGridPos(normalizedXIdx, int(dim[1]), int(dim[2]))
+	return glm.Vec3{float32(x), float32(y), float32(z)}
+}
+
+// / pos = Vec{y,z,x}
+func pos3ToIdx(pos, dim glm.Vec3) int {
+
+	var yLevel int = int(pos[0]) * int(dim[0]*dim[2])
+	var idx = gridPosToIdx(int(pos[2]), int(pos[1]), int(dim[0]))
+	_, _ = yLevel, idx
+	return yLevel + idx
 }

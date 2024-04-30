@@ -26,7 +26,7 @@ func newRect(shader *Shader, projection *glm.Mat4, dim glm.Vec4, colour glm.Vec4
 		dim[0], dim[1] + dim[3], colour[0], colour[1], colour[2], colour[3], // bottom l
 		dim[0], dim[1], colour[0], colour[1], colour[2], colour[3], // top l
 	}
-	generateBuffers(&rect.vao, &rect.vbo, nil, nil, len(rect.vertices)*4, nil, []VertexInfo{{2, 0}, {4, 8}})
+	generateBuffers(&rect.vao, &rect.vbo, nil, nil, len(rect.vertices)*4, nil, []int{2, 4})
 	return rect
 }
 

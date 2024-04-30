@@ -16,7 +16,7 @@ type Sprite2D struct {
 
 func newSprite2D(s *Shader, tex *uint32, pos, size glm.Vec2, tint glm.Vec4) Sprite2D {
 	var sprite = Sprite2D{shader: s, texture: tex, pos: pos, size: size, tint: tint, visible: true}
-	generateBuffers(&sprite.vao, &sprite.vbo, &sprite.ebo, fullQuad, 0, indicesQuad, []VertexInfo{{3, 0}, {2, 12}})
+	generateBuffers(&sprite.vao, &sprite.vbo, &sprite.ebo, fullQuad, 0, indicesQuad, []int{3, 2})
 	return sprite
 }
 

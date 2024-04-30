@@ -19,7 +19,7 @@ func newLineArr(shader *Shader, projection *glm.Mat4) LineArr {
 
 func (this *LineArr) generateBuffers() {
 	this.deleteBuffers()
-	generateBuffers(&this.vao, &this.vbo, nil, this.points, 5*4, nil, []VertexInfo{{2, 0}, {3, 8}})
+	generateBuffers(&this.vao, &this.vbo, nil, this.points, 5*4, nil, []int{2, 3})
 }
 
 func (this *LineArr) deleteBuffers() {

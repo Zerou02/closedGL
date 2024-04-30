@@ -31,7 +31,7 @@ func (c *Camera) process(w *glfw.Window, deltaTime float32) {
 	c.cameraDir[2] = float32(math.Sin(float64((glm.DegToRad(c.yaw))))) * float32(math.Cos(float64(glm.DegToRad(c.pitch))))
 	c.cameraFront = c.cameraDir.Normalized()
 
-	var speed float32 = 2
+	var speed float32 = 5
 	if w.GetKey(glfw.KeyW) == glfw.Press {
 		c.cameraPos = c.cameraPos.AddNP(c.cameraFront.Scale(speed).Scale(float32(deltaTime)))
 	}
@@ -46,9 +46,6 @@ func (c *Camera) process(w *glfw.Window, deltaTime float32) {
 		var b = c.cameraFront.CrossNP(c.cameraUp).NormalizedNP().Scale(speed).Scale(float32(deltaTime))
 		c.cameraPos = c.cameraPos.Add(&b)
 	}
-	if w.GetKey(glfw.KeyF) == glfw.Press {
-		c.isOrtho = !c.isOrtho
-	}
 	if w.GetKey(glfw.KeyQ) == glfw.Press {
 		c.cameraPos.AddWith(&glm.Vec3{0, 0.01 * speed, 0})
 	}
@@ -60,7 +57,7 @@ func (c *Camera) process(w *glfw.Window, deltaTime float32) {
 	c.lookAtMat = glm.LookAtV(&c.cameraPos, &a, &(c.cameraUp))
 
 	if c.isOrtho {
-		c.perspective = glm.Ortho(0, 800, 0, 600, 0.1, 100)
+		c.perspective = glm.Ortho2D(0, 800, 0, 600)
 		c.lookAtMat = glm.Ident4()
 
 	} else {

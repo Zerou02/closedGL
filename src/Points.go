@@ -18,7 +18,7 @@ func newPoint(shader *Shader, pos glm.Vec2, colour glm.Vec3, projection *glm.Mat
 	var vertex = []float32{
 		pos[0], pos[1], colour[0], colour[1], colour[2],
 	}
-	generateBuffers(&p.vao, &p.vbo, nil, vertex, 0, nil, []VertexInfo{{2, 0}, {3, 8}})
+	generateBuffers(&p.vao, &p.vbo, nil, vertex, 0, nil, []int{2, 3})
 	return p
 }
 

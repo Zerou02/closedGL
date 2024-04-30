@@ -28,7 +28,7 @@ func newText(font string, shader *Shader, x, y, w, h float32, tint glm.Vec3, pro
 	var text = Text{shader: shader, x: x, y: y, w: w, h: h, tint: tint, projection: projection}
 	text.deserializeIglbmf(font)
 	text.vertices = make([]float32, 4*6*64)
-	generateBuffers(&text.vao, &text.vbo, nil, nil, len(text.vertices)*4, nil, []VertexInfo{{4, 0}})
+	generateBuffers(&text.vao, &text.vbo, nil, nil, len(text.vertices)*4, nil, []int{4})
 	return text
 }
 
@@ -61,10 +61,10 @@ func (this *Text) draw(text string) {
 
 		var newVertices = []float32{
 			posX + letterWidth, posY, endX, startY, //tr
-			posX + letterWidth, posY + letterHeight, endX, endY, //br
-			posX, posY, startX, startY, //tl
 			posX, posY, startX, startY, //tl
 			posX + letterWidth, posY + letterHeight, endX, endY, //br
+			posX + letterWidth, posY + letterHeight, endX, endY, //br
+			posX, posY, startX, startY, //tl
 			posX, posY + letterHeight, startX, endY, //bl
 		}
 		for j := 0; j < len(newVertices); j++ {
