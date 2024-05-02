@@ -87,6 +87,8 @@ func (this *Chunk) createVBO() {
 	var blockStride = 6
 	this.calculateInnerBlocks()
 	var vboSize = 0
+	var blockVerticesBytes = 1 + 2 + 1
+	var cubeStride = blockVerticesBytes * 36
 	for i := 0; i < len(this.cubes); i++ {
 		var c = this.cubes[i]
 		var baseX, baseY = idxToGridPos(c.texId, 32, 32)
@@ -94,24 +96,39 @@ func (this *Chunk) createVBO() {
 			//vertexNr
 			for j := 0; j < verticesPerCube; j++ {
 				//copy pos
-				for k := 0; k < 3; k++ {
-					cumulatedVertices[vboSize*288+j*8+k] = cubeVertices[j*5+k]
+				var ndcBitMask = 0
+				if cubeVertices[j*5+0] == 1.0 {
+					ndcBitMask |= 0b100
 				}
+				if cubeVertices[j*5+1] == 1.0 {
+					ndcBitMask |= 0b010
+				}
+				if cubeVertices[j*5+2] == 1.0 {
+					ndcBitMask |= 0b001
+				}
+				cumulatedVertices[vboSize*cubeStride+j*blockVerticesBytes] = float32(ndcBitMask)
 				//copy tex
-				cumulatedVertices[vboSize*288+j*8+3] = float32((j / 6)) + cubeVertices[j*5+3] + float32(baseX)*float32(blockStride)
-				cumulatedVertices[vboSize*288+j*8+4] = cubeVertices[j*5+4] + float32(baseY)*float32(blockStride)
+				cumulatedVertices[vboSize*cubeStride+j*blockVerticesBytes+1] = float32((j / 6)) + cubeVertices[j*5+3] + float32(baseX)*float32(blockStride)
+				cumulatedVertices[vboSize*cubeStride+j*blockVerticesBytes+2] = cubeVertices[j*5+4] + float32(baseY)*float32(blockStride)
 				//copy model
-				for k := 0; k < 3; k++ {
-					cumulatedVertices[vboSize*288+j*8+5+k] = float32(c.vertices[k]) + this.pos[k]
-				}
+				var modelBitMask uint32 = 0
+				modelBitMask |= uint32(c.vertices[0])
+				modelBitMask <<= 5
+				modelBitMask |= uint32(c.vertices[1])
+				modelBitMask <<= 5
+				modelBitMask |= uint32(c.vertices[2])
+				cumulatedVertices[vboSize*cubeStride+j*blockVerticesBytes+3] = float32(modelBitMask)
 			}
 			vboSize += 1
 		}
 	}
+	var slice = cumulatedVertices[cubeStride*2 : 3*cubeStride]
+	printFloatArr(&slice, blockVerticesBytes)
+
 	this.amountOuter = uint32(vboSize)
 	gl.DeleteBuffers(1, &this.vao)
 	gl.DeleteBuffers(1, &this.vbo)
-	generateBuffersCopy(&this.vao, &this.vbo, nil, cumulatedVertices, 0, nil, []int{3, 2, 3})
+	generateBuffersCopy(&this.vao, &this.vbo, nil, cumulatedVertices, 0, nil, []int{1, 2, 1})
 }
 
 // surrounded on all sides
@@ -135,6 +152,7 @@ func (this *Chunk) draw() {
 	this.shader.use()
 	this.shader.setUniformMatrix4("view", &this.camera.lookAtMat)
 	this.shader.setUniformMatrix4("projection", this.projection)
+	this.shader.setUniformVec3("chunkOrigin", &this.pos)
 	this.shader.setUniform1i("tex", 0)
 
 	gl.BindVertexArray(this.vao)

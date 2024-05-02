@@ -43,7 +43,7 @@ func main() {
 	//projection = glm.Ident4()
 	var chunks = []*Chunk{}
 
-	//24
+	//32
 	for y := 0; y < 24; y++ {
 		var posXZ = []float32{
 			0, 0,
@@ -72,12 +72,35 @@ func main() {
 
 	glfw.SwapInterval(0)
 
+	println("MAIN-TEST")
 	var test = []byte{1, 2, 3, 4, 5}
 	test = append(test, 0x05)
 	println(test)
 	var ptr = (*float32)(unsafe.Pointer(&test[0]))
 	*ptr = 4.5
 	println(*ptr)
+	var testMask = 0
+	testMask |= 0b01
+	testMask |= 0b100
+	testMask |= 0b010
+
+	println(testMask)
+	var nr float32 = 5
+	println(float32((int(nr) >> 2) & 0b1))
+	println(float32((int(nr) >> 1) & 0b1))
+	println(float32((int(nr) >> 0) & 0b1))
+	var modelBitMask = 0
+	modelBitMask |= 1
+	modelBitMask <<= 5
+	modelBitMask |= 0
+	modelBitMask <<= 5
+	modelBitMask |= 0
+	modelBitMask <<= 0
+	modelBitMask = 1024
+	println("model", modelBitMask)
+	println("model", (modelBitMask>>10)&31)
+	println("model", (modelBitMask>>5)&0b11111)
+	println("model", (modelBitMask>>0)&0b11111)
 
 	for !window.ShouldClose() {
 		gl.ClearColor(0.0, 0.0, 0.0, 1.0)
