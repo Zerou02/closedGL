@@ -1,6 +1,8 @@
 package main
 
 import (
+	"unsafe"
+
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/glfw/v3.2/glfw"
 	"neilpa.me/go-stbi"
@@ -13,7 +15,7 @@ func initGlfw() *glfw.Window {
 	glfw.WindowHint(glfw.ContextVersionMinor, 1)
 	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
 	glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
-	var window, _ = glfw.CreateWindow(width, height, "light - i hate packages", nil, nil)
+	var window, _ = glfw.CreateWindow(width, height, "fast blazinglycraft", nil, nil)
 	window.MakeContextCurrent()
 	return window
 }
@@ -60,7 +62,13 @@ func generateEBO(ebo *uint32, indices []uint32) {
 }
 
 func generateBuffers(vao, vbo, ebo *uint32, vertices []float32, vboByteLen int, indices []uint32, vertexAttribBytes []int) {
+	generateBuffersSuper(vao, vbo, ebo, vertices, vboByteLen, indices, vertexAttribBytes, false)
+}
 
+func generateBuffersCopy(vao, vbo, ebo *uint32, vertices []float32, vboByteLen int, indices []uint32, vertexAttribBytes []int) {
+	generateBuffersSuper(vao, vbo, ebo, vertices, vboByteLen, indices, vertexAttribBytes, true)
+}
+func generateBuffersSuper(vao, vbo, ebo *uint32, vertices []float32, vboByteLen int, indices []uint32, vertexAttribBytes []int, copyVertices bool) {
 	//vbo
 	gl.GenBuffers(1, vbo)
 	gl.GenVertexArrays(1, vao)
@@ -68,7 +76,21 @@ func generateBuffers(vao, vbo, ebo *uint32, vertices []float32, vboByteLen int, 
 	gl.BindBuffer(gl.ARRAY_BUFFER, *vbo)
 
 	if vertices != nil {
-		gl.BufferData(gl.ARRAY_BUFFER, 4*len(vertices), gl.Ptr(vertices), gl.STATIC_DRAW)
+		var length = vboByteLen
+		if vboByteLen <= 0 {
+			length = 4 * len(vertices)
+		}
+		if copyVertices {
+			gl.BufferData(gl.ARRAY_BUFFER, length, nil, gl.STATIC_DRAW)
+			var baseAddr = (*float32)(gl.MapBuffer(gl.ARRAY_BUFFER, gl.WRITE_ONLY))
+			for i := 0; i < len(vertices); i++ {
+				var b = (*float32)(unsafe.Add(unsafe.Pointer(baseAddr), i*4))
+				*b = vertices[i]
+			}
+			gl.UnmapBuffer(gl.ARRAY_BUFFER)
+		} else {
+			gl.BufferData(gl.ARRAY_BUFFER, length, gl.Ptr(vertices), gl.STATIC_DRAW)
+		}
 	} else {
 		gl.BufferData(gl.ARRAY_BUFFER, vboByteLen, gl.Ptr(nil), gl.DYNAMIC_DRAW)
 	}
@@ -95,7 +117,6 @@ func generateBuffers(vao, vbo, ebo *uint32, vertices []float32, vboByteLen int, 
 	gl.BindVertexArray(0)
 	gl.BindBuffer(gl.ARRAY_BUFFER, 0)
 	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, 0)
-
 }
 
 type VertexInfo struct {

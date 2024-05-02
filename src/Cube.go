@@ -12,10 +12,11 @@ type Cube struct {
 	tex        *Texture
 	position   glm.Vec3
 	vao, vbo   uint32
+	isInner    bool
 }
 
 func newCube(shader *Shader, camera *Camera, projection *glm.Mat4, tex *Texture, pos glm.Vec3) Cube {
-	var retCube = Cube{shader: shader, camera: camera, projection: projection, tex: tex, position: pos}
+	var retCube = Cube{shader: shader, camera: camera, projection: projection, tex: tex, position: pos, isInner: false}
 	generateBuffers(&retCube.vao, &retCube.vbo, nil, cube, 0, nil, []int{3, 2})
 	return retCube
 }

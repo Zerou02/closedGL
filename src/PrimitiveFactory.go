@@ -18,14 +18,17 @@ func newPrimitiveFactory2D(width, height float32, camera *Camera) PrimitiveFacto
 	var light = initShaderFromName("light")
 	var points = initShaderFromName("points")
 	var text = initShaderFromName("text")
+	var cube = initShaderFromName("cube")
 
 	factory.camera = camera
 	factory.shadermap["base"] = &base
 	factory.shadermap["light"] = &light
 	factory.shadermap["points"] = &points
 	factory.shadermap["text"] = &text
+	factory.shadermap["cube"] = &cube
+
 	factory.projectionMatrix = glm.Ortho2D(0, width, height, 0)
-	factory.projection3D = glm.Perspective(glm.DegToRad(45), width/height, 0.1, 100)
+	factory.projection3D = glm.Perspective(glm.DegToRad(45), width/height, 0.1, 1000)
 
 	factory.viewMatrix = glm.Ident4()
 

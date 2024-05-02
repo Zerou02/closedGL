@@ -6,6 +6,7 @@ import (
 	"runtime"
 	"strconv"
 	"time"
+	"unsafe"
 
 	"github.com/EngoEngine/glm"
 	"github.com/go-gl/gl/v4.1-core/gl"
@@ -40,29 +41,33 @@ func main() {
 	var vao, vbo uint32 = 0, 0
 	generateBuffers(&vao, &vbo, nil, cube, 0, nil, []int{3, 3, 2})
 	//projection = glm.Ident4()
-	var chunk = newChunk(glm.Vec3{16, 16, 16}, dirtTex)
+	var chunks = []*Chunk{}
+	for y := 0; y < 2; y++ {
+		var posXZ = []float32{
+			0, 0,
+			16, 0,
+			16, 16,
+			16, 32,
+			0, 32,
+		}
+		for i := 0; i < len(posXZ); i += 2 {
+			var chunk = newChunk(glm.Vec3{16, 16, 16}, glm.Vec3{posXZ[i], float32(y * 16), posXZ[i+1]}, dirtTex, &c, &factory.projection3D, factory.shadermap["cube"])
+			chunks = append(chunks, &chunk)
+		}
+	}
+
 	var singleCube = factory.newCube(glm.Vec3{0, 3, 17}, dirtTex)
-	_, _ = singleCube, chunk
 
 	window.SetScrollCallback(c.scrollCb)
 	window.SetCursorPosCallback(c.mouseCallback)
 	window.SetInputMode(glfw.CursorMode, glfw.CursorDisabled)
 	gl.PolygonMode(gl.FRONT_AND_BACK, gl.FILL)
 
-	for i := 0; i < 27; i++ {
-		var vec = idxToPos3(i, glm.Vec3{3, 3, 3})
-		var idx = pos3ToIdx(glm.Vec3{vec[1], vec[2], vec[0]}, glm.Vec3{3, 3, 3})
-		fmt.Printf("%d: %f %f %f;; %d\n", i, vec[0], vec[1], vec[2], idx)
-	}
-
-	println()
-	for i := 0; i < 9; i++ {
-		var x, y = idxToGridPos(i, 3, 3)
-		var idx = gridPosToIdx(x, y, 3)
-		fmt.Printf("%d: x:%d, y:%d, idx:%d\n", i, x, y, idx)
-	}
-
 	var isWireframeMode = false
+
+	println(unsafe.Pointer(chunks[0]))
+	println(unsafe.Sizeof(chunks[0].cubes[0]))
+
 	for !window.ShouldClose() {
 		gl.ClearColor(0.0, 0.0, 0.0, 1.0)
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
@@ -85,7 +90,10 @@ func main() {
 		   		if keyboardManger.isPressed(glfw.KeyO) {
 		   			cube.position[0] += -0.1
 		   		} */
-		chunk.draw()
+		for _, x := range chunks {
+			x.draw()
+		}
+
 		singleCube.draw()
 		text.x = 0
 		text.y = 0

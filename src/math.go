@@ -210,18 +210,17 @@ func neededDecimalPlacesToNextInt(x float64) int {
 	return retVal
 }
 
-func idxToPos3(idx int, dim glm.Vec3) glm.Vec3 {
-	var y int = idx / int(dim[0]*dim[1])
-	var normalizedXIdx = idx - y*int(dim[0]*dim[1])
-	var x, z = idxToGridPos(normalizedXIdx, int(dim[1]), int(dim[2]))
-	return glm.Vec3{float32(x), float32(y), float32(z)}
+// x,y,z
+func idxToPos3(idx, x, y, z int) (int, int, int) {
+	var yComp int = idx / int(x*y)
+	var normalizedXIdx = idx - yComp*int(x*y)
+	var xComp, zCom = idxToGridPos(normalizedXIdx, int(y), int(z))
+	return xComp, yComp, zCom
 }
 
-// / pos = Vec{y,z,x}
-func pos3ToIdx(pos, dim glm.Vec3) int {
-
-	var yLevel int = int(pos[0]) * int(dim[0]*dim[2])
-	var idx = gridPosToIdx(int(pos[2]), int(pos[1]), int(dim[0]))
-	_, _ = yLevel, idx
+// pos = Vec{y,z,x}
+func pos3ToIdx(posX, posY, posZ int, dimX, dimY, dimZ int) int {
+	var yLevel = posY * dimX * dimZ
+	var idx = gridPosToIdx(posX, posZ, dimX)
 	return yLevel + idx
 }
