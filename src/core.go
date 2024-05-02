@@ -68,6 +68,7 @@ func generateBuffers(vao, vbo, ebo *uint32, vertices []float32, vboByteLen int, 
 func generateBuffersCopy(vao, vbo, ebo *uint32, vertices []float32, vboByteLen int, indices []uint32, vertexAttribBytes []int) {
 	generateBuffersSuper(vao, vbo, ebo, vertices, vboByteLen, indices, vertexAttribBytes, true)
 }
+
 func generateBuffersSuper(vao, vbo, ebo *uint32, vertices []float32, vboByteLen int, indices []uint32, vertexAttribBytes []int, copyVertices bool) {
 	//vbo
 	gl.GenBuffers(1, vbo)

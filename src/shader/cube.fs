@@ -10,6 +10,7 @@ void main() {
 	//fragColour = mix(texture(tex,texCoord),texture(tex2,texCoord),0.2f);
 	//fragColour = vec4(color,1.0f);
 	//fragColour = vec4(0.0f,0.0f,1.0f,1.0f);
-	vec4 tex = texture(tex,texCoord);
+	//ivec2 size = textureSize(tex,0);
+	vec4 tex = texture(tex,texCoord*32/1024);
 	fragColour = vec4(tex.rgb,1);
 }

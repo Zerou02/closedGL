@@ -62,6 +62,58 @@ var cube = []float32{
 	0.5, 0.5, 0.5, 1.0, 1.0, //vorne rechts oben
 }
 
+var cubeVertices = []float32{
+	//pos x,y,z;;tex s,t
+	//oben
+	1, 1, 1, 1.0, 1.0, //vorne rechts oben
+	1, 1, 0.0, 1.0, 0.0, //hinten rechts oben
+	0.0, 1, 0.0, 0.0, 0.0, //hinten links oben
+	0.0, 1, 0.0, 0.0, 0.0, //hinten links oben
+	0.0, 1, 1, 0.0, 1.0, //vorne links oben
+	1, 1, 1, 1.0, 1.0, //vorne rechts oben
+
+	//vorne
+	0.0, 0.0, 1, 0.0, 1.0, //vorne links unten
+	1, 0.0, 1, 1.0, 1.0, //vorne rechts unten
+	1, 1, 1, 1.0, 0.0, //vorne rechts oben
+	1, 1, 1, 1.0, 0.0, //vorne rechts oben
+	0.0, 1, 1, 0.0, 0.0, //vorne links oben
+	0.0, 0.0, 1, 0.0, 1.0, //vorne links unten
+
+	//links
+	0.0, 1, 1, 1.0, 0.0, //vorne links oben
+	0.0, 1, 0.0, 0.0, 0.0, //hinten links oben
+	0.0, 0.0, 0.0, 0.0, 1.0, //hinten links unten
+	0.0, 0.0, 0.0, 0.0, 1.0, //hinten links unten
+	0.0, 0.0, 1, 1.0, 1.0, //vorne links unten
+	0.0, 1, 1, 1.0, 0.0, //vorne links oben
+
+	//rechts
+	1, 0.0, 0.0, 1.0, 1.0, //hinten rechts unten
+	1, 1, 0.0, 1.0, 0.0, //hinten rechts oben
+	1, 1, 1, 0.0, 0.0, //vorne rechts oben
+	1, 0.0, 0.0, 1.0, 1.0, //hinten rechts unten
+	1, 1, 1, 0.0, 0.0, //vorne rechts oben
+	1, 0.0, 1, 0.0, 1.0, //vorne rechts unten
+
+	//hinten
+	1, 1, 0.0, 0.0, 0.0, //hinten rechts oben
+	1, 0.0, 0.0, 0.0, 1.0, //hinten rechts unten
+	0.0, 0.0, 0.0, 1.0, 1.0, //hinten links unten
+	0.0, 0.0, 0.0, 1.0, 1.0, //hinten links unten
+	0.0, 1, 0.0, 1.0, 0.0, //hinten links oben
+	1, 1, 0.0, 0.0, 0.0, //hinten rechts oben
+
+	//unten
+	0.0, 0.0, 0.0, 1.0, 0.0, //links unten hinten
+	1, 0.0, 0.0, 0.0, 0.0, //hinten rechts unten
+	1, 0.0, 1, 0.0, 1.0, //vorne rechts unten
+	1, 0.0, 1, 0.0, 1.0, //vorne rechts unten
+	0.0, 0.0, 1, 1.0, 1.0, //vorne links unten
+	0.0, 0.0, 0.0, 1.0, 0.0, //hinten links unten
+
+}
+
 var quad = []float32{
 	//pos;;col;;tex
 	1, 0, 0, 0.5, 0.0, // top right

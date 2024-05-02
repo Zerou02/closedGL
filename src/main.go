@@ -37,18 +37,23 @@ func main() {
 	var keyboardManger = newKeyBoardManager(window)
 	var fpsCounter = newFPSCounter()
 	text = newText("default", factory.shadermap["text"], 0, 500, 1, 1, glm.Vec3{1, 0, 1}, &factory.projectionMatrix)
-	var dirtTex = loadImage("assets/dirt_side.jpg", gl.RGBA)
+	var dirtTex = loadImage("assets/tileset1.png", gl.RGBA)
 	var vao, vbo uint32 = 0, 0
 	generateBuffers(&vao, &vbo, nil, cube, 0, nil, []int{3, 3, 2})
 	//projection = glm.Ident4()
 	var chunks = []*Chunk{}
-	for y := 0; y < 2; y++ {
+
+	//24
+	for y := 0; y < 24; y++ {
 		var posXZ = []float32{
 			0, 0,
 			16, 0,
 			16, 16,
 			16, 32,
 			0, 32,
+			-16, 0,
+			-16, 16,
+			-16, 32,
 		}
 		for i := 0; i < len(posXZ); i += 2 {
 			var chunk = newChunk(glm.Vec3{16, 16, 16}, glm.Vec3{posXZ[i], float32(y * 16), posXZ[i+1]}, dirtTex, &c, &factory.projection3D, factory.shadermap["cube"])
@@ -65,8 +70,14 @@ func main() {
 
 	var isWireframeMode = false
 
-	println(unsafe.Pointer(chunks[0]))
-	println(unsafe.Sizeof(chunks[0].cubes[0]))
+	glfw.SwapInterval(0)
+
+	var test = []byte{1, 2, 3, 4, 5}
+	test = append(test, 0x05)
+	println(test)
+	var ptr = (*float32)(unsafe.Pointer(&test[0]))
+	*ptr = 4.5
+	println(*ptr)
 
 	for !window.ShouldClose() {
 		gl.ClearColor(0.0, 0.0, 0.0, 1.0)
@@ -98,8 +109,6 @@ func main() {
 		text.x = 0
 		text.y = 0
 		text.draw("FPS: " + strconv.FormatInt(int64(fpsCounter.fpsAverage), 10) + "!")
-
-		glfw.SwapInterval(0)
 
 		if fpsCounter.elapsed >= 0.5 {
 			fpsCounter.calcAverage()
