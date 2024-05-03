@@ -12,7 +12,7 @@ var cummVertexStride = 8
 
 var verticesPerCube = 36
 var dim = 16
-var cumulatedVertices = make([]float32, verticesPerCube*(cummVertexStride)*dim*dim*dim)
+var cumulatedVertices2 = make([]uint32, verticesPerCube*(cummVertexStride)*dim*dim*dim)
 
 type CubeVertex struct {
 	vertices []byte
@@ -32,6 +32,7 @@ type Chunk struct {
 }
 
 func newChunk(dim, pos glm.Vec3, tex *Texture, camera *Camera, projection *glm.Mat4, shader *Shader) Chunk {
+	profiler.startTime("init")
 	var chunk = Chunk{dim: dim, pos: pos, camera: camera, projection: projection, tex: tex, shader: shader}
 	var amountCubes = int(dim[0] * dim[1] * dim[2])
 	var cubeArr = make([]CubeVertex, amountCubes)
@@ -40,12 +41,9 @@ func newChunk(dim, pos glm.Vec3, tex *Texture, camera *Camera, projection *glm.M
 		for z := 0; z < int(dim[2]); z++ {
 			for x := 0; x < int(dim[0]); x++ {
 				var vertices = make([]byte, (cubeVertexStride)*verticesPerCube)
-				for i := 0; i < verticesPerCube; i++ {
-					//pos
-					vertices[i*cubeVertexStride] = byte(x)
-					vertices[i*cubeVertexStride+1] = byte(y)
-					vertices[i*cubeVertexStride+2] = byte(z)
-				}
+				vertices[0] = byte(x)
+				vertices[0+1] = byte(y)
+				vertices[0+2] = byte(z)
 				var newVertex = CubeVertex{isInner: false, vertices: vertices, texId: 1}
 				cubeArr[count] = newVertex
 				count += 1
@@ -53,9 +51,18 @@ func newChunk(dim, pos glm.Vec3, tex *Texture, camera *Camera, projection *glm.M
 		}
 	}
 	chunk.cubes = cubeArr
+	profiler.endTime("init")
+	profiler.startTime("vbo")
 	//copy into vbo
 	chunk.createVBO()
+	profiler.endTime("vbo")
+
 	return chunk
+}
+
+func (this *Chunk) delete() {
+	gl.DeleteBuffers(1, &this.vao)
+	gl.DeleteBuffers(1, &this.vbo)
 }
 
 // No Diagonal Neighbours
@@ -83,52 +90,59 @@ func (this *Chunk) getAmountNeighbours(cube *CubeVertex) int {
 }
 
 func (this *Chunk) createVBO() {
-
+	profiler.startTime("vertexCreation")
 	var blockStride = 6
 	this.calculateInnerBlocks()
 	var vboSize = 0
-	var blockVerticesBytes = 1 + 2 + 1
-	var cubeStride = blockVerticesBytes * 36
+	var idx = 0
 	for i := 0; i < len(this.cubes); i++ {
 		var c = this.cubes[i]
 		var baseX, baseY = idxToGridPos(c.texId, 32, 32)
 		if !c.isInner {
 			//vertexNr
 			for j := 0; j < verticesPerCube; j++ {
-				//copy pos
-				var ndcBitMask = 0
+				//copy pos-3bit
+				var vertex uint32 = 0
 				if cubeVertices[j*5+0] == 1.0 {
-					ndcBitMask |= 0b100
+					vertex |= 0b100
 				}
 				if cubeVertices[j*5+1] == 1.0 {
-					ndcBitMask |= 0b010
+					vertex |= 0b010
 				}
 				if cubeVertices[j*5+2] == 1.0 {
-					ndcBitMask |= 0b001
+					vertex |= 0b001
 				}
-				cumulatedVertices[vboSize*cubeStride+j*blockVerticesBytes] = float32(ndcBitMask)
-				//copy tex
-				cumulatedVertices[vboSize*cubeStride+j*blockVerticesBytes+1] = float32((j / 6)) + cubeVertices[j*5+3] + float32(baseX)*float32(blockStride)
-				cumulatedVertices[vboSize*cubeStride+j*blockVerticesBytes+2] = cubeVertices[j*5+4] + float32(baseY)*float32(blockStride)
-				//copy model
-				var modelBitMask uint32 = 0
-				modelBitMask |= uint32(c.vertices[0])
-				modelBitMask <<= 5
-				modelBitMask |= uint32(c.vertices[1])
-				modelBitMask <<= 5
-				modelBitMask |= uint32(c.vertices[2])
-				cumulatedVertices[vboSize*cubeStride+j*blockVerticesBytes+3] = float32(modelBitMask)
+				vertex <<= 5
+				//copy tex-10bit
+				var texX = (j / 6) + int(cubeVertices[j*5+3]) + baseX*blockStride
+				var texY = int(cubeVertices[j*5+4]) + baseY*blockStride
+				vertex |= uint32(texX)
+				vertex <<= 5
+				vertex |= uint32(texY)
+				vertex <<= 5
+				//copy model-15bit
+				vertex |= uint32(c.vertices[0])
+				vertex <<= 5
+				vertex |= uint32(c.vertices[1])
+				vertex <<= 5
+				vertex |= uint32(c.vertices[2])
+				cumulatedVertices2[vboSize*36+j] = vertex
+
+				idx += 1
 			}
 			vboSize += 1
 		}
 	}
-	var slice = cumulatedVertices[cubeStride*2 : 3*cubeStride]
-	printFloatArr(&slice, blockVerticesBytes)
-
+	profiler.endTime("vertexCreation")
 	this.amountOuter = uint32(vboSize)
-	gl.DeleteBuffers(1, &this.vao)
-	gl.DeleteBuffers(1, &this.vbo)
-	generateBuffersCopy(&this.vao, &this.vbo, nil, cumulatedVertices, 0, nil, []int{1, 2, 1})
+	profiler.startTime("buffer")
+	this.delete()
+	profiler.startTime("genBufs")
+	generateBuffersCopy2(&this.vao, &this.vbo, nil, cumulatedVertices2, 0, nil, []int{1})
+	profiler.endTime("genBufs")
+
+	profiler.endTime("buffer")
+
 }
 
 // surrounded on all sides
@@ -160,4 +174,9 @@ func (this *Chunk) draw() {
 	gl.ActiveTexture(gl.TEXTURE0)
 	gl.BindTexture(gl.TEXTURE_2D, *this.tex)
 	gl.DrawArrays(gl.TRIANGLES, 0, int32(this.amountOuter)*int32(verticesPerCube))
+
+	gl.BindVertexArray(0)
+	gl.BindBuffer(gl.ARRAY_BUFFER, 0)
+	gl.BindTexture(gl.TEXTURE_2D, 0)
+
 }

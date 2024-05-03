@@ -65,8 +65,66 @@ func generateBuffers(vao, vbo, ebo *uint32, vertices []float32, vboByteLen int, 
 	generateBuffersSuper(vao, vbo, ebo, vertices, vboByteLen, indices, vertexAttribBytes, false)
 }
 
+func generateBuffersCopy2(vao, vbo, ebo *uint32, vertices []uint32, vboByteLen int, indices []uint32, vertexAttribBytes []int) {
+	generateBuffersSuper2(vao, vbo, ebo, vertices, vboByteLen, indices, vertexAttribBytes, true)
+}
+
 func generateBuffersCopy(vao, vbo, ebo *uint32, vertices []float32, vboByteLen int, indices []uint32, vertexAttribBytes []int) {
 	generateBuffersSuper(vao, vbo, ebo, vertices, vboByteLen, indices, vertexAttribBytes, true)
+}
+func generateBuffersSuper2(vao, vbo, ebo *uint32, vertices []uint32, vboByteLen int, indices []uint32, vertexAttribBytes []int, copyVertices bool) {
+	//vbo
+	profiler.startTime("gengen")
+	gl.GenBuffers(1, vbo)
+	gl.GenVertexArrays(1, vao)
+	gl.BindVertexArray(*vao)
+	gl.BindBuffer(gl.ARRAY_BUFFER, *vbo)
+	profiler.endTime("gengen")
+
+	profiler.startTime("vbocpy")
+
+	if vertices != nil {
+		var length = vboByteLen
+		if vboByteLen <= 0 {
+			length = 4 * len(vertices)
+		}
+		if copyVertices {
+			gl.BufferData(gl.ARRAY_BUFFER, length, nil, gl.STATIC_DRAW)
+			var baseAddr = (*uint32)(gl.MapBuffer(gl.ARRAY_BUFFER, gl.WRITE_ONLY))
+			var gpuSlice = unsafe.Slice(baseAddr, length)
+			copy(gpuSlice, vertices)
+			gl.UnmapBuffer(gl.ARRAY_BUFFER)
+
+		} else {
+			gl.BufferData(gl.ARRAY_BUFFER, length, gl.Ptr(vertices), gl.STATIC_DRAW)
+		}
+	} else {
+		gl.BufferData(gl.ARRAY_BUFFER, vboByteLen, gl.Ptr(nil), gl.DYNAMIC_DRAW)
+	}
+	profiler.endTime("vbocpy")
+
+	//vao
+	gl.BindVertexArray(*vao)
+	var stride = 0
+	for i := 0; i < len(vertexAttribBytes); i++ {
+		stride += int(vertexAttribBytes[i])
+	}
+	var currOffset = 0
+	for i := 0; i < len(vertexAttribBytes); i++ {
+		gl.VertexAttribIPointerWithOffset(uint32(i), int32(vertexAttribBytes[i]), gl.UNSIGNED_INT, int32(stride*4), uintptr(currOffset)*4)
+		gl.EnableVertexAttribArray(uint32(i))
+		currOffset += vertexAttribBytes[i]
+	}
+
+	//ebo
+	if ebo != nil {
+		gl.GenBuffers(1, ebo)
+		gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, *ebo)
+		gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, 4*len(indices), gl.Ptr(indices), gl.STATIC_DRAW)
+	}
+	gl.BindVertexArray(0)
+	gl.BindBuffer(gl.ARRAY_BUFFER, 0)
+	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, 0)
 }
 
 func generateBuffersSuper(vao, vbo, ebo *uint32, vertices []float32, vboByteLen int, indices []uint32, vertexAttribBytes []int, copyVertices bool) {

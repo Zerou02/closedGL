@@ -73,6 +73,10 @@ func (this *Text) draw(text string) {
 	}
 	gl.BufferSubData(gl.ARRAY_BUFFER, 0, len(this.vertices)*4, gl.Ptr(this.vertices))
 	gl.DrawArrays(gl.TRIANGLES, 0, int32(amountLetters)*6)
+
+	gl.BindVertexArray(0)
+	gl.BindBuffer(gl.ARRAY_BUFFER, 0)
+	gl.BindTexture(gl.TEXTURE_2D, 0)
 }
 
 func (this *Text) deserializeIglbmf(path string) {

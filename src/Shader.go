@@ -32,8 +32,6 @@ func initShader(vertPath, fragPath string) Shader {
 		println("ERROR")
 		gl.GetProgramInfoLog(shader.prog, 512, nil, &s[0])
 		fmt.Printf("%s", s)
-	} else {
-		println("Shader successfully linked")
 	}
 	return shader
 }
@@ -81,8 +79,6 @@ func (s *Shader) compileShader(shaderSrc string, vertex bool) uint32 {
 		var ptr uint8
 		gl.GetShaderInfoLog(shader, 512, nil, &ptr)
 		println("Error at shader Compiling", ptr)
-	} else {
-		println("Shader successfully compiled")
 	}
 	return shader
 }

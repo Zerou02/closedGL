@@ -5,8 +5,6 @@ import (
 	_ "image/png"
 	"runtime"
 	"strconv"
-	"time"
-	"unsafe"
 
 	"github.com/EngoEngine/glm"
 	"github.com/go-gl/gl/v4.1-core/gl"
@@ -24,9 +22,11 @@ type Texture = uint32
 
 var factory PrimitiveFactory
 var text Text
+var profiler Profiler
 
 func main() {
-	startTime()
+	profiler = newProfiler()
+	profiler.startTime("123")
 	runtime.LockOSThread()
 	var window = initGlfw()
 	initOpenGL()
@@ -38,29 +38,26 @@ func main() {
 	var fpsCounter = newFPSCounter()
 	text = newText("default", factory.shadermap["text"], 0, 500, 1, 1, glm.Vec3{1, 0, 1}, &factory.projectionMatrix)
 	var dirtTex = loadImage("assets/tileset1.png", gl.RGBA)
-	var vao, vbo uint32 = 0, 0
-	generateBuffers(&vao, &vbo, nil, cube, 0, nil, []int{3, 3, 2})
-	//projection = glm.Ident4()
 	var chunks = []*Chunk{}
 
-	//32
-	for y := 0; y < 24; y++ {
-		var posXZ = []float32{
-			0, 0,
-			16, 0,
-			16, 16,
-			16, 32,
-			0, 32,
-			-16, 0,
-			-16, 16,
-			-16, 32,
-		}
-		for i := 0; i < len(posXZ); i += 2 {
-			var chunk = newChunk(glm.Vec3{16, 16, 16}, glm.Vec3{posXZ[i], float32(y * 16), posXZ[i+1]}, dirtTex, &c, &factory.projection3D, factory.shadermap["cube"])
-			chunks = append(chunks, &chunk)
-		}
+	profiler.startTime("chunks")
+	for y := 0; y < 16; y++ {
+		/* 		var posXZ = []float32{
+		   			0, 0,
+		   			16, 0,
+		   			16, 16,
+		   			16, 32,
+		   			0, 32,
+		   			-16, 0,
+		   			-16, 16,
+		   			-16, 32,
+		   		}
+		   		for i := 0; i < len(posXZ); i += 2 {
+		   			var chunk = newChunk(glm.Vec3{16, 16, 16}, glm.Vec3{posXZ[i], float32(y * 16), posXZ[i+1]}, dirtTex, &c, &factory.projection3D, factory.shadermap["cube"])
+		   			chunks = append(chunks, &chunk)
+		   		} */
 	}
-
+	profiler.endTime("chunks")
 	var singleCube = factory.newCube(glm.Vec3{0, 3, 17}, dirtTex)
 
 	window.SetScrollCallback(c.scrollCb)
@@ -70,37 +67,11 @@ func main() {
 
 	var isWireframeMode = false
 
+	profiler.startTime("1")
+	profiler.endTime("1")
+
 	glfw.SwapInterval(0)
-
-	println("MAIN-TEST")
-	var test = []byte{1, 2, 3, 4, 5}
-	test = append(test, 0x05)
-	println(test)
-	var ptr = (*float32)(unsafe.Pointer(&test[0]))
-	*ptr = 4.5
-	println(*ptr)
-	var testMask = 0
-	testMask |= 0b01
-	testMask |= 0b100
-	testMask |= 0b010
-
-	println(testMask)
-	var nr float32 = 5
-	println(float32((int(nr) >> 2) & 0b1))
-	println(float32((int(nr) >> 1) & 0b1))
-	println(float32((int(nr) >> 0) & 0b1))
-	var modelBitMask = 0
-	modelBitMask |= 1
-	modelBitMask <<= 5
-	modelBitMask |= 0
-	modelBitMask <<= 5
-	modelBitMask |= 0
-	modelBitMask <<= 0
-	modelBitMask = 1024
-	println("model", modelBitMask)
-	println("model", (modelBitMask>>10)&31)
-	println("model", (modelBitMask>>5)&0b11111)
-	println("model", (modelBitMask>>0)&0b11111)
+	profiler.endTime("123")
 
 	for !window.ShouldClose() {
 		gl.ClearColor(0.0, 0.0, 0.0, 1.0)
@@ -117,6 +88,21 @@ func main() {
 			} else {
 				gl.PolygonMode(gl.FRONT_AND_BACK, gl.LINE)
 			}
+		}
+		if keyboardManger.isPressed(glfw.KeyP) {
+			for i := 0; i < 1; i++ {
+				profiler.startTime("generating")
+				var chunk = newChunk(glm.Vec3{16, 16, 16}, glm.Vec3{0, 0, 0}, dirtTex, &c, &factory.projection3D, factory.shadermap["cube"])
+				profiler.endTime("generating")
+
+				chunks = append(chunks, &chunk)
+			}
+		}
+		if keyboardManger.isPressed(glfw.KeyL) {
+			for _, x := range chunks {
+				x.delete()
+			}
+			chunks = []*Chunk{}
 		}
 		/* 		if keyboardManger.isPressed(glfw.KeyP) {
 		   			cube.position[0] += 0.1
@@ -151,23 +137,90 @@ func process(window *glfw.Window) {
 	}
 }
 
-var start = time.Now()
-var end = time.Now()
-
-func startTime() {
-	start = time.Now()
-}
-
-func endTime(name string) {
-	end = time.Now()
-	var dur = end.Sub(start)
-	fmt.Printf("%s:%f\n", name, dur.Seconds())
-}
-
 func stringToBool(s string) bool {
 	if s == "true" {
 		return true
 	} else {
 		return false
 	}
+}
+
+func decodeVertex(vertex uint32) {
+
+	var val = uint32(vertex)
+	println("val", val)
+	var modelZ = val & 31
+	val >>= 5
+	var modelY = val & 31
+	val >>= 5
+	var modelX = val & 31
+	val >>= 5
+	var texY = val & 31
+	val >>= 5
+	var texX = val & 31
+	val >>= 5
+	var ndcIdx = val & 7
+
+	var x = (ndcIdx >> 2) & 1
+	var y = (ndcIdx >> 1) & 1
+	var z = (ndcIdx >> 0) & 1
+
+	println(modelX, ",", modelY, ";", modelZ)
+	println(texX, ",", texY, ";")
+	println(x, ",", y, ",", z)
+}
+
+func encodeVertex(ndc glm.Vec3, tex glm.Vec3, modelX, modelY, modelZ int) uint {
+	//copy pos-3bit
+	var vertex uint32 = 0
+	if ndc[0] == 1.0 {
+		vertex |= 0b100
+	}
+	if ndc[1] == 1.0 {
+		vertex |= 0b010
+	}
+	if ndc[2] == 1.0 {
+		vertex |= 0b001
+	}
+	vertex <<= 5
+	//cumulatedVertices[vboSize*cubeStride+j*blockVerticesBytes] = float32(ndcBitMask)
+	//copy tex-10bit
+	var texX = byte(tex[0])
+	var texY = byte(tex[1])
+	vertex |= uint32(texX)
+	vertex <<= 5
+	vertex |= uint32(texY)
+	vertex <<= 5
+
+	//copy model-15bit
+	vertex |= uint32(modelX)
+	vertex <<= 5
+	vertex |= uint32(modelY)
+	vertex <<= 5
+	vertex |= uint32(modelZ)
+	return uint(vertex)
+}
+
+func printBitPattern(val uint32) {
+	var str = strconv.FormatInt(int64(val), 2)
+	for len(str) < 32 {
+		str = "0" + str
+	}
+	fmt.Println(str, uint64(val)) //
+}
+
+func printBitPatternF(val float32) {
+	var str = strconv.FormatInt(int64(val), 2)
+	for len(str) < 32 {
+		str = "0" + str
+	}
+	fmt.Println(str, uint64(val)) //
+}
+
+func printBitPatternF64(val float64) {
+	var str = strconv.FormatInt(int64(val), 2)
+	for len(str) < 32 {
+		str = "0" + str
+	}
+	fmt.Println(str, uint64(val)) //
 }
