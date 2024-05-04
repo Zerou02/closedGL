@@ -28,7 +28,7 @@ func newPrimitiveFactory2D(width, height float32, camera *Camera) PrimitiveFacto
 	factory.shadermap["cube"] = &cube
 
 	factory.projectionMatrix = glm.Ortho2D(0, width, height, 0)
-	factory.projection3D = glm.Perspective(glm.DegToRad(45), width/height, 0.1, 1000)
+	factory.projection3D = glm.Perspective(glm.DegToRad(45), width/height, 0.1, 2000)
 
 	factory.viewMatrix = glm.Ident4()
 

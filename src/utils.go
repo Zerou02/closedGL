@@ -26,7 +26,7 @@ func printFloatArr(arr *[]float32, stride int) {
 	println()
 }
 func printFloat(f float32) {
-	fmt.Printf("%f", f)
+	fmt.Printf("%f\n", f)
 }
 
 func printlnFloat(f float32) {

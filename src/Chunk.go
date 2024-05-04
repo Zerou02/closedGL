@@ -15,9 +15,8 @@ var dim = 16
 var cumulatedVertices2 = make([]uint32, verticesPerCube*(cummVertexStride)*dim*dim*dim)
 
 type CubeVertex struct {
-	vertices []byte
-	isInner  bool
-	texId    int
+	isInner bool
+	texId   int
 }
 
 type Chunk struct {
@@ -37,14 +36,13 @@ func newChunk(dim, pos glm.Vec3, tex *Texture, camera *Camera, projection *glm.M
 	var amountCubes = int(dim[0] * dim[1] * dim[2])
 	var cubeArr = make([]CubeVertex, amountCubes)
 	var count = 0
+	var texId = 0
 	for y := 0; y < int(dim[1]); y++ {
 		for z := 0; z < int(dim[2]); z++ {
 			for x := 0; x < int(dim[0]); x++ {
-				var vertices = make([]byte, (cubeVertexStride)*verticesPerCube)
-				vertices[0] = byte(x)
-				vertices[0+1] = byte(y)
-				vertices[0+2] = byte(z)
-				var newVertex = CubeVertex{isInner: false, vertices: vertices, texId: 1}
+				var newVertex = CubeVertex{isInner: false, texId: texId}
+				texId = (texId + 1) % 2
+				texId = 0
 				cubeArr[count] = newVertex
 				count += 1
 			}
@@ -66,9 +64,9 @@ func (this *Chunk) delete() {
 }
 
 // No Diagonal Neighbours
-func (this *Chunk) getAmountNeighbours(cube *CubeVertex) int {
+func (this *Chunk) getAmountNeighbours(idx int) int {
 	var retAmount = 0
-	var offsets = []float32{
+	var offsets = []int{
 		-1, 0, 0,
 		1, 0, 0,
 		0, 1, 0,
@@ -76,10 +74,11 @@ func (this *Chunk) getAmountNeighbours(cube *CubeVertex) int {
 		0, 0, 1,
 		0, 0, -1,
 	}
-	var pos = glm.Vec3{float32(cube.vertices[0]), float32(cube.vertices[1]), float32(cube.vertices[2])}
+
+	var posX, posY, posZ = idxToPos3(idx, int(this.dim[0]), int(this.dim[1]), int(this.dim[2]))
 
 	for i := 0; i < len(offsets); i += 3 {
-		var newX, newY, newZ = pos[0] + offsets[i], pos[1] + offsets[i+1], pos[2] + offsets[i+2]
+		var newX, newY, newZ = posX + offsets[i], posY + offsets[i+1], posZ + offsets[i+2]
 
 		var idx = pos3ToIdx(int(newX), int(newY), int(newZ), int(this.dim[0]), int(this.dim[1]), int(this.dim[2]))
 		if idx >= 0 && idx < len(this.cubes) {
@@ -97,9 +96,13 @@ func (this *Chunk) createVBO() {
 	var idx = 0
 	for i := 0; i < len(this.cubes); i++ {
 		var c = this.cubes[i]
-		var baseX, baseY = idxToGridPos(c.texId, 32, 32)
+		var baseX, baseY = idxToGridPos(c.texId, 64, 64)
+		var posX, posY, posZ = idxToPos3(i, int(this.dim[0]), int(this.dim[1]), int(this.dim[2]))
 		if !c.isInner {
 			//vertexNr
+			var colour = (vboSize % 2)
+			colour = 1
+			_ = colour
 			for j := 0; j < verticesPerCube; j++ {
 				//copy pos-3bit
 				var vertex uint32 = 0
@@ -116,16 +119,18 @@ func (this *Chunk) createVBO() {
 				//copy tex-10bit
 				var texX = (j / 6) + int(cubeVertices[j*5+3]) + baseX*blockStride
 				var texY = int(cubeVertices[j*5+4]) + baseY*blockStride
+				_, _, _ = blockStride, baseX, baseY
+				//var texX, texY = colour, colour
 				vertex |= uint32(texX)
 				vertex <<= 5
 				vertex |= uint32(texY)
 				vertex <<= 5
 				//copy model-15bit
-				vertex |= uint32(c.vertices[0])
+				vertex |= uint32(posX)
 				vertex <<= 5
-				vertex |= uint32(c.vertices[1])
+				vertex |= uint32(posY)
 				vertex <<= 5
-				vertex |= uint32(c.vertices[2])
+				vertex |= uint32(posZ)
 				cumulatedVertices2[vboSize*36+j] = vertex
 
 				idx += 1
@@ -146,23 +151,22 @@ func (this *Chunk) createVBO() {
 }
 
 // surrounded on all sides
-func (this *Chunk) isInnerBlock(cube *CubeVertex) bool {
-	var neighbours = this.getAmountNeighbours(cube)
-	var posX = float32(cube.vertices[0])
-	var posY = float32(cube.vertices[1])
-	var posZ = float32(cube.vertices[2])
+func (this *Chunk) isInnerBlock(idx int) bool {
+	var neighbours = this.getAmountNeighbours(idx)
+	var posX, posY, posZ = idxToPos3(idx, int(this.dim[0]), int(this.dim[1]), int(this.dim[2]))
 
-	var isInner = posX > 0 && posX < this.dim[0]-1 && posY > 0 && posY < this.dim[1]-1 && posZ > 0 && posZ < this.dim[2]-1
+	var isInner = posX > 0 && posX < int(this.dim[0])-1 && posY > 0 && posY < int(this.dim[1])-1 && posZ > 0 && posZ < int(this.dim[2])-1
 	return isInner && neighbours >= 4
 }
 
 func (this *Chunk) calculateInnerBlocks() {
 	for i := 0; i < len(this.cubes); i++ {
-		this.cubes[i].isInner = this.isInnerBlock(&this.cubes[i])
+		this.cubes[i].isInner = this.isInnerBlock(i)
 	}
 }
 
 func (this *Chunk) draw() {
+	//this.createVBO()
 	this.shader.use()
 	this.shader.setUniformMatrix4("view", &this.camera.lookAtMat)
 	this.shader.setUniformMatrix4("projection", this.projection)
@@ -171,6 +175,7 @@ func (this *Chunk) draw() {
 
 	gl.BindVertexArray(this.vao)
 	gl.BindBuffer(gl.ARRAY_BUFFER, this.vbo)
+	//gl.BufferSubData(gl.ARRAY_BUFFER, 0, int(this.amountOuter)*36, gl.Ptr(cumulatedVertices2))
 	gl.ActiveTexture(gl.TEXTURE0)
 	gl.BindTexture(gl.TEXTURE_2D, *this.tex)
 	gl.DrawArrays(gl.TRIANGLES, 0, int32(this.amountOuter)*int32(verticesPerCube))

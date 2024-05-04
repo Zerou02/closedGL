@@ -22,6 +22,13 @@ void main() {
 	uint ndcIDx = val & 7;
 
 	//translation-matrix; column-major; 4x4homogenous
+	mat4 scaleMat = mat4(
+		1,0,0,0,
+		0,1,0,0,
+		0,0,1,0,
+		0,0,0,1
+	);
+
  	mat4 modelMat = mat4(
 		1,0,0,0,
 		0,1,0,0,
@@ -30,11 +37,15 @@ void main() {
 		float(modelY+chunkOrigin.y),
 		float(modelZ+chunkOrigin.z),
 		1
-	); 
+	);
 	uint x = (ndcIDx>>2) & 1;
 	uint y = (ndcIDx>>1) & 1;
 	uint z = (ndcIDx>>0) & 1;
 
-	gl_Position = projection * view * modelMat * vec4(float(x),float(y),float(z),1.0f);
+	float C = 1.0; 
+	float far = 2000.0; 
+	gl_Position = projection * view * scaleMat* modelMat * vec4(float(x),float(y),float(z),1.0f);
+/* 	gl_Position.z = 2.0*log(gl_Position.w*C + 1)/log(far*C + 1) - 1;
+    gl_Position.z *= gl_Position.w; */
 	texCoord = vec2(float(texX),float(texY));
 }

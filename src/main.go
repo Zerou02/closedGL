@@ -5,6 +5,7 @@ import (
 	_ "image/png"
 	"runtime"
 	"strconv"
+	"unsafe"
 
 	"github.com/EngoEngine/glm"
 	"github.com/go-gl/gl/v4.1-core/gl"
@@ -25,40 +26,45 @@ var text Text
 var profiler Profiler
 
 func main() {
+
 	profiler = newProfiler()
 	profiler.startTime("123")
+	profiler.log = false
 	runtime.LockOSThread()
+	//log.Println(http.ListenAndServe("localhost:6060", nil))
 	var window = initGlfw()
 	initOpenGL()
 	var c = CreateCamera()
-	c.cameraPos = glm.Vec3{0, 3, 18}
+	c.cameraPos = glm.Vec3{0, 0, 18}
 
 	factory = newPrimitiveFactory2D(width, height, &c)
 	var keyboardManger = newKeyBoardManager(window)
 	var fpsCounter = newFPSCounter()
 	text = newText("default", factory.shadermap["text"], 0, 500, 1, 1, glm.Vec3{1, 0, 1}, &factory.projectionMatrix)
 	var dirtTex = loadImage("assets/tileset1.png", gl.RGBA)
+	var altTex = loadImage("assets/dirt_side.jpg", gl.RGBA)
+	var testTex = loadImage("assets/tileset2.png", gl.RGBA)
+	_ = testTex
+
 	var chunks = []*Chunk{}
 
 	profiler.startTime("chunks")
-	for y := 0; y < 16; y++ {
-		/* 		var posXZ = []float32{
-		   			0, 0,
-		   			16, 0,
-		   			16, 16,
-		   			16, 32,
-		   			0, 32,
-		   			-16, 0,
-		   			-16, 16,
-		   			-16, 32,
-		   		}
-		   		for i := 0; i < len(posXZ); i += 2 {
-		   			var chunk = newChunk(glm.Vec3{16, 16, 16}, glm.Vec3{posXZ[i], float32(y * 16), posXZ[i+1]}, dirtTex, &c, &factory.projection3D, factory.shadermap["cube"])
-		   			chunks = append(chunks, &chunk)
-		   		} */
+	for x := 0; x < 10; x++ {
+		for z := 0; z < 10; z++ {
+			_, _, _ = dirtTex, altTex, testTex
+			var chunk = newChunk(glm.Vec3{16, 16, 16}, glm.Vec3{float32(x * 32), float32(-32), float32(z * 32)}, dirtTex, &c, &factory.projection3D, factory.shadermap["cube"])
+			chunks = append(chunks, &chunk)
+		}
 	}
 	profiler.endTime("chunks")
-	var singleCube = factory.newCube(glm.Vec3{0, 3, 17}, dirtTex)
+	var cubes = []Cube{}
+	for i := 0; i < 1; i++ {
+		for j := 0; j < 1; j++ {
+			for k := 0; k < 1; k++ {
+				cubes = append(cubes, factory.newCube(glm.Vec3{float32(j), float32(k), float32(i)}, altTex))
+			}
+		}
+	}
 
 	window.SetScrollCallback(c.scrollCb)
 	window.SetCursorPosCallback(c.mouseCallback)
@@ -72,8 +78,11 @@ func main() {
 
 	glfw.SwapInterval(0)
 	profiler.endTime("123")
+	println("cube", unsafe.Sizeof(chunks[0].cubes[0]))
+	println("chunk", unsafe.Sizeof(*chunks[0]))
 
 	for !window.ShouldClose() {
+
 		gl.ClearColor(0.0, 0.0, 0.0, 1.0)
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
@@ -90,13 +99,13 @@ func main() {
 			}
 		}
 		if keyboardManger.isPressed(glfw.KeyP) {
-			for i := 0; i < 1; i++ {
-				profiler.startTime("generating")
-				var chunk = newChunk(glm.Vec3{16, 16, 16}, glm.Vec3{0, 0, 0}, dirtTex, &c, &factory.projection3D, factory.shadermap["cube"])
-				profiler.endTime("generating")
+			profiler.startTime("generating")
+			for i := 0; i < 10; i++ {
+				var chunk = newChunk(glm.Vec3{32, 32, 32}, glm.Vec3{0, 0, 0}, dirtTex, &c, &factory.projection3D, factory.shadermap["cube"])
 
 				chunks = append(chunks, &chunk)
 			}
+			profiler.endTime("generating")
 		}
 		if keyboardManger.isPressed(glfw.KeyL) {
 			for _, x := range chunks {
@@ -114,7 +123,9 @@ func main() {
 			x.draw()
 		}
 
-		singleCube.draw()
+		for _, x := range cubes {
+			x.draw()
+		}
 		text.x = 0
 		text.y = 0
 		text.draw("FPS: " + strconv.FormatInt(int64(fpsCounter.fpsAverage), 10) + "!")
