@@ -41,8 +41,6 @@ func newChunk(dim, pos glm.Vec3, tex *Texture, camera *Camera, projection *glm.M
 		for z := 0; z < int(dim[2]); z++ {
 			for x := 0; x < int(dim[0]); x++ {
 				var newVertex = CubeVertex{isInner: false, texId: texId}
-				texId = (texId + 1) % 2
-				texId = 0
 				cubeArr[count] = newVertex
 				count += 1
 			}
@@ -163,6 +161,40 @@ func (this *Chunk) calculateInnerBlocks() {
 	for i := 0; i < len(this.cubes); i++ {
 		this.cubes[i].isInner = this.isInnerBlock(i)
 	}
+}
+
+func (this *Chunk) isVisible() bool {
+	var points = []glm.Vec3{
+		//Mittelpunk
+		this.pos.Add(&glm.Vec3{this.dim[0] / 2, this.dim[1] / 2, this.dim[2] / 2}),
+		//Ecken
+		this.pos,
+
+		this.pos.Add(&glm.Vec3{this.dim[0], 0, 0}),
+		this.pos.Add(&glm.Vec3{this.dim[0], 0, this.dim[2]}),
+		this.pos.Add(&glm.Vec3{0, 0, this.dim[2]}),
+		this.pos.Add(&glm.Vec3{0, -this.dim[1], 0}),
+		this.pos.Add(&glm.Vec3{this.dim[0], -this.dim[1], 0}),
+		this.pos.Add(&glm.Vec3{this.dim[0], -this.dim[1], this.dim[2]}),
+		this.pos.Add(&glm.Vec3{0, -this.dim[1], this.dim[2]}),
+		//Seiten
+		this.pos.Add(&glm.Vec3{this.dim[0] / 2, -this.dim[1] / 2, 0}),
+		this.pos.Add(&glm.Vec3{0, -this.dim[1] / 2, this.dim[2] / 2}),
+		this.pos.Add(&glm.Vec3{0, -this.dim[1] / 2, this.dim[2] / 2}),
+		this.pos.Add(&glm.Vec3{this.dim[0] / 2, -this.dim[1] / 2, this.dim[2]}),
+		this.pos.Add(&glm.Vec3{this.dim[0] / 2, 0, this.dim[2] / 2}),
+		this.pos.Add(&glm.Vec3{this.dim[0] / 2, -this.dim[1] / 2, this.dim[2] / 2}),
+	}
+
+	var retVal = false
+	for _, x := range points {
+		if isPointInFrustum(this.camera, x) {
+
+			retVal = true
+			break
+		}
+	}
+	return retVal
 }
 
 func (this *Chunk) draw() {

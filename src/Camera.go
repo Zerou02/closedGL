@@ -21,7 +21,7 @@ type Camera struct {
 
 func CreateCamera() Camera {
 	return Camera{
-		0, -90, 0, 0.1, 45, glm.Vec3{0, 0, 0}, glm.Vec3{0, 0, -1}, glm.Vec3{0, 1, 0}, glm.Vec3{0, 0, 0}, glm.Ident4(), glm.Ident4(), false, 0, 0, false,
+		0, 32, 0, 0.1, 45, glm.Vec3{0, 0, 0}, glm.Vec3{0, 0, -1}, glm.Vec3{0, 1, 0}, glm.Vec3{0.0, 0, 0}, glm.Ident4(), glm.Ident4(), false, 0, 0, false,
 	}
 }
 

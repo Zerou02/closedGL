@@ -175,6 +175,7 @@ func ssVectorOriginCol(ssVel, ssWall glm.Vec2) glm.Vec2 {
 	newAngle.Normalize()
 	return newAngle.ComponentProduct(&glm.Vec2{1, -1})
 }
+
 func aabbAabbCol(b1, b2 glm.Vec4) bool {
 	var colX = b1.X()+b1.Z() >= b2[0] && b2[0]+b2[2] >= b1[0]
 	var colY = b1[1]+b1[3] >= b2[1] && b2[1]+b2[3] >= b1[1]
@@ -223,4 +224,63 @@ func pos3ToIdx(posX, posY, posZ int, dimX, dimY, dimZ int) int {
 	var yLevel = posY * dimX * dimZ
 	var idx = gridPosToIdx(posX, posZ, dimX)
 	return yLevel + idx
+}
+
+func clampToIntegerMultipleOf(val float32, multiple float32) float32 {
+	var new = int(val / multiple)
+	return float32(new) * multiple
+}
+
+func multidimensionalNewton(startVec glm.Vec2) {
+	var current = startVec
+	for i := 0; i < 10; i++ {
+		var mat = glm.Mat2{
+			float32(math.Sin(float64(current[0]))),
+			1, 1,
+			float32(math.Sin(float64(current[1]))),
+		}
+		var inv = mat.Inverse()
+		var fmat = glm.Vec2{
+			current[1] - float32(math.Cos(float64(current[0]))),
+			current[0] - float32(math.Cos(float64(current[1]))),
+		}
+		var tmpMat = inv.Mul2x1(&fmat)
+		current = current.Sub(&tmpMat)
+		printFloat(current[0])
+		printFloat(current[1])
+		println()
+	}
+
+}
+
+/*
+func createFrustumFromCamera(camera *Camera, aspect float32, fovy, zNear, zFar float32) Frustum {
+	var retFrustum = Frustum{planes: []Plane{}}
+	var halfVSide = zFar * float32(math.Tan(float64(fovy)*0.5))
+	var halfHSide = halfVSide * aspect
+	var frontMultFar = camera.cameraFront.Scale(zFar)
+	/* retFrustum.planes[0] = Plane{
+		normal: camera.cameraPos,distance: camera.right,
+	}
+	var tmp = camera.cameraFront.Scale(zNear)
+	//retFrustum.planes[1] = Plane{normal: camera.cameraPos.Add(&tmp),distance: camera.cameraFront[]}
+	return retFrustum
+}
+*/
+
+func isPointInFrustum(c *Camera, worldPos glm.Vec3) bool {
+	var view = c.lookAtMat
+	var l = view.Mul4x1(&glm.Vec4{worldPos[0], worldPos[1], worldPos[2], 1})
+	var p = glm.Vec3{l[0], l[1], l[2]}
+
+	var v = p.Sub(&c.cameraPos)
+	var vz = v.Dot(&glm.Vec3{0, 0, -1})
+	var isVisible = !(vz >= -2000 && vz <= -0.1)
+	var frustumH = 2.0 * float64(vz) * math.Tan(0.5*float64(glm.DegToRad(c.fov)))
+	//var frustumH = 10000
+	var isVis2y = !(-frustumH > float64(l[1]) || float64(l[1]) > frustumH)
+	var w = frustumH * (width / height)
+	var isVis2x = !(l[0] > float32(w) || l[0] < -float32(w))
+
+	return isVis2x && isVis2y && isVisible
 }

@@ -26,7 +26,6 @@ var text Text
 var profiler Profiler
 
 func main() {
-
 	profiler = newProfiler()
 	profiler.startTime("123")
 	profiler.log = false
@@ -49,22 +48,14 @@ func main() {
 	var chunks = []*Chunk{}
 
 	profiler.startTime("chunks")
-	for x := 0; x < 10; x++ {
-		for z := 0; z < 10; z++ {
+	for x := 0; x < 16; x++ {
+		for z := 0; z < 16; z++ {
 			_, _, _ = dirtTex, altTex, testTex
-			var chunk = newChunk(glm.Vec3{16, 16, 16}, glm.Vec3{float32(x * 32), float32(-32), float32(z * 32)}, dirtTex, &c, &factory.projection3D, factory.shadermap["cube"])
+			var chunk = newChunk(glm.Vec3{32, 32, 32}, glm.Vec3{float32(x * 32), float32(0), float32(z * 32)}, dirtTex, &c, &factory.projection3D, factory.shadermap["cube"])
 			chunks = append(chunks, &chunk)
 		}
 	}
 	profiler.endTime("chunks")
-	var cubes = []Cube{}
-	for i := 0; i < 1; i++ {
-		for j := 0; j < 1; j++ {
-			for k := 0; k < 1; k++ {
-				cubes = append(cubes, factory.newCube(glm.Vec3{float32(j), float32(k), float32(i)}, altTex))
-			}
-		}
-	}
 
 	window.SetScrollCallback(c.scrollCb)
 	window.SetCursorPosCallback(c.mouseCallback)
@@ -81,14 +72,19 @@ func main() {
 	println("cube", unsafe.Sizeof(chunks[0].cubes[0]))
 	println("chunk", unsafe.Sizeof(*chunks[0]))
 
-	for !window.ShouldClose() {
+	var player = newPlayer(glm.Vec3{0, 33, 0}, chunks[0], altTex, &keyboardManger, &c)
 
+	_ = player
+
+	c.cameraPos = glm.Vec3{0, 32, 0}
+
+	for !window.ShouldClose() {
 		gl.ClearColor(0.0, 0.0, 0.0, 1.0)
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
 		fpsCounter.process()
 		c.process(window, float32(fpsCounter.delta))
-
+		//player.process(float32(fpsCounter.delta))
 		keyboardManger.process()
 		if keyboardManger.isPressed(glfw.KeyF) {
 			isWireframeMode = !isWireframeMode
@@ -107,28 +103,28 @@ func main() {
 			}
 			profiler.endTime("generating")
 		}
-		if keyboardManger.isPressed(glfw.KeyL) {
-			for _, x := range chunks {
-				x.delete()
-			}
-			chunks = []*Chunk{}
+		/* if keyboardManger.isPressed(glfw.KeyP) {
+			cube.position[0] += 0.1
 		}
-		/* 		if keyboardManger.isPressed(glfw.KeyP) {
-		   			cube.position[0] += 0.1
-		   		}
-		   		if keyboardManger.isPressed(glfw.KeyO) {
-		   			cube.position[0] += -0.1
-		   		} */
+		if keyboardManger.isPressed(glfw.KeyO) {
+			cube.position[0] += -0.1
+		} */
+		var skipped = 0
 		for _, x := range chunks {
-			x.draw()
+			if x.isVisible() {
+				x.draw()
+			} else {
+				skipped++
+			}
 		}
+		println(skipped)
 
-		for _, x := range cubes {
-			x.draw()
-		}
+		//player.draw()
 		text.x = 0
 		text.y = 0
-		text.draw("FPS: " + strconv.FormatInt(int64(fpsCounter.fpsAverage), 10) + "!")
+		for i := 0; i < 1; i++ {
+			text.draw("FPS: " + strconv.FormatInt(int64(fpsCounter.fpsAverage), 10) + "!")
+		}
 
 		if fpsCounter.elapsed >= 0.5 {
 			fpsCounter.calcAverage()
