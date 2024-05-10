@@ -4,3 +4,8 @@
 ![image](https://github.com/Zerou02/closedGL/assets/104669241/32ffaf30-eea1-4392-823f-70e1647a2aa0)
 ### Frustum Culling! High-performance, if you close your eyes. ![image](https://github.com/Zerou02/closedGL/assets/104669241/3688eb94-3d88-44a0-a287-16b6aff6ade2) 
 255 Chunks are culled
+### Prototyp von Face Culling. Auch, wenn der CPU-Overhead zu groß ist, dass dies gerechtfertigt ist!
+![image](https://github.com/Zerou02/closedGL/assets/104669241/83bf07a3-b41f-4832-b5cd-88014c8e1f76)
+### Besseres und effizienteres Face-Culling
+![image](https://github.com/Zerou02/closedGL/assets/104669241/e33e1261-2f69-4c9f-ad9f-b43d10ebfb22)
+
