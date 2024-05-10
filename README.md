@@ -6,4 +6,6 @@
 255 Chunks are culled
 ### Prototyp von Face Culling. Auch, wenn der CPU-Overhead zu groß ist, dass dies gerechtfertigt ist!
 ![image](https://github.com/Zerou02/closedGL/assets/104669241/83bf07a3-b41f-4832-b5cd-88014c8e1f76)
+### Besseres und effizienteres Face-Culling
+![image](https://github.com/Zerou02/closedGL/assets/104669241/e33e1261-2f69-4c9f-ad9f-b43d10ebfb22)
 
