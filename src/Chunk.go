@@ -93,7 +93,7 @@ func (this *Chunk) createVertices() {
 	var blockStride = 6
 	var idx = 0
 	var amountVertices = 0
-	this.calculateInnerBlocks()
+	//	this.calculateInnerBlocks()
 	profiler.startTime("begin mesh creation")
 	for i := 0; i < len(this.cubes); i++ {
 		var c = this.cubes[i]
@@ -101,11 +101,11 @@ func (this *Chunk) createVertices() {
 		var posX, posY, posZ = idxToPos3(i, int(this.dim[0]), int(this.dim[1]), int(this.dim[2]))
 		if !c.isInner {
 			//vertexNr
-			//	var allowFaces = this.faceCullCube(glm.Vec3{float32(posX) + this.dim[2]/2, float32(posY) + this.dim[2]/2, float32(posZ) + this.dim[2]/2})
+			var allowFaces = this.faceCullCube2(i)
 			//		println("vis", len(allowFaces))
 			//allowFaces = []int{0, 1, 2, 3, 4, 5}
-			for l := 0; l < 6; l++ {
-				var j = l
+			for l := 0; l < len(allowFaces); l++ {
+				var j = allowFaces[l]
 				for k := 0; k < 6; k++ {
 					//copy pos-3bit
 					var vertex uint32 = 0
@@ -247,4 +247,30 @@ func (this *Chunk) faceCullCube(posCentre glm.Vec3) []int {
 		}
 	}
 	return retVec
+}
+
+func (this *Chunk) faceCullCube2(cubeIdx int) []int {
+	var dimX = int(this.dim[0])
+	var dimY = int(this.dim[1])
+	var dimZ = int(this.dim[2])
+
+	var posX, posY, posZ = idxToPos3(cubeIdx, dimX, dimY, dimZ)
+	var offsets = []int{
+		0, 1, 0,
+		0, 0, 1,
+		-1, 0, 0,
+		0, 0, -1,
+		1, 0, 0,
+		0, -1, 0,
+	}
+
+	var allowedFaces = []int{}
+	for i := 0; i < len(offsets); i += 3 {
+		var newX, newY, newZ = posX + offsets[i], posY + offsets[i+1], posZ + offsets[i+2]
+		var isOuter = (newX < 0 || newX >= int(this.dim[0])) || (newY < 0 || newY >= int(this.dim[1])) || (newZ < 0 || newZ >= int(this.dim[2]))
+		if isOuter {
+			allowedFaces = append(allowedFaces, i/3)
+		}
+	}
+	return allowedFaces
 }

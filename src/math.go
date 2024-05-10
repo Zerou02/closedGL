@@ -213,7 +213,7 @@ func neededDecimalPlacesToNextInt(x float64) int {
 
 // x,y,z
 func idxToPos3(idx, x, y, z int) (int, int, int) {
-	var yComp int = idx / int(x*y)
+	var yComp int = idx / int(x*z)
 	var normalizedXIdx = idx - yComp*int(x*y)
 	var xComp, zCom = idxToGridPos(normalizedXIdx, int(y), int(z))
 	return xComp, yComp, zCom
