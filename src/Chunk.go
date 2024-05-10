@@ -1,6 +1,8 @@
 package main
 
 import (
+	"math"
+
 	"github.com/EngoEngine/glm"
 	"github.com/go-gl/gl/v4.1-core/gl"
 )
@@ -10,6 +12,7 @@ import (
 var cubeVertexStride = 3
 var cummVertexStride = 8
 
+var bytesPerVertex = 4
 var verticesPerCube = 36
 var dim = 16
 var cumulatedVertices2 = make([]uint32, verticesPerCube*(cummVertexStride)*dim*dim*dim)
@@ -20,14 +23,14 @@ type CubeVertex struct {
 }
 
 type Chunk struct {
-	shader      *Shader
-	camera      *Camera
-	projection  *glm.Mat4
-	tex         *Texture
-	dim, pos    glm.Vec3
-	cubes       []CubeVertex
-	amountOuter uint32
-	vao, vbo    uint32
+	shader         *Shader
+	camera         *Camera
+	projection     *glm.Mat4
+	tex            *Texture
+	dim, pos       glm.Vec3
+	cubes          []CubeVertex
+	amountVertices uint32
+	vao, vbo       uint32
 }
 
 func newChunk(dim, pos glm.Vec3, tex *Texture, camera *Camera, projection *glm.Mat4, shader *Shader) Chunk {
@@ -86,58 +89,64 @@ func (this *Chunk) getAmountNeighbours(idx int) int {
 	return retAmount
 }
 
-func (this *Chunk) createVBO() {
-	profiler.startTime("vertexCreation")
+func (this *Chunk) createVertices() {
 	var blockStride = 6
-	this.calculateInnerBlocks()
-	var vboSize = 0
 	var idx = 0
+	var amountVertices = 0
+	this.calculateInnerBlocks()
+	profiler.startTime("begin mesh creation")
 	for i := 0; i < len(this.cubes); i++ {
 		var c = this.cubes[i]
-		var baseX, baseY = idxToGridPos(c.texId, 64, 64)
+		var baseX, baseY = idxToGridPos(c.texId, 32, 32)
 		var posX, posY, posZ = idxToPos3(i, int(this.dim[0]), int(this.dim[1]), int(this.dim[2]))
 		if !c.isInner {
 			//vertexNr
-			var colour = (vboSize % 2)
-			colour = 1
-			_ = colour
-			for j := 0; j < verticesPerCube; j++ {
-				//copy pos-3bit
-				var vertex uint32 = 0
-				if cubeVertices[j*5+0] == 1.0 {
-					vertex |= 0b100
+			//	var allowFaces = this.faceCullCube(glm.Vec3{float32(posX) + this.dim[2]/2, float32(posY) + this.dim[2]/2, float32(posZ) + this.dim[2]/2})
+			//		println("vis", len(allowFaces))
+			//allowFaces = []int{0, 1, 2, 3, 4, 5}
+			for l := 0; l < 6; l++ {
+				var j = l
+				for k := 0; k < 6; k++ {
+					//copy pos-3bit
+					var vertex uint32 = 0
+					if cubeVertices[(j*6+k)*5+0] == 1.0 {
+						vertex |= 0b100
+					}
+					if cubeVertices[(j*6+k)*5+1] == 1.0 {
+						vertex |= 0b010
+					}
+					if cubeVertices[(j*6+k)*5+2] == 1.0 {
+						vertex |= 0b001
+					}
+					vertex <<= 5
+					//copy tex-10bit
+					var texX = j + int(cubeVertices[(j*6+k)*5+3]) + baseX*blockStride
+					var texY = int(cubeVertices[(j*6+k)*5+4]) + baseY*blockStride
+					_, _, _ = blockStride, baseX, baseY
+					vertex |= uint32(texX)
+					vertex <<= 5
+					vertex |= uint32(texY)
+					vertex <<= 5
+					//copy model-15bit
+					vertex |= uint32(posX)
+					vertex <<= 5
+					vertex |= uint32(posY)
+					vertex <<= 5
+					vertex |= uint32(posZ)
+					cumulatedVertices2[idx*6+k] = vertex
+					amountVertices += 1
 				}
-				if cubeVertices[j*5+1] == 1.0 {
-					vertex |= 0b010
-				}
-				if cubeVertices[j*5+2] == 1.0 {
-					vertex |= 0b001
-				}
-				vertex <<= 5
-				//copy tex-10bit
-				var texX = (j / 6) + int(cubeVertices[j*5+3]) + baseX*blockStride
-				var texY = int(cubeVertices[j*5+4]) + baseY*blockStride
-				_, _, _ = blockStride, baseX, baseY
-				//var texX, texY = colour, colour
-				vertex |= uint32(texX)
-				vertex <<= 5
-				vertex |= uint32(texY)
-				vertex <<= 5
-				//copy model-15bit
-				vertex |= uint32(posX)
-				vertex <<= 5
-				vertex |= uint32(posY)
-				vertex <<= 5
-				vertex |= uint32(posZ)
-				cumulatedVertices2[vboSize*36+j] = vertex
-
 				idx += 1
 			}
-			vboSize += 1
 		}
 	}
+	profiler.endTime("begin mesh creation")
+	this.amountVertices = uint32(amountVertices)
+}
+func (this *Chunk) createVBO() {
+	profiler.startTime("vertexCreation")
+	this.createVertices()
 	profiler.endTime("vertexCreation")
-	this.amountOuter = uint32(vboSize)
 	profiler.startTime("buffer")
 	this.delete()
 	profiler.startTime("genBufs")
@@ -169,21 +178,20 @@ func (this *Chunk) isVisible() bool {
 		this.pos.Add(&glm.Vec3{this.dim[0] / 2, this.dim[1] / 2, this.dim[2] / 2}),
 		//Ecken
 		this.pos,
-
 		this.pos.Add(&glm.Vec3{this.dim[0], 0, 0}),
 		this.pos.Add(&glm.Vec3{this.dim[0], 0, this.dim[2]}),
 		this.pos.Add(&glm.Vec3{0, 0, this.dim[2]}),
-		this.pos.Add(&glm.Vec3{0, -this.dim[1], 0}),
-		this.pos.Add(&glm.Vec3{this.dim[0], -this.dim[1], 0}),
-		this.pos.Add(&glm.Vec3{this.dim[0], -this.dim[1], this.dim[2]}),
-		this.pos.Add(&glm.Vec3{0, -this.dim[1], this.dim[2]}),
+		this.pos.Add(&glm.Vec3{0, this.dim[1], 0}),
+		this.pos.Add(&glm.Vec3{this.dim[0], this.dim[1], 0}),
+		this.pos.Add(&glm.Vec3{this.dim[0], this.dim[1], this.dim[2]}),
+		this.pos.Add(&glm.Vec3{0, this.dim[1], this.dim[2]}),
 		//Seiten
-		this.pos.Add(&glm.Vec3{this.dim[0] / 2, -this.dim[1] / 2, 0}),
-		this.pos.Add(&glm.Vec3{0, -this.dim[1] / 2, this.dim[2] / 2}),
-		this.pos.Add(&glm.Vec3{0, -this.dim[1] / 2, this.dim[2] / 2}),
-		this.pos.Add(&glm.Vec3{this.dim[0] / 2, -this.dim[1] / 2, this.dim[2]}),
+		this.pos.Add(&glm.Vec3{this.dim[0] / 2, this.dim[1] / 2, 0}),
+		this.pos.Add(&glm.Vec3{0, this.dim[1] / 2, this.dim[2] / 2}),
+		this.pos.Add(&glm.Vec3{0, this.dim[1] / 2, this.dim[2] / 2}),
+		this.pos.Add(&glm.Vec3{this.dim[0] / 2, this.dim[1] / 2, this.dim[2]}),
 		this.pos.Add(&glm.Vec3{this.dim[0] / 2, 0, this.dim[2] / 2}),
-		this.pos.Add(&glm.Vec3{this.dim[0] / 2, -this.dim[1] / 2, this.dim[2] / 2}),
+		this.pos.Add(&glm.Vec3{this.dim[0] / 2, this.dim[1] / 2, this.dim[2] / 2}),
 	}
 
 	var retVal = false
@@ -198,7 +206,7 @@ func (this *Chunk) isVisible() bool {
 }
 
 func (this *Chunk) draw() {
-	//this.createVBO()
+
 	this.shader.use()
 	this.shader.setUniformMatrix4("view", &this.camera.lookAtMat)
 	this.shader.setUniformMatrix4("projection", this.projection)
@@ -207,13 +215,36 @@ func (this *Chunk) draw() {
 
 	gl.BindVertexArray(this.vao)
 	gl.BindBuffer(gl.ARRAY_BUFFER, this.vbo)
-	//gl.BufferSubData(gl.ARRAY_BUFFER, 0, int(this.amountOuter)*36, gl.Ptr(cumulatedVertices2))
+
 	gl.ActiveTexture(gl.TEXTURE0)
 	gl.BindTexture(gl.TEXTURE_2D, *this.tex)
-	gl.DrawArrays(gl.TRIANGLES, 0, int32(this.amountOuter)*int32(verticesPerCube))
+	gl.DrawArrays(gl.TRIANGLES, 0, int32(this.amountVertices)*3)
 
 	gl.BindVertexArray(0)
 	gl.BindBuffer(gl.ARRAY_BUFFER, 0)
 	gl.BindTexture(gl.TEXTURE_2D, 0)
 
+}
+
+func (this *Chunk) faceCullCube(posCentre glm.Vec3) []int {
+
+	var ca = this.camera
+	var vec = posCentre.Sub(&ca.cameraPos)
+	//oben,vorne,links,...,unten
+	var normals = []glm.Vec3{{0, 1, 0}, {0, 0, 1}, {-1, 0, 0}, {-0, 0, -1}, {1, 0, 0}, {0, -1, 0}}
+	var retVec = []int{}
+	for j, x := range normals {
+		for i := 0; i < 3; i++ {
+			if x[i] == 0 {
+				continue
+			}
+			var camSign = vec[i] > 0
+			var cubeSign = x[i] > 0
+			if camSign != cubeSign && math.Abs(float64(vec[i])) > 0.2 {
+				retVec = append(retVec, j)
+				break
+			}
+		}
+	}
+	return retVec
 }

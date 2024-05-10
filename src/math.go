@@ -253,31 +253,14 @@ func multidimensionalNewton(startVec glm.Vec2) {
 
 }
 
-/*
-func createFrustumFromCamera(camera *Camera, aspect float32, fovy, zNear, zFar float32) Frustum {
-	var retFrustum = Frustum{planes: []Plane{}}
-	var halfVSide = zFar * float32(math.Tan(float64(fovy)*0.5))
-	var halfHSide = halfVSide * aspect
-	var frontMultFar = camera.cameraFront.Scale(zFar)
-	/* retFrustum.planes[0] = Plane{
-		normal: camera.cameraPos,distance: camera.right,
-	}
-	var tmp = camera.cameraFront.Scale(zNear)
-	//retFrustum.planes[1] = Plane{normal: camera.cameraPos.Add(&tmp),distance: camera.cameraFront[]}
-	return retFrustum
-}
-*/
-
 func isPointInFrustum(c *Camera, worldPos glm.Vec3) bool {
 	var view = c.lookAtMat
 	var l = view.Mul4x1(&glm.Vec4{worldPos[0], worldPos[1], worldPos[2], 1})
 	var p = glm.Vec3{l[0], l[1], l[2]}
-
 	var v = p.Sub(&c.cameraPos)
 	var vz = v.Dot(&glm.Vec3{0, 0, -1})
 	var isVisible = !(vz >= -2000 && vz <= -0.1)
 	var frustumH = 2.0 * float64(vz) * math.Tan(0.5*float64(glm.DegToRad(c.fov)))
-	//var frustumH = 10000
 	var isVis2y = !(-frustumH > float64(l[1]) || float64(l[1]) > frustumH)
 	var w = frustumH * (width / height)
 	var isVis2x = !(l[0] > float32(w) || l[0] < -float32(w))

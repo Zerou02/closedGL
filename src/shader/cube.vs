@@ -34,7 +34,7 @@ void main() {
 		0,1,0,0,
 		0,0,1,0,
 		float(modelX+chunkOrigin.x),
-		-float(modelY+chunkOrigin.y),
+		float(modelY+chunkOrigin.y),
 		float(modelZ+chunkOrigin.z),
 		1
 	);

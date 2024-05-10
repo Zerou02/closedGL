@@ -40,7 +40,7 @@ func main() {
 	var keyboardManger = newKeyBoardManager(window)
 	var fpsCounter = newFPSCounter()
 	text = newText("default", factory.shadermap["text"], 0, 500, 1, 1, glm.Vec3{1, 0, 1}, &factory.projectionMatrix)
-	var dirtTex = loadImage("assets/tileset1.png", gl.RGBA)
+	var dirtTex = loadImage("assets/tileset1alt.png", gl.RGBA)
 	var altTex = loadImage("assets/dirt_side.jpg", gl.RGBA)
 	var testTex = loadImage("assets/tileset2.png", gl.RGBA)
 	_ = testTex
@@ -48,8 +48,8 @@ func main() {
 	var chunks = []*Chunk{}
 
 	profiler.startTime("chunks")
-	for x := 0; x < 16; x++ {
-		for z := 0; z < 16; z++ {
+	for x := 0; x < 10; x++ {
+		for z := 0; z < 10; z++ {
 			_, _, _ = dirtTex, altTex, testTex
 			var chunk = newChunk(glm.Vec3{32, 32, 32}, glm.Vec3{float32(x * 32), float32(0), float32(z * 32)}, dirtTex, &c, &factory.projection3D, factory.shadermap["cube"])
 			chunks = append(chunks, &chunk)
@@ -76,7 +76,7 @@ func main() {
 
 	_ = player
 
-	c.cameraPos = glm.Vec3{0, 32, 0}
+	c.cameraPos = glm.Vec3{0, 0, 0}
 
 	for !window.ShouldClose() {
 		gl.ClearColor(0.0, 0.0, 0.0, 1.0)
@@ -117,7 +117,7 @@ func main() {
 				skipped++
 			}
 		}
-		println(skipped)
+		//println(skipped)
 
 		//player.draw()
 		text.x = 0
