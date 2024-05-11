@@ -1,139 +1,82 @@
 package main
 
 import (
-	"fmt"
+	closedGL "closed_gl/src/test"
+	closed_gl "closed_gl/src/test"
 	_ "image/png"
 	"runtime"
 	"strconv"
-	"unsafe"
 
 	"github.com/EngoEngine/glm"
-	"github.com/go-gl/gl/v4.1-core/gl"
+	"github.com/go-gl/gl/v2.1/gl"
 	"github.com/go-gl/glfw/v3.2/glfw"
 )
 
 const width = 800
 const height = 600
 
-type Vao = uint32
-type Vbo = uint32
-type Ebo = uint32
-type Prog = uint32
-type Texture = uint32
-
-var factory PrimitiveFactory
-var text Text
-var profiler Profiler
-
 func main() {
-	profiler = newProfiler()
-	profiler.startTime("123")
-	profiler.log = false
 	runtime.LockOSThread()
-	//log.Println(http.ListenAndServe("localhost:6060", nil))
-	var window = initGlfw()
-	initOpenGL()
-	var c = CreateCamera()
-	c.cameraPos = glm.Vec3{0, 0, 18}
 
-	factory = newPrimitiveFactory2D(width, height, &c)
-	var keyboardManger = newKeyBoardManager(window)
-	var fpsCounter = newFPSCounter()
-	text = newText("default", factory.shadermap["text"], 0, 500, 1, 1, glm.Vec3{1, 0, 1}, &factory.projectionMatrix)
-	var dirtTex = loadImage("assets/tileset1alt.png", gl.RGBA)
-	var altTex = loadImage("assets/dirt_side.jpg", gl.RGBA)
-	var testTex = loadImage("assets/tileset2.png", gl.RGBA)
+	var openGL = closedGL.InitClosedGL(800, 600)
+
+	var fpsCounter = closedGL.NewFPSCounter()
+	var dirtTex = closedGL.LoadImage("assets/tileset1alt.png", gl.RGBA)
+	var altTex = closedGL.LoadImage("assets/dirt_side.jpg", gl.RGBA)
+	var testTex = closedGL.LoadImage("assets/tileset2.png", gl.RGBA)
 	_ = testTex
 
-	var chunks = []*Chunk{}
+	_ = fpsCounter
+	_ = dirtTex
+	_ = altTex
 
-	profiler.startTime("chunks")
+	var chunks = []*closedGL.Chunk{}
+
 	for x := 0; x < 10; x++ {
 		for z := 0; z < 10; z++ {
 			_, _, _ = dirtTex, altTex, testTex
-			var chunk = newChunk(glm.Vec3{32, 32, 32}, glm.Vec3{float32(x * 32), float32(0), float32(z * 32)}, dirtTex, &c, &factory.projection3D, factory.shadermap["cube"])
+			var chunk = closedGL.NewChunk(glm.Vec3{32, 32, 32}, glm.Vec3{float32(x * 32), float32(0), float32(z * 32)}, dirtTex, openGL.Camera, &openGL.Factory.Projection3D, openGL.Factory.Shadermap["cube"])
 			chunks = append(chunks, &chunk)
 		}
 	}
-	profiler.endTime("chunks")
-
-	window.SetScrollCallback(c.scrollCb)
-	window.SetCursorPosCallback(c.mouseCallback)
-	window.SetInputMode(glfw.CursorMode, glfw.CursorDisabled)
-	gl.PolygonMode(gl.FRONT_AND_BACK, gl.FILL)
-
+	openGL.Window.SetScrollCallback(openGL.Camera.ScrollCb)
+	openGL.Window.SetCursorPosCallback(openGL.Camera.MouseCallback)
+	openGL.Window.SetInputMode(glfw.CursorMode, glfw.CursorDisabled)
 	var isWireframeMode = false
 
-	profiler.startTime("1")
-	profiler.endTime("1")
-
 	glfw.SwapInterval(0)
-	profiler.endTime("123")
-	println("cube", unsafe.Sizeof(chunks[0].cubes[0]))
-	println("chunk", unsafe.Sizeof(*chunks[0]))
 
-	var player = newPlayer(glm.Vec3{0, 33, 0}, chunks[0], altTex, &keyboardManger, &c)
+	openGL.Camera.CameraPos = glm.Vec3{0, 0, 0}
 
-	_ = player
+	for !openGL.Window.ShouldClose() {
+		closed_gl.ClearBG()
+		fpsCounter.Process()
 
-	c.cameraPos = glm.Vec3{0, 0, 0}
-
-	for !window.ShouldClose() {
-		gl.ClearColor(0.0, 0.0, 0.0, 1.0)
-		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
-
-		fpsCounter.process()
-		c.process(window, float32(fpsCounter.delta))
-		//player.process(float32(fpsCounter.delta))
-		keyboardManger.process()
-		if keyboardManger.isPressed(glfw.KeyF) {
+		openGL.Camera.Process(openGL.Window, float32(fpsCounter.Delta))
+		openGL.KeyBoardManager.Process()
+		if openGL.KeyBoardManager.IsPressed(glfw.KeyF) {
 			isWireframeMode = !isWireframeMode
-			if isWireframeMode {
-				gl.PolygonMode(gl.FRONT_AND_BACK, gl.FILL)
-			} else {
-				gl.PolygonMode(gl.FRONT_AND_BACK, gl.LINE)
-			}
+			closedGL.SetWireFrameMode(isWireframeMode)
 		}
-		if keyboardManger.isPressed(glfw.KeyP) {
-			profiler.startTime("generating")
+		if openGL.KeyBoardManager.IsPressed(glfw.KeyP) {
 			for i := 0; i < 10; i++ {
-				var chunk = newChunk(glm.Vec3{32, 32, 32}, glm.Vec3{0, 0, 0}, dirtTex, &c, &factory.projection3D, factory.shadermap["cube"])
-
+				var chunk = closedGL.NewChunk(glm.Vec3{32, 32, 32}, glm.Vec3{float32(0), float32(0), float32(0)}, dirtTex, openGL.Camera, &openGL.Factory.Projection3D, openGL.Factory.Shadermap["cube"])
 				chunks = append(chunks, &chunk)
 			}
-			profiler.endTime("generating")
 		}
-		/* if keyboardManger.isPressed(glfw.KeyP) {
-			cube.position[0] += 0.1
-		}
-		if keyboardManger.isPressed(glfw.KeyO) {
-			cube.position[0] += -0.1
-		} */
-		var skipped = 0
 		for _, x := range chunks {
-			if x.isVisible() {
-				x.draw()
-			} else {
-				skipped++
-			}
+			x.Draw()
 		}
-		//println(skipped)
+		openGL.Text.DrawText(0, 0, "FPS: "+strconv.FormatInt(int64(fpsCounter.FpsAverage), 10)+"!")
 
-		//player.draw()
-		text.x = 0
-		text.y = 0
-		for i := 0; i < 1; i++ {
-			text.draw("FPS: " + strconv.FormatInt(int64(fpsCounter.fpsAverage), 10) + "!")
+		if fpsCounter.Elapsed >= 0.5 {
+			fpsCounter.CalcAverage()
+			fpsCounter.Clear()
 		}
 
-		if fpsCounter.elapsed >= 0.5 {
-			fpsCounter.calcAverage()
-			fpsCounter.clear()
-		}
-
-		process(window)
+		process(openGL.Window)
 		glfw.PollEvents()
-		window.SwapBuffers()
+		openGL.Window.SwapBuffers()
 	}
 	glfw.Terminate()
 }
@@ -142,92 +85,4 @@ func process(window *glfw.Window) {
 	if window.GetKey(glfw.KeyEscape) == glfw.Press {
 		window.SetShouldClose(true)
 	}
-}
-
-func stringToBool(s string) bool {
-	if s == "true" {
-		return true
-	} else {
-		return false
-	}
-}
-
-func decodeVertex(vertex uint32) {
-
-	var val = uint32(vertex)
-	println("val", val)
-	var modelZ = val & 31
-	val >>= 5
-	var modelY = val & 31
-	val >>= 5
-	var modelX = val & 31
-	val >>= 5
-	var texY = val & 31
-	val >>= 5
-	var texX = val & 31
-	val >>= 5
-	var ndcIdx = val & 7
-
-	var x = (ndcIdx >> 2) & 1
-	var y = (ndcIdx >> 1) & 1
-	var z = (ndcIdx >> 0) & 1
-
-	println(modelX, ",", modelY, ";", modelZ)
-	println(texX, ",", texY, ";")
-	println(x, ",", y, ",", z)
-}
-
-func encodeVertex(ndc glm.Vec3, tex glm.Vec3, modelX, modelY, modelZ int) uint {
-	//copy pos-3bit
-	var vertex uint32 = 0
-	if ndc[0] == 1.0 {
-		vertex |= 0b100
-	}
-	if ndc[1] == 1.0 {
-		vertex |= 0b010
-	}
-	if ndc[2] == 1.0 {
-		vertex |= 0b001
-	}
-	vertex <<= 5
-	//cumulatedVertices[vboSize*cubeStride+j*blockVerticesBytes] = float32(ndcBitMask)
-	//copy tex-10bit
-	var texX = byte(tex[0])
-	var texY = byte(tex[1])
-	vertex |= uint32(texX)
-	vertex <<= 5
-	vertex |= uint32(texY)
-	vertex <<= 5
-
-	//copy model-15bit
-	vertex |= uint32(modelX)
-	vertex <<= 5
-	vertex |= uint32(modelY)
-	vertex <<= 5
-	vertex |= uint32(modelZ)
-	return uint(vertex)
-}
-
-func printBitPattern(val uint32) {
-	var str = strconv.FormatInt(int64(val), 2)
-	for len(str) < 32 {
-		str = "0" + str
-	}
-	fmt.Println(str, uint64(val)) //
-}
-
-func printBitPatternF(val float32) {
-	var str = strconv.FormatInt(int64(val), 2)
-	for len(str) < 32 {
-		str = "0" + str
-	}
-	fmt.Println(str, uint64(val)) //
-}
-
-func printBitPatternF64(val float64) {
-	var str = strconv.FormatInt(int64(val), 2)
-	for len(str) < 32 {
-		str = "0" + str
-	}
-	fmt.Println(str, uint64(val)) //
 }
