@@ -1,6 +1,7 @@
 package closed_gl
 
 import (
+	"strconv"
 	"unsafe"
 
 	"github.com/EngoEngine/glm"
@@ -20,19 +21,21 @@ type ClosedGLContext struct {
 	Camera          *Camera
 	Text            *Text
 	KeyBoardManager *KeyBoardManager
+	FPSCounter      *FPSCounter
 }
 
 func InitClosedGL(pWidth, pHeight float32) ClosedGLContext {
 	width = pWidth
 	height = pHeight
 	var window = initGlfw(int(width), int(height))
+	var fpsCounter = NewFPSCounter()
 	initOpenGL()
 
 	var c = newCamera(width, height)
 	factory = newPrimitiveFactory2D(float32(width), float32(height), &c)
 	text = NewText("default", factory.Shadermap["text"], 0, 500, 1, 1, glm.Vec3{1, 0, 1}, &factory.projectionMatrix)
 	var key = newKeyBoardManager(window)
-	var con = ClosedGLContext{Window: window, Factory: &factory, Camera: &c, Text: &text, KeyBoardManager: &key}
+	var con = ClosedGLContext{Window: window, Factory: &factory, Camera: &c, Text: &text, KeyBoardManager: &key, FPSCounter: &fpsCounter}
 	return con
 }
 
@@ -235,4 +238,28 @@ func SetWireFrameMode(val bool) {
 		gl.PolygonMode(gl.FRONT_AND_BACK, gl.LINE)
 
 	}
+}
+
+func (this *ClosedGLContext) Process() {
+	if this.Window.GetKey(glfw.KeyEscape) == glfw.Press {
+		this.Window.SetShouldClose(true)
+	}
+	this.KeyBoardManager.Process()
+	this.FPSCounter.Process()
+	this.Camera.Process(this.Window, float32(0.16))
+	glfw.PollEvents()
+	this.Window.SwapBuffers()
+	if this.FPSCounter.Elapsed >= 0.5 {
+		this.FPSCounter.CalcAverage()
+		this.FPSCounter.Clear()
+	}
+}
+
+func (this *ClosedGLContext) Free() {
+	glfw.Terminate()
+}
+
+func (this *ClosedGLContext) DrawFPS(posX, posY int) {
+	this.Text.DrawText(posX, posY, "FPS: "+strconv.FormatInt(int64(this.FPSCounter.FpsAverage), 10)+"!")
+
 }

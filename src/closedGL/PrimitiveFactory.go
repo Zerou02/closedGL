@@ -47,3 +47,9 @@ func (this *PrimitiveFactory) newRect(dim, colour glm.Vec4) Rectangle {
 func (this *PrimitiveFactory) newCube(pos glm.Vec3, tex *Texture) Cube {
 	return newCube(this.Shadermap["base"], this.camera, &this.Projection3D, tex, pos)
 }
+
+func (this *PrimitiveFactory) NewChunk(dim, pos glm.Vec3, tex *Texture) *Chunk {
+	var chunk = NewChunk(dim, pos, tex, this.camera, &this.Projection3D, this.Shadermap["cube"])
+	return &chunk
+
+}
