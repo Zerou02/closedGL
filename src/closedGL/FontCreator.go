@@ -32,7 +32,7 @@ func newFontCreator(cellSize, gridWidth int, gridShader *Shader, projection *glm
 	var fc = FontCreator{
 		grids: grids, keyBoardManager: keyboardManger, window: window,
 		cellSize: cellSize, gridWidth: gridWidth, currentIdx: 0, currColour: glm.Vec4{0, 1, 1, 1},
-		previewRect: factory.newRect(glm.Vec4{600, 200, 100, 100}, glm.Vec4{0, 1, 1, 1}),
+		previewRect: factory.NewRect(glm.Vec4{600, 200, 100, 100}, glm.Vec4{0, 1, 1, 1}),
 		slider:      [4]*Slider{},
 		autoUpdate:  false,
 	}
@@ -146,7 +146,7 @@ func (this *FontCreator) draw() {
 	for _, x := range this.slider {
 		x.draw()
 	}
-	this.previewRect.draw()
+	this.previewRect.Draw()
 	text.x = 500
 	text.y = 100
 	text.draw("preview: " + string(rune(this.currentIdx)))

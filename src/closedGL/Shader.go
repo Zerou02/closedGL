@@ -72,6 +72,16 @@ func (s *Shader) setUniform1f(name string, value float32) {
 	var location = gl.GetUniformLocation(s.prog, gl.Str(name+"\x00"))
 	gl.Uniform1f(location, value)
 }
+
+func (s *Shader) setUniform2f(name string, value []float32) {
+	var location = gl.GetUniformLocation(s.prog, gl.Str(name+"\x00"))
+	gl.Uniform2f(location, value[0], value[1])
+}
+
+func (s *Shader) setUniform2fv(name string, value Vec2) {
+	var location = gl.GetUniformLocation(s.prog, gl.Str(name+"\x00"))
+	gl.Uniform2f(location, value[0], value[1])
+}
 func (s *Shader) compileShader(shaderSrc string, vertex bool) uint32 {
 	var stype uint32 = gl.FRAGMENT_SHADER
 	if vertex {

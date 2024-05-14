@@ -18,8 +18,8 @@ type Slider struct {
 
 func newSlider(window *glfw.Window, lineDim, lineColour, markerDim, markerColour glm.Vec4, min, max, curr float32, step float64, label string) Slider {
 	var slider = Slider{
-		baseLine: factory.newRect(lineDim, lineColour),
-		marker:   factory.newRect(markerDim, markerColour),
+		baseLine: factory.NewRect(lineDim, lineColour),
+		marker:   factory.NewRect(markerDim, markerColour),
 		min:      min,
 		max:      max,
 		curr:     curr,
@@ -38,8 +38,8 @@ func (this *Slider) alignMarker() {
 }
 
 func (this *Slider) draw() {
-	this.baseLine.draw()
-	this.marker.draw()
+	this.baseLine.Draw()
+	this.marker.Draw()
 	text.x = this.baseLine.dim[0] + this.baseLine.dim[2]/2 - 50
 	text.y = this.baseLine.dim[1] - 20
 	text.draw(this.label + strconv.FormatFloat(float64(this.curr), 'f', -1, 32))

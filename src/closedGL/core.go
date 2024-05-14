@@ -54,9 +54,9 @@ func initGlfw(width, height int) *glfw.Window {
 func initOpenGL() {
 	gl.Init()
 	gl.Viewport(0, 0, int32(width), int32(height))
-	gl.Enable(gl.DEPTH_TEST)
+	//	gl.Enable(gl.DEPTH_TEST)
 	gl.Enable(gl.BLEND)
-	gl.Enable(gl.CULL_FACE)
+	//gl.Enable(gl.CULL_FACE)
 	gl.Enable(gl.PROGRAM_POINT_SIZE)
 	gl.PointSize(1)
 	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)

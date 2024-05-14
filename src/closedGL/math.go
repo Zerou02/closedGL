@@ -246,8 +246,8 @@ func multidimensionalNewton(startVec glm.Vec2) {
 		}
 		var tmpMat = inv.Mul2x1(&fmat)
 		current = current.Sub(&tmpMat)
-		printFloat(current[0])
-		printFloat(current[1])
+		PrintFloat(current[0])
+		PrintFloat(current[1])
 		println()
 	}
 
@@ -266,4 +266,34 @@ func isPointInFrustum(c *Camera, worldPos glm.Vec3) bool {
 	var isVis2x = !(l[0] > float32(w) || l[0] < -float32(w))
 
 	return isVis2x && isVis2y && isVisible
+}
+
+func SspointsToCartesianLine(p1, p2 Vec2) Vec2 {
+	var c1 = SsToCartesian(p1)
+	var c2 = SsToCartesian(p2)
+	var dy = c2[1] - c1[1]
+	var dx = c2[0] - c1[0]
+	var m = dy / dx
+	var n = c1[1] - c1[0]*m
+	return Vec2{m, n}
+}
+func IntersectionOfLines(p1, p2, p3, p4 Vec2) Vec2 {
+	//m,n
+	var vec1 = SspointsToCartesianLine(p1, p2)
+	var vec2 = SspointsToCartesianLine(p3, p4)
+
+	//(d-b)/(a-c)
+	var x = (vec2[1] - vec1[1]) / (vec1[0] - vec2[0])
+	var y = vec1[0]*x + vec1[1]
+
+	return Vec2{x, y}
+}
+
+// screen is upper right quadrant
+func SsToCartesian(p Vec2) Vec2 {
+	return Vec2{p[0], height - p[1]}
+}
+
+func CartesianToSS(p Vec2) Vec2 {
+	return Vec2{p[0], height - p[1]}
 }

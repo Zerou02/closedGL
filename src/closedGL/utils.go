@@ -20,15 +20,15 @@ func printFloatArr(arr *[]float32, stride int) {
 		if i%stride == 0 {
 			println()
 		}
-		printFloat((*arr)[i])
+		PrintFloat((*arr)[i])
 		print(", ")
 	}
 	println()
 }
-func printFloat(f float32) {
+func PrintFloat(f float32) {
 	fmt.Printf("%f\n", f)
 }
 
-func printlnFloat(f float32) {
+func PrintlnFloat(f float32) {
 	fmt.Printf("%f\n", f)
 }

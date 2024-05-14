@@ -4,13 +4,13 @@ import "github.com/go-gl/glfw/v3.2/glfw"
 
 type FPSCounter struct {
 	Elapsed, fpsSum                   float64
-	frameCount, fpsAmount, FpsAverage int
+	FrameCount, fpsAmount, FpsAverage int
 	Delta                             float64
 	lastFrame                         float64
 }
 
 func NewFPSCounter() FPSCounter {
-	var counter = FPSCounter{Elapsed: 0, fpsSum: 0, fpsAmount: 0, FpsAverage: 0, Delta: 0, frameCount: 0, lastFrame: 0}
+	var counter = FPSCounter{Elapsed: 0, fpsSum: 0, fpsAmount: 0, FpsAverage: 0, Delta: 0, FrameCount: 0, lastFrame: 0}
 	return counter
 }
 
@@ -19,7 +19,7 @@ func (this *FPSCounter) Process() {
 	this.Elapsed += this.Delta
 	this.Delta = currFrame - this.lastFrame
 	this.lastFrame = currFrame
-	this.frameCount += 1
+	this.FrameCount += 1
 	this.fpsAmount += 1
 	this.fpsSum += 1 / this.Delta
 }

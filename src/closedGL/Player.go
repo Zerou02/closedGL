@@ -18,7 +18,7 @@ func newPlayer(pos glm.Vec3, chunk *Chunk, tex *Texture, keyboardManager *KeyBoa
 	var p = Player{
 		chunk:           chunk,
 		pos:             pos,
-		model:           factory.newCube(pos, tex),
+		model:           factory.NewCube(pos, tex),
 		keyboardManager: keyboardManager,
 		camera:          camera,
 	}

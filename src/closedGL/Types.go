@@ -11,3 +11,6 @@ type Frustum struct {
 	planes []Plane
 }
 type Texture = uint32
+
+type Buffer = uint32
+type Vec2 = [2]float32

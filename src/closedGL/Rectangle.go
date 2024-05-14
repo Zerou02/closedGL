@@ -17,16 +17,8 @@ type Rectangle struct {
 
 func newRect(shader *Shader, projection *glm.Mat4, dim glm.Vec4, colour glm.Vec4) Rectangle {
 	var rect = Rectangle{shader: shader, projection: projection, dim: dim, colour: colour}
-	rect.vertices = make([]float32, 6*6)
-	rect.vertices = []float32{
-		dim[0] + dim[2], dim[1], colour[0], colour[1], colour[2], colour[3], //top r
-		dim[0] + dim[2], dim[1] + dim[3], colour[0], colour[1], colour[2], colour[3], // bottom r
-		dim[0], dim[1], colour[0], colour[1], colour[2], colour[3], // top l
-		dim[0] + dim[2], dim[1] + dim[3], colour[0], colour[1], colour[2], colour[3], // bottom r
-		dim[0], dim[1] + dim[3], colour[0], colour[1], colour[2], colour[3], // bottom l
-		dim[0], dim[1], colour[0], colour[1], colour[2], colour[3], // top l
-	}
-	generateBuffers(&rect.vao, &rect.vbo, nil, nil, len(rect.vertices)*4, nil, []int{2, 4})
+	rect.createVertices()
+	generateBuffers(&rect.vao, &rect.vbo, nil, rect.vertices, 0, nil, []int{2, 4})
 	return rect
 }
 
@@ -45,16 +37,15 @@ func (this *Rectangle) createVertices() {
 		this.dim[0], this.dim[1] + this.dim[3], colour[0], colour[1], colour[2], colour[3], // bottom l
 		this.dim[0], this.dim[1], this.colour[0], colour[1], colour[2], colour[3], // top l
 	}
-	/* for i := 0; i < 6; i++ {
+	for i := 0; i < 6; i++ {
 		this.vertices[(i*6)+2] = colour[0]
 		this.vertices[(i*6)+3] = colour[1]
 		this.vertices[(i*6)+4] = colour[2]
 		this.vertices[(i*6)+5] = colour[3]
-
-	} */
+	}
 }
 
-func (this *Rectangle) draw() {
+func (this *Rectangle) Draw() {
 
 	this.shader.use()
 	this.shader.setUniformMatrix4("projection", this.projection)
