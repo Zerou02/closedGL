@@ -28,7 +28,7 @@ func (this *LineArr) deleteBuffers() {
 }
 
 func (this *LineArr) addLine(line *Line) {
-	this.points = append(this.points, line.points...)
+	this.points = append(this.points, line.Points...)
 	this.generateBuffers()
 }
 

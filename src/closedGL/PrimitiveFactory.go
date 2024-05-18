@@ -46,6 +46,13 @@ func (this *PrimitiveFactory) NewRect(dim, colour glm.Vec4) Rectangle {
 	return newRect(this.Shadermap["points"], &this.projectionMatrix, dim, colour)
 }
 
+func (this *PrimitiveFactory) NewLine(p1, p2 Vec2, colour1, colour2 glm.Vec3) Line {
+	var l = newLine(this.Shadermap["points"], &this.projectionMatrix)
+	l.addPoint(p1, colour1)
+	l.addPoint(p2, colour2)
+	return l
+}
+
 func (this *PrimitiveFactory) NewCircle(centreColour, borderColour glm.Vec4, radius float32, centre Vec2, borderThickness float32) Circle {
 	return newCircle(this.Shadermap["circle"], &this.projectionMatrix, radius, centre, centreColour, borderColour, borderThickness)
 }

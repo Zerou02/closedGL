@@ -21,7 +21,7 @@ void main() {
 	val = val >> 5;
 	uint ndcIDx = val & 7;
 
-	//translation-matrix; column-major; 4x4homogenous
+	//column-major;
 	mat4 scaleMat = mat4(
 		1,0,0,0,
 		0,1,0,0,
@@ -41,11 +41,12 @@ void main() {
 	uint x = (ndcIDx>>2) & 1;
 	uint y = (ndcIDx>>1) & 1;
 	uint z = (ndcIDx>>0) & 1;
-/* 
+	
+	/* 
 	float C = 1.0; 
 	float far = 2000.0;  */
 	gl_Position = projection * view * scaleMat* modelMat * vec4(float(x),float(y),float(z),1.0f);
-/* 	gl_Position.z = 2.0*log(gl_Position.w*C + 1)/log(far*C + 1) - 1;
+	/* 	gl_Position.z = 2.0*log(gl_Position.w*C + 1)/log(far*C + 1) - 1;
     gl_Position.z *= gl_Position.w; */
 	texCoord = vec2(float(texX),float(texY));
 }

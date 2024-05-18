@@ -7,7 +7,7 @@ import (
 
 type Line struct {
 	shader     *Shader
-	points     []float32
+	Points     []float32
 	vao, vbo   uint32
 	projection *glm.Mat4
 }
@@ -25,26 +25,31 @@ func (this *Line) deleteBuffers() {
 
 func (this *Line) generateBuffers() {
 	this.deleteBuffers()
-	generateBuffers(&this.vao, &this.vbo, nil, this.points, 0, nil, []int{2, 3})
+	generateBuffers(&this.vao, &this.vbo, nil, this.Points, 0, nil, []int{2, 3})
 }
 
-func (this *Line) draw() {
-	if len(this.points)/5 < 1 {
+func (this *Line) Draw() {
+	if len(this.Points)/5 < 1 {
 		return
 	}
 	this.shader.use()
 	this.shader.setUniformMatrix4("projection", this.projection)
 	gl.BindVertexArray(this.vao)
 	gl.BindBuffer(gl.ARRAY_BUFFER, this.vbo)
+	gl.BufferSubData(gl.ARRAY_BUFFER, 0, len(this.Points)*4, gl.Ptr(this.Points))
 
-	gl.DrawArrays(gl.LINES, 0, int32(len(this.points)/5))
+	gl.DrawArrays(gl.LINES, 0, int32(len(this.Points)/5))
 }
 
-func (this *Line) addPoint(p Point) {
-	this.points = append(this.points, p.pos[0])
-	this.points = append(this.points, p.pos[1])
-	this.points = append(this.points, p.colour[0])
-	this.points = append(this.points, p.colour[1])
-	this.points = append(this.points, p.colour[2])
+func (this *Line) Rehydrate() {
+	this.generateBuffers()
+}
+
+func (this *Line) addPoint(pos Vec2, colour glm.Vec3) {
+	this.Points = append(this.Points, pos[0])
+	this.Points = append(this.Points, pos[1])
+	this.Points = append(this.Points, colour[0])
+	this.Points = append(this.Points, colour[1])
+	this.Points = append(this.Points, colour[2])
 	this.generateBuffers()
 }

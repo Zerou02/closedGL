@@ -277,6 +277,16 @@ func SspointsToCartesianLine(p1, p2 Vec2) Vec2 {
 	var n = c1[1] - c1[0]*m
 	return Vec2{m, n}
 }
+
+func subVec2(this *Vec2, v Vec2) Vec2 {
+	return Vec2{this[0] - v[0], this[1] - v[1]}
+}
+func Dist(p1, p2 Vec2) float32 {
+	var a = subVec2(&p1, p2)
+	return float32(math.Sqrt(float64(a[0]*a[0] + a[1]*a[1])))
+}
+
+// Ein-/Ausgabe in SS
 func IntersectionOfLines(p1, p2, p3, p4 Vec2) Vec2 {
 	//m,n
 	var vec1 = SspointsToCartesianLine(p1, p2)
@@ -286,7 +296,7 @@ func IntersectionOfLines(p1, p2, p3, p4 Vec2) Vec2 {
 	var x = (vec2[1] - vec1[1]) / (vec1[0] - vec2[0])
 	var y = vec1[0]*x + vec1[1]
 
-	return Vec2{x, y}
+	return CartesianToSS(Vec2{x, y})
 }
 
 // screen is upper right quadrant
@@ -296,4 +306,38 @@ func SsToCartesian(p Vec2) Vec2 {
 
 func CartesianToSS(p Vec2) Vec2 {
 	return Vec2{p[0], height - p[1]}
+}
+
+func MiddlePoint(p1, p2 Vec2) Vec2 {
+	return Vec2{(p1[0] + p2[0]) / 2.0, (p1[1] + p2[1]) / 2}
+}
+
+func CalculateIncenter(tri *Triangle) Vec2 {
+	return IntersectionOfLines(tri.Points[0], MiddlePoint(tri.Points[1], tri.Points[2]), tri.Points[1], MiddlePoint(tri.Points[0], tri.Points[2]))
+}
+func CircleLineIntersection(pp1, pp2 Vec2, r float32, circlePos Vec2) bool {
+	var p1 = SsToCartesian(pp1)
+	var p2 = SsToCartesian(pp2)
+	var line = SspointsToCartesianLine(pp1, pp2)
+	var ssPos = SsToCartesian(circlePos)
+
+	var newN = line[1] - ssPos[1]
+	var xOffset = circlePos[0]
+
+	var p1x float32 = 1.0
+	var p2x float32 = 2.0
+
+	var p1y = line[0]*(p1x+(xOffset)) + newN
+	var p2y = line[0]*(p2x+(xOffset)) + newN
+
+	p1 = Vec2{p1x, p1y}
+	p2 = Vec2{p2x, p2y}
+
+	var dx = p2[0] - p1[0]
+	var dy = p2[1] - p1[1]
+	var dr = math.Sqrt(float64(dx*dx + dy*dy))
+	var d = p1[0]*p2[1] - p2[0]*p1[1]
+
+	var delta = (r*r)*float32(dr*dr) - (d * d)
+	return delta >= 0
 }

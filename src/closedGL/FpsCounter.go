@@ -7,10 +7,11 @@ type FPSCounter struct {
 	FrameCount, fpsAmount, FpsAverage int
 	Delta                             float64
 	lastFrame                         float64
+	Time                              float64
 }
 
 func NewFPSCounter() FPSCounter {
-	var counter = FPSCounter{Elapsed: 0, fpsSum: 0, fpsAmount: 0, FpsAverage: 0, Delta: 0, FrameCount: 0, lastFrame: 0}
+	var counter = FPSCounter{Elapsed: 0, fpsSum: 0, fpsAmount: 0, FpsAverage: 0, Delta: 0, FrameCount: 0, lastFrame: 0, Time: 0}
 	return counter
 }
 
@@ -18,6 +19,7 @@ func (this *FPSCounter) Process() {
 	var currFrame = glfw.GetTime()
 	this.Elapsed += this.Delta
 	this.Delta = currFrame - this.lastFrame
+	this.Time += this.Delta
 	this.lastFrame = currFrame
 	this.FrameCount += 1
 	this.fpsAmount += 1

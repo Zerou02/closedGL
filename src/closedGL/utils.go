@@ -32,3 +32,8 @@ func PrintFloat(f float32) {
 func PrintlnFloat(f float32) {
 	fmt.Printf("%f\n", f)
 }
+
+func PrintlnVec2(vec Vec2) {
+	PrintlnFloat(vec[0])
+	PrintlnFloat(vec[1])
+}
