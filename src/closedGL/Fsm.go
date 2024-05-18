@@ -1,4 +1,4 @@
-package main
+package closed_gl
 
 type State struct {
 	TransitionConditions []func() bool

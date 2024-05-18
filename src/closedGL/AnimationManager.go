@@ -1,4 +1,4 @@
-package main
+package closed_gl
 
 type AnimationManager struct {
 	anims map[string]*Animation

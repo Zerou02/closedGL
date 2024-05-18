@@ -1,20 +1,18 @@
-package main
+package closed_gl
 
 import (
-	closed_gl "closed_gl/src/closedGL"
-
 	"github.com/EngoEngine/glm"
 )
 
 type JourneyCircle struct {
-	Position closed_gl.Vec2
+	Position Vec2
 	Radius   float32
 
-	CentreCircle closed_gl.Circle
-	RadiusCircle closed_gl.Circle
+	CentreCircle Circle
+	RadiusCircle Circle
 }
 
-func newJourneyCircle(pos closed_gl.Vec2, radius float32, ctx closed_gl.ClosedGLContext) JourneyCircle {
+func newJourneyCircle(pos Vec2, radius float32, ctx ClosedGLContext) JourneyCircle {
 	return JourneyCircle{Position: pos, Radius: radius,
 		CentreCircle: ctx.Factory.NewCircle(glm.Vec4{1, 0, 0, 1}, glm.Vec4{1, 0, 0, 0}, 10, pos, 5),
 		RadiusCircle: ctx.Factory.NewCircle(glm.Vec4{0, 0, 0, 0}, glm.Vec4{1, 0, 0, 0}, radius, pos, 10),
