@@ -17,10 +17,9 @@ var verticesPerCube = 36
 var dim = 16
 var cumulatedVertices2 = make([]uint32, verticesPerCube*(cummVertexStride)*dim*dim*dim)
 
-type CubeVertex struct {
-	isInner bool
-	texId   int
-}
+// 10 bit TexOffset
+// big-endian: xxxxx yyyyy
+type CubeVertex = uint16
 
 type Chunk struct {
 	shader         *Shader
@@ -39,10 +38,15 @@ func NewChunk(dim, pos glm.Vec3, tex *Texture, camera *Camera, projection *glm.M
 	var cubeArr = make([]CubeVertex, amountCubes)
 	var count = 0
 	var texId = 0
+	var texX, texY = IdxToGridPos(texId, 32, 32)
 	for y := 0; y < int(dim[1]); y++ {
 		for z := 0; z < int(dim[2]); z++ {
 			for x := 0; x < int(dim[0]); x++ {
-				var newVertex = CubeVertex{isInner: false, texId: texId}
+
+				var newVertex uint16 = 0
+				newVertex |= uint16(texX)
+				newVertex <<= 5
+				newVertex |= uint16(texY)
 				cubeArr[count] = newVertex
 				count += 1
 			}
@@ -89,50 +93,48 @@ func (this *Chunk) createVertices() {
 	var blockStride = 6
 	var idx = 0
 	var amountVertices = 0
-	//	this.calculateInnerBlocks()
 	for i := 0; i < len(this.cubes); i++ {
 		var c = this.cubes[i]
-		var baseX, baseY = idxToGridPos(c.texId, 32, 32)
+		var baseY = int(c & 31)
+		c >>= 5
+		var baseX = int(c & 31)
+
 		var posX, posY, posZ = idxToPos3(i, int(this.dim[0]), int(this.dim[1]), int(this.dim[2]))
-		if !c.isInner {
-			//vertexNr
-			var allowFaces = this.faceCullCube2(i)
-			//		println("vis", len(allowFaces))
-			//allowFaces = []int{0, 1, 2, 3, 4, 5}
-			for l := 0; l < len(allowFaces); l++ {
-				var j = allowFaces[l]
-				for k := 0; k < 6; k++ {
-					//copy pos-3bit
-					var vertex uint32 = 0
-					if cubeVertices[(j*6+k)*5+0] == 1.0 {
-						vertex |= 0b100
-					}
-					if cubeVertices[(j*6+k)*5+1] == 1.0 {
-						vertex |= 0b010
-					}
-					if cubeVertices[(j*6+k)*5+2] == 1.0 {
-						vertex |= 0b001
-					}
-					vertex <<= 5
-					//copy tex-10bit
-					var texX = j + int(cubeVertices[(j*6+k)*5+3]) + baseX*blockStride
-					var texY = int(cubeVertices[(j*6+k)*5+4]) + baseY*blockStride
-					_, _, _ = blockStride, baseX, baseY
-					vertex |= uint32(texX)
-					vertex <<= 5
-					vertex |= uint32(texY)
-					vertex <<= 5
-					//copy model-15bit
-					vertex |= uint32(posX)
-					vertex <<= 5
-					vertex |= uint32(posY)
-					vertex <<= 5
-					vertex |= uint32(posZ)
-					cumulatedVertices2[idx*6+k] = vertex
-					amountVertices += 1
+		//vertexNr
+		var allowFaces = this.faceCullCube2(i)
+		for l := 0; l < len(allowFaces); l++ {
+			var j = allowFaces[l]
+			for k := 0; k < 6; k++ {
+				//copy pos-3bit
+				var vertex uint32 = 0
+				if cubeVertices[(j*6+k)*5+0] == 1.0 {
+					vertex |= 0b100
 				}
-				idx += 1
+				if cubeVertices[(j*6+k)*5+1] == 1.0 {
+					vertex |= 0b010
+				}
+				if cubeVertices[(j*6+k)*5+2] == 1.0 {
+					vertex |= 0b001
+				}
+				vertex <<= 5
+				//copy tex-10bit
+				var texX = j + int(cubeVertices[(j*6+k)*5+3]) + baseX*blockStride
+				var texY = int(cubeVertices[(j*6+k)*5+4]) + baseY*blockStride
+				_, _, _ = blockStride, baseX, baseY
+				vertex |= uint32(texX)
+				vertex <<= 5
+				vertex |= uint32(texY)
+				vertex <<= 5
+				//copy model-15bit
+				vertex |= uint32(posX)
+				vertex <<= 5
+				vertex |= uint32(posY)
+				vertex <<= 5
+				vertex |= uint32(posZ)
+				cumulatedVertices2[idx*6+k] = vertex
+				amountVertices += 1
 			}
+			idx += 1
 		}
 	}
 	this.amountVertices = uint32(amountVertices)
@@ -150,12 +152,6 @@ func (this *Chunk) isInnerBlock(idx int) bool {
 
 	var isInner = posX > 0 && posX < int(this.dim[0])-1 && posY > 0 && posY < int(this.dim[1])-1 && posZ > 0 && posZ < int(this.dim[2])-1
 	return isInner && neighbours >= 4
-}
-
-func (this *Chunk) calculateInnerBlocks() {
-	for i := 0; i < len(this.cubes); i++ {
-		this.cubes[i].isInner = this.isInnerBlock(i)
-	}
 }
 
 func (this *Chunk) isVisible() bool {

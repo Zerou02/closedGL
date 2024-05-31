@@ -20,6 +20,7 @@ func newPrimitiveFactory2D(width, height float32, camera *Camera) PrimitiveFacto
 	var text = initShaderFromName("text")
 	var cube = initShaderFromName("cube")
 	var circle = initShaderFromName("circle")
+	var tileMap = initShaderFromName("tilemap")
 
 	factory.camera = camera
 	factory.Shadermap["base"] = &base
@@ -28,6 +29,7 @@ func newPrimitiveFactory2D(width, height float32, camera *Camera) PrimitiveFacto
 	factory.Shadermap["text"] = &text
 	factory.Shadermap["cube"] = &cube
 	factory.Shadermap["circle"] = &circle
+	factory.Shadermap["tilemap"] = &tileMap
 
 	factory.projectionMatrix = glm.Ortho2D(0, width, height, 0)
 	factory.Projection3D = glm.Perspective(glm.DegToRad(45), width/height, 0.1, 2000)
@@ -68,4 +70,12 @@ func (this *PrimitiveFactory) NewChunk(dim, pos glm.Vec3, tex *Texture) *Chunk {
 
 func (this *PrimitiveFactory) NewTriangle(points []Vec2, colour glm.Vec4) Triangle {
 	return newTriangle(this.Shadermap["points"], &this.projectionMatrix, colour, points)
+}
+
+func (this *PrimitiveFactory) NewSprite2D(pos, size glm.Vec2, tint glm.Vec4, texPath string) Sprite2D {
+	return newSprite2D(this.Shadermap["base"], pos, size, tint, texPath)
+}
+
+func (this *PrimitiveFactory) NewTileMap() TileMap {
+	return NewTileMap(this.Shadermap["tilemap"], &this.projectionMatrix)
 }

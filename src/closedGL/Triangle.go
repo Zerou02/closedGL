@@ -39,11 +39,13 @@ func (this *Triangle) createVertices() {
 
 func (this *Triangle) Draw() {
 	this.shader.use()
+	gl.Disable(gl.CULL_FACE)
 	this.shader.setUniformMatrix4("projection", this.projection)
 	gl.BindVertexArray(this.vao)
 	gl.BindBuffer(gl.ARRAY_BUFFER, this.vbo)
 	//	this.createVertices()
 	gl.BufferSubData(gl.ARRAY_BUFFER, 0, 4*len(this.vertices), gl.Ptr(this.vertices))
 	gl.DrawArrays(gl.TRIANGLES, 0, 6)
+	gl.Enable(gl.CULL_FACE)
 
 }

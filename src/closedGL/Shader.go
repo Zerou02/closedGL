@@ -45,7 +45,7 @@ func initShader(vertPath, fragPath string) Shader {
 func initShaderFromName(name string) Shader {
 	//	shader
 	//
-	return initShader("/home/esben/programmierung/go/selectiveIntegratedGL/src/shader/"+name+".vs", "/home/esben/programmierung/go/selectiveIntegratedGL/src/shader/"+name+".fs")
+	return initShader("./assets/shader/"+name+".vs", "./assets/shader/"+name+".fs")
 }
 
 func (s *Shader) setUniformMatrix4(name string, value *glm.Mat4) {
@@ -78,10 +78,20 @@ func (s *Shader) setUniform2f(name string, value []float32) {
 	gl.Uniform2f(location, value[0], value[1])
 }
 
+func (s *Shader) setUniform1fv(name string, values []float32) {
+	var location = gl.GetUniformLocation(s.prog, gl.Str(name+"\x00"))
+	gl.Uniform1fv(location, int32(len(values)), &values[0])
+}
+
+func (s *Shader) setUniform1iv(name string, values []int32) {
+	var location = gl.GetUniformLocation(s.prog, gl.Str(name+"\x00"))
+	gl.Uniform1iv(location, int32(len(values)), &values[0])
+}
 func (s *Shader) setUniform2fv(name string, value Vec2) {
 	var location = gl.GetUniformLocation(s.prog, gl.Str(name+"\x00"))
 	gl.Uniform2f(location, value[0], value[1])
 }
+
 func (s *Shader) compileShader(shaderSrc string, vertex bool) uint32 {
 	var stype uint32 = gl.FRAGMENT_SHADER
 	if vertex {

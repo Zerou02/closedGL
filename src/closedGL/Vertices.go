@@ -111,7 +111,9 @@ var indicesQuad = []uint32{
 var fullQuad = []float32{
 	//pos;;tex
 	1, 0, 0, 1.0, 0.0, // top right
-	1, 1, 0, 1.0, 1.0, // bottom right
-	0, 1, 0, 0.0, 1.0, // bottom left
 	0, 0, 0, 0.0, 0.0, // top left
+	1, 1, 0, 1.0, 1.0, // bottom right
+	1, 1, 0, 1.0, 1.0, // bottom right
+	0, 0, 0, 0.0, 0.0, // top left
+	0, 1, 0, 0.0, 1.0, // bottom left
 }

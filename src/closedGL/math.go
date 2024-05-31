@@ -150,11 +150,11 @@ func bezierLerp(a, b, c glm.Vec2, t float32) glm.Vec2 {
 	return lerpVec2(r, s, t)
 }
 
-func idxToGridPos(idx, w, h int) (int, int) {
+func IdxToGridPos(idx, w, h int) (int, int) {
 	return idx % h, idx / w
 }
 
-func gridPosToIdx(posX, posY, w int) int {
+func GridPosToIdx(posX, posY, w int) int {
 	return posY*w + posX
 }
 
@@ -215,14 +215,14 @@ func neededDecimalPlacesToNextInt(x float64) int {
 func idxToPos3(idx, x, y, z int) (int, int, int) {
 	var yComp int = idx / int(x*z)
 	var normalizedXIdx = idx - yComp*int(x*y)
-	var xComp, zCom = idxToGridPos(normalizedXIdx, int(y), int(z))
+	var xComp, zCom = IdxToGridPos(normalizedXIdx, int(y), int(z))
 	return xComp, yComp, zCom
 }
 
 // pos = Vec{y,z,x}
 func pos3ToIdx(posX, posY, posZ int, dimX, dimY, dimZ int) int {
 	var yLevel = posY * dimX * dimZ
-	var idx = gridPosToIdx(posX, posZ, dimX)
+	var idx = GridPosToIdx(posX, posZ, dimX)
 	return yLevel + idx
 }
 

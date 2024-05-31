@@ -54,9 +54,9 @@ func initGlfw(width, height int) *glfw.Window {
 func initOpenGL() {
 	gl.Init()
 	gl.Viewport(0, 0, int32(width), int32(height))
-	//	gl.Enable(gl.DEPTH_TEST)
+	gl.Enable(gl.DEPTH_TEST)
 	gl.Enable(gl.BLEND)
-	//gl.Enable(gl.CULL_FACE)
+	gl.Enable(gl.CULL_FACE)
 	gl.Enable(gl.PROGRAM_POINT_SIZE)
 	gl.PointSize(1)
 	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
@@ -97,6 +97,10 @@ func generateEBO(ebo *uint32, indices []uint32) {
 }
 
 func generateBuffers(vao, vbo, ebo *uint32, vertices []float32, vboByteLen int, indices []uint32, vertexAttribBytes []int) {
+	generateBuffersSuper(vao, vbo, ebo, vertices, vboByteLen, indices, vertexAttribBytes, false)
+}
+
+func GenerateBuffers(vao, vbo, ebo *uint32, vertices []float32, vboByteLen int, indices []uint32, vertexAttribBytes []int) {
 	generateBuffersSuper(vao, vbo, ebo, vertices, vboByteLen, indices, vertexAttribBytes, false)
 }
 

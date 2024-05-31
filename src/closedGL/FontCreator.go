@@ -158,7 +158,7 @@ func (this *FontCreator) draw() {
 
 func (this *FontCreator) loadFont(path string) {
 	var file, _ = os.ReadFile("./font/" + path + ".iglbmf")
-
+	file = RleDecode(file)
 	var fileLen = len(file) / 128
 	for i := 0; i < 128; i++ {
 
@@ -175,7 +175,7 @@ func (this *FontCreator) serializeIglbmf(path string) {
 	}
 	var file, _ = os.Create("./font/" + path + ".iglbmf")
 	this.iglbmfToIglbmt(arr, path)
-	file.Write(arr)
+	file.Write(RleEncode(arr))
 	file.Close()
 }
 
@@ -184,7 +184,7 @@ func (this *FontCreator) gridToChunk(grid []Rectangle, asciicode byte) []byte {
 	var topmostY, bottommostY, rightmostX, leftmostX int = 16, 0, 0, 16
 	for i := 0; i < len(grid); i++ {
 		if grid[i].colour[3] != 0 {
-			var gridX, gridY = idxToGridPos(i, 16, 16)
+			var gridX, gridY = IdxToGridPos(i, 16, 16)
 			if gridX < leftmostX {
 				leftmostX = gridX
 			}
@@ -253,7 +253,7 @@ func (this *FontCreator) iglbmfToIglbmt(iglbmf []byte, path string) {
 				chunk = file[idx*chunkSize : (idx+1)*chunkSize]
 			}
 			if idx < 128 {
-				var posX, posY = idxToGridPos(idx, texRowLen, texRowLen)
+				var posX, posY = IdxToGridPos(idx, texRowLen, texRowLen)
 				var info = CharacterInfo{
 					tex: &texPtr, texW: uint32(imgLenPx), texH: uint32(imgLenPx),
 					asciicode: chunk[5], charX: byte(chunk[1]), charY: byte(chunk[2]),
@@ -281,7 +281,7 @@ func (this *FontCreator) iglbmfToIglbmt(iglbmf []byte, path string) {
 		texData = append(texData, bytes...)
 	}
 	var outFile, _ = os.Create("font/" + path + ".iglbmt")
-	outFile.Write(texData)
+	outFile.Write(RleEncode(texData))
 }
 
 func (this *FontCreator) loadChunkInRect(grid *[]Rectangle, chunk []byte) {

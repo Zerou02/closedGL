@@ -40,6 +40,7 @@ func (this *Text) DrawText(posX, posY int, text string) {
 
 func (this *Text) draw(text string) {
 	this.shader.use()
+	gl.Disable(gl.DEPTH_TEST)
 	this.shader.setUniformMatrix4("projection", this.projection)
 	this.shader.setUniformVec3("colour", &this.tint)
 	gl.ActiveTexture(gl.TEXTURE0)
@@ -83,10 +84,13 @@ func (this *Text) draw(text string) {
 	gl.BindVertexArray(0)
 	gl.BindBuffer(gl.ARRAY_BUFFER, 0)
 	gl.BindTexture(gl.TEXTURE_2D, 0)
+	gl.Enable(gl.DEPTH_TEST)
+
 }
 
 func (this *Text) deserializeIglbmf(path string) {
-	var file, _ = os.ReadFile("font/" + path + ".iglbmt")
+	var file, _ = os.ReadFile("./assets/font/" + path + ".iglbmt")
+	file = RleDecode(file)
 	var texLen = 147456
 	var texData = file[0:texLen]
 	var texPtr uint32

@@ -64,11 +64,11 @@ func (this *Player) process(delta float32) {
 		if idx >= len(this.chunk.cubes) || idx < 0 {
 			continue
 		}
-		var exists = !this.chunk.cubes[idx].isInner
-		if exists {
+		//var exists = !this.chunk.cubes[idx].isInner
+		/* if exists {
 			isCollided = true
 			break
-		}
+		} */
 	}
 	if isCollided {
 		this.pos[1] = oldPos[1]
