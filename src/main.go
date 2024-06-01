@@ -1,7 +1,6 @@
 package main
 
 import (
-	mididec "closed_gl/src/MidiDec"
 	closedGL "closed_gl/src/closedGL"
 	"fmt"
 	_ "image/png"
@@ -30,55 +29,31 @@ func startClosedGL() {
 	runtime.LockOSThread()
 
 	var openGL = closedGL.InitClosedGL(800, 600)
-	var otoCtx = initAudio()
 	openGL.Window.SetScrollCallback(openGL.Camera.ScrollCb)
 	openGL.Window.SetCursorPosCallback(openGL.Camera.MouseCallback)
 
 	var isWireframeMode = false
 
-	var ww = float32(800)
-	var wh = float32(600)
-	var sizeY float32 = 200
 	_ = isWireframeMode
 	glfw.SwapInterval(0)
-	var piano = mididec.NewPiano(otoCtx, &openGL, ww, wh, sizeY)
 	openGL.Camera.CameraPos = glm.Vec3{0, 0, 0}
 
-	var dec = mididec.NewMidiDecoder()
-	_ = dec
-	dec.Deserialize("./assets/midisongs/milky_way_explore.midi")
-
-	_ = piano
-	var tileMap = openGL.Factory.NewTileMap()
 	for !openGL.Window.ShouldClose() {
 		var delta = openGL.FPSCounter.Delta
 		_ = delta
 
 		closedGL.ClearBG()
 
-		dec.Process(float32(delta))
-		var notes = dec.CurrNoteEvents
-		for _, x := range notes {
-			if x.EvType == mididec.NoteOn {
-				var ev = x.Event.GetBytes()
-				piano.PlaySound(int(ev[1]))
-				piano.ShowKey(int(ev[1]))
-			} else if x.EvType == mididec.NoteOff {
-				var ev = x.Event.GetBytes()
-				piano.DeleteKey(int(ev[1]))
-
-			} else {
-				panic("invalid event")
-			}
-		}
-
 		if openGL.KeyBoardManager.IsPressed(glfw.KeyF) {
 			isWireframeMode = !isWireframeMode
 			closedGL.SetWireFrameMode(isWireframeMode)
 		}
+		for i := 0; i < 100; i++ {
 
-		tileMap.Draw()
-		openGL.DrawFPS(0, 0)
+			openGL.DrawFPS(i, i)
+		}
+
+		openGL.DrawFPS(0, 300)
 
 		openGL.Process()
 	}

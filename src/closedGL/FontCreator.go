@@ -66,14 +66,14 @@ func (this *FontCreator) process() {
 			this.grids[this.currentIdx].cells[idx].colour = this.currColour
 			if this.autoUpdate {
 				this.serializeIglbmf("default")
-				text.deserializeIglbmf("default")
+				text.deserializeIglbmt("default")
 			}
 		}
 		if this.window.GetMouseButton(glfw.MouseButton2) == glfw.Press {
 			this.grids[this.currentIdx].cells[idx].colour = glm.Vec4{0, 0, 0, 0}
 			if this.autoUpdate {
 				this.serializeIglbmf("default")
-				text.deserializeIglbmf("default")
+				text.deserializeIglbmt("default")
 			}
 		}
 	}

@@ -267,3 +267,7 @@ func (this *ClosedGLContext) DrawFPS(posX, posY int) {
 	this.Text.DrawText(posX, posY, "FPS: "+strconv.FormatInt(int64(this.FPSCounter.FpsAverage), 10)+"!")
 
 }
+
+func (this *ClosedGLContext) EndDrawing() {
+
+}

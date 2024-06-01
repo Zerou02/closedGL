@@ -26,7 +26,7 @@ type Text struct {
 
 func NewText(font string, shader *Shader, x, y, w, h float32, tint glm.Vec3, projection *glm.Mat4) Text {
 	var text = Text{shader: shader, x: x, y: y, w: w, h: h, tint: tint, projection: projection}
-	text.deserializeIglbmf(font)
+	text.deserializeIglbmt(font)
 	text.vertices = make([]float32, 4*6*64)
 	generateBuffers(&text.vao, &text.vbo, nil, nil, len(text.vertices)*4, nil, []int{4})
 	return text
@@ -88,7 +88,7 @@ func (this *Text) draw(text string) {
 
 }
 
-func (this *Text) deserializeIglbmf(path string) {
+func (this *Text) deserializeIglbmt(path string) {
 	var file, _ = os.ReadFile("./assets/font/" + path + ".iglbmt")
 	file = RleDecode(file)
 	var texLen = 147456
