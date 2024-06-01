@@ -10,7 +10,6 @@ import (
 
 	"github.com/EngoEngine/glm"
 	"github.com/ebitengine/oto/v3"
-	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/glfw/v3.2/glfw"
 )
 
@@ -49,15 +48,14 @@ func startClosedGL() {
 	_ = dec
 	dec.Deserialize("./assets/midisongs/milky_way_explore.midi")
 
-	var texArr uint32 = 0
-	gl.CreateTextures(gl.TEXTURE_2D_ARRAY, 1, &texArr)
-
+	_ = piano
+	var tileMap = openGL.Factory.NewTileMap()
 	for !openGL.Window.ShouldClose() {
 		var delta = openGL.FPSCounter.Delta
 		_ = delta
 
-		piano.Process()
-		piano.ShowKey(36)
+		closedGL.ClearBG()
+
 		dec.Process(float32(delta))
 		var notes = dec.CurrNoteEvents
 		for _, x := range notes {
@@ -74,15 +72,12 @@ func startClosedGL() {
 			}
 		}
 
-		closedGL.ClearBG()
 		if openGL.KeyBoardManager.IsPressed(glfw.KeyF) {
 			isWireframeMode = !isWireframeMode
 			closedGL.SetWireFrameMode(isWireframeMode)
 		}
-		gl.Disable(gl.DEPTH_TEST)
-		piano.Draw()
-		gl.Enable(gl.DEPTH_TEST)
 
+		tileMap.Draw()
 		openGL.DrawFPS(0, 0)
 
 		openGL.Process()

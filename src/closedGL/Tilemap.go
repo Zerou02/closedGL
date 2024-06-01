@@ -30,19 +30,19 @@ func NewTileMap(shader *Shader, projection *glm.Mat4) TileMap {
 
 	var retMap = TileMap{SheetIdxMap: []TileSheet{
 		{
-			tex:     LoadImage("./lotusland/Graphics/Tilesets/City_TileB.png", gl.RGBA),
+			tex:     LoadImage("./assets/tilemaps/dungeon_a1.png", gl.RGBA),
 			dim:     glm.Vec2{512, 512},
 			name:    "City_TileB",
 			tileDim: glm.Vec2{16, 16},
 		},
 		{
-			tex:     LoadImage("./lotusland/Graphics/Tilesets/City_TileC.png", gl.RGBA),
+			tex:     LoadImage("./assets/tilemaps/dungeon_a2.png", gl.RGBA),
 			dim:     glm.Vec2{512, 512},
 			name:    "cityC",
 			tileDim: glm.Vec2{16, 16},
 		},
 		{
-			tex:     LoadImage("./lotusland/Graphics/Tilesets/City_TileD.png", gl.RGBA),
+			tex:     LoadImage("./assets/tilemaps/dungeon_a1.png", gl.RGBA),
 			dim:     glm.Vec2{512, 512},
 			name:    "cityC",
 			tileDim: glm.Vec2{16, 16},

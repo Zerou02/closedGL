@@ -3,7 +3,8 @@ out vec4 fragColour;
 in vec2 texCoord;
 in float outTexID;
 
-//uniform sampler2DArray tex;
+
+
 uniform sampler2D tex0;
 uniform sampler2D tex1;
 uniform sampler2D tex2;
@@ -22,7 +23,8 @@ uniform sampler2D tex14;
 uniform sampler2D tex15; 
 
 void main() {
-	if(outTexID == 0){
+
+ 	if(outTexID == 0){
 		fragColour = texture(tex0,texCoord);
 	}else if(outTexID == 1){
 		fragColour = texture(tex1,texCoord);
@@ -56,5 +58,5 @@ void main() {
 		fragColour = texture(tex14,texCoord);
 	}else if(outTexID == 15){
 		fragColour = texture(tex15,texCoord);
-	} 
+	}  
 }
