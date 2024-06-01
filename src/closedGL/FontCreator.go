@@ -147,11 +147,11 @@ func (this *FontCreator) draw() {
 		x.draw()
 	}
 	this.previewRect.Draw()
-	text.x = 500
-	text.y = 100
-	text.draw("preview: " + string(rune(this.currentIdx)))
-	text.y = 50
-	text.draw("current index: " + strconv.FormatInt(int64(this.currentIdx), 10))
+	var x float32 = 500
+	var y float32 = 100
+	text.createVertices("preview: "+string(rune(this.currentIdx)), x, y)
+	y = 50
+	text.createVertices("current index: "+strconv.FormatInt(int64(this.currentIdx), 10), x, y)
 	gl.Enable(gl.DEPTH_TEST)
 
 }
@@ -230,7 +230,7 @@ func (this *FontCreator) iglbmfToIglbmt(iglbmf []byte, path string) {
 	var charInfo = []CharacterInfo{}
 	var texData = []byte{}
 	var texPtr uint32
-
+	_ = texPtr
 	var chunkW = int(file[0])
 	var dataOffset = int(file[6])
 	var chunkSize = chunkW*chunkW*4 + dataOffset
@@ -255,7 +255,9 @@ func (this *FontCreator) iglbmfToIglbmt(iglbmf []byte, path string) {
 			if idx < 128 {
 				var posX, posY = IdxToGridPos(idx, texRowLen, texRowLen)
 				var info = CharacterInfo{
-					tex: &texPtr, texW: uint32(imgLenPx), texH: uint32(imgLenPx),
+					//tex:       &texPtr,
+					//texW:      uint32(imgLenPx),
+					//texH:      uint32(imgLenPx),
 					asciicode: chunk[5], charX: byte(chunk[1]), charY: byte(chunk[2]),
 					charW: byte(chunk[3]), charH: byte(chunk[4]),
 					offsetX: uint32(posX) * uint32(chunkW), offsetY: uint32(posY) * uint32(chunkPxW),
@@ -277,7 +279,11 @@ func (this *FontCreator) iglbmfToIglbmt(iglbmf []byte, path string) {
 		}
 	}
 	for _, x := range charInfo {
-		var bytes = []byte{byte(x.texW), byte(x.charX), byte(x.charY), byte(x.charW), byte(x.charH), byte(x.offsetX), byte(x.offsetY), x.asciicode}
+		//TODO: Change
+		var texW = 192
+		var bytes = []byte{
+			byte(texW),
+			byte(x.charX), byte(x.charY), byte(x.charW), byte(x.charH), byte(x.offsetX), byte(x.offsetY), x.asciicode}
 		texData = append(texData, bytes...)
 	}
 	var outFile, _ = os.Create("font/" + path + ".iglbmt")

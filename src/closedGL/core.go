@@ -4,7 +4,6 @@ import (
 	"strconv"
 	"unsafe"
 
-	"github.com/EngoEngine/glm"
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/glfw/v3.2/glfw"
 	"neilpa.me/go-stbi"
@@ -33,7 +32,7 @@ func InitClosedGL(pWidth, pHeight float32) ClosedGLContext {
 
 	var c = newCamera(width, height)
 	factory = newPrimitiveFactory2D(float32(width), float32(height), &c)
-	text = NewText("default", factory.Shadermap["text"], 0, 500, 1, 1, glm.Vec3{1, 0, 1}, &factory.projectionMatrix)
+	text = NewText("default", factory.Shadermap["text"], &factory.projectionMatrix)
 	var key = newKeyBoardManager(window)
 	var con = ClosedGLContext{Window: window, Factory: &factory, Camera: &c, Text: &text, KeyBoardManager: &key, FPSCounter: &fpsCounter}
 	return con
@@ -269,5 +268,9 @@ func (this *ClosedGLContext) DrawFPS(posX, posY int) {
 }
 
 func (this *ClosedGLContext) EndDrawing() {
+	this.Text.draw()
+}
 
+func (this *ClosedGLContext) BeginDrawing() {
+	this.Text.clearBuffer()
 }

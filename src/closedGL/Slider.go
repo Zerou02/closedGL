@@ -40,17 +40,17 @@ func (this *Slider) alignMarker() {
 func (this *Slider) draw() {
 	this.baseLine.Draw()
 	this.marker.Draw()
-	text.x = this.baseLine.dim[0] + this.baseLine.dim[2]/2 - 50
-	text.y = this.baseLine.dim[1] - 20
-	text.draw(this.label + strconv.FormatFloat(float64(this.curr), 'f', -1, 32))
+	var x = this.baseLine.dim[0] + this.baseLine.dim[2]/2 - 50
+	var y = this.baseLine.dim[1] - 20
+	text.createVertices(this.label+strconv.FormatFloat(float64(this.curr), 'f', -1, 32), x, y)
 
-	text.x = this.baseLine.dim[0] - 50
-	text.y = this.baseLine.dim[1]
-	text.draw(strconv.FormatFloat(float64(this.min), 'f', -1, 32))
+	x = this.baseLine.dim[0] - 50
+	y = this.baseLine.dim[1]
+	text.createVertices(strconv.FormatFloat(float64(this.min), 'f', -1, 32), x, y)
 
-	text.x = this.baseLine.dim[0] + this.baseLine.dim[2] + 10
-	text.y = this.baseLine.dim[1]
-	text.draw(strconv.FormatFloat(float64(this.max), 'f', -1, 32))
+	x = this.baseLine.dim[0] + this.baseLine.dim[2] + 10
+	y = this.baseLine.dim[1]
+	text.createVertices(strconv.FormatFloat(float64(this.max), 'f', -1, 32), x, y)
 }
 
 func (this *Slider) process() {

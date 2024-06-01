@@ -42,18 +42,17 @@ func startClosedGL() {
 		var delta = openGL.FPSCounter.Delta
 		_ = delta
 
-		closedGL.ClearBG()
-
 		if openGL.KeyBoardManager.IsPressed(glfw.KeyF) {
 			isWireframeMode = !isWireframeMode
 			closedGL.SetWireFrameMode(isWireframeMode)
 		}
-		for i := 0; i < 100; i++ {
 
-			openGL.DrawFPS(i, i)
-		}
+		openGL.BeginDrawing()
 
+		closedGL.ClearBG()
 		openGL.DrawFPS(0, 300)
+
+		openGL.EndDrawing()
 
 		openGL.Process()
 	}
