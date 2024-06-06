@@ -1,5 +1,7 @@
 package closed_gl
 
+/*
+
 import (
 	"fmt"
 	"math"
@@ -303,3 +305,4 @@ func (this *FontCreator) loadChunkInRect(grid *[]Rectangle, chunk []byte) {
 		rect.colour[3] = float32(chunk[i+3]) / 255.0
 	}
 }
+*/

@@ -4,6 +4,7 @@ import (
 	"strconv"
 	"unsafe"
 
+	"github.com/EngoEngine/glm"
 	"github.com/go-gl/gl/v4.1-core/gl"
 	"github.com/go-gl/glfw/v3.2/glfw"
 	"neilpa.me/go-stbi"
@@ -21,6 +22,7 @@ type ClosedGLContext struct {
 	Text            *Text
 	KeyBoardManager *KeyBoardManager
 	FPSCounter      *FPSCounter
+	rectangleManger *RectangleManager
 }
 
 func InitClosedGL(pWidth, pHeight float32) ClosedGLContext {
@@ -34,7 +36,8 @@ func InitClosedGL(pWidth, pHeight float32) ClosedGLContext {
 	factory = newPrimitiveFactory2D(float32(width), float32(height), &c)
 	text = NewText("default", factory.Shadermap["text"], &factory.projectionMatrix)
 	var key = newKeyBoardManager(window)
-	var con = ClosedGLContext{Window: window, Factory: &factory, Camera: &c, Text: &text, KeyBoardManager: &key, FPSCounter: &fpsCounter}
+	var rm = factory.newRectManager()
+	var con = ClosedGLContext{Window: window, Factory: &factory, Camera: &c, Text: &text, KeyBoardManager: &key, FPSCounter: &fpsCounter, rectangleManger: &rm}
 	return con
 }
 
@@ -264,13 +267,32 @@ func (this *ClosedGLContext) Free() {
 
 func (this *ClosedGLContext) DrawFPS(posX, posY int) {
 	this.Text.DrawText(posX, posY, "FPS: "+strconv.FormatInt(int64(this.FPSCounter.FpsAverage), 10)+"!")
+}
 
+func (this *ClosedGLContext) DrawRect(dim, colour glm.Vec4) {
+	this.rectangleManger.createVertices(dim, colour)
 }
 
 func (this *ClosedGLContext) EndDrawing() {
 	this.Text.draw()
+	this.rectangleManger.Draw()
+
 }
 
 func (this *ClosedGLContext) BeginDrawing() {
 	this.Text.clearBuffer()
+	this.rectangleManger.clearVertices()
+}
+
+func setVerticesInVbo(vertices *[]float32, vboSize *uint32, vbo uint32) {
+	if len(*vertices) == 0 {
+		return
+	}
+	gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
+	if len(*vertices) >= int(*vboSize) {
+		*vboSize *= 2
+		gl.BufferData(gl.ARRAY_BUFFER, int(*vboSize)*4, gl.Ptr(*vertices), gl.STATIC_DRAW)
+	} else {
+		gl.BufferSubData(gl.ARRAY_BUFFER, 0, len(*vertices)*4, gl.Ptr(*vertices))
+	}
 }

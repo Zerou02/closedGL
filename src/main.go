@@ -50,6 +50,10 @@ func startClosedGL() {
 		openGL.BeginDrawing()
 
 		closedGL.ClearBG()
+		openGL.DrawRect(glm.Vec4{0, 0, 100, 100}, glm.Vec4{0, 1, 1, 1})
+		for i := 0; i < 1; i++ {
+			openGL.DrawRect(glm.Vec4{float32(i), float32(i), 100, 100}, glm.Vec4{0, float32(i) / 100.0, float32(i) / 100.0, 1})
+		}
 		openGL.DrawFPS(0, 300)
 
 		openGL.EndDrawing()

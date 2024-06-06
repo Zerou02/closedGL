@@ -1,5 +1,7 @@
 package closed_gl
 
+/*
+
 import (
 	"math"
 	"strconv"
@@ -73,3 +75,4 @@ func (this *Slider) process() {
 	}
 
 }
+*/

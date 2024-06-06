@@ -44,8 +44,8 @@ func newPrimitiveFactory2D(width, height float32, camera *Camera) PrimitiveFacto
 	return factory
 }
 
-func (this *PrimitiveFactory) NewRect(dim, colour glm.Vec4) Rectangle {
-	return newRect(this.Shadermap["points"], &this.projectionMatrix, dim, colour)
+func (this *PrimitiveFactory) newRectManager() RectangleManager {
+	return newRect(this.Shadermap["points"], &this.projectionMatrix)
 }
 
 func (this *PrimitiveFactory) NewLine(p1, p2 Vec2, colour1, colour2 glm.Vec3) Line {

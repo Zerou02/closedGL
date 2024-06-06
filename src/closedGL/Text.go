@@ -76,12 +76,8 @@ func (this *Text) draw() {
 	gl.BindVertexArray(this.vao)
 	gl.BindBuffer(gl.ARRAY_BUFFER, this.vbo)
 
-	if len(this.vertices) >= int(this.vboSize) {
-		this.vboSize *= 2
-		gl.BufferData(gl.ARRAY_BUFFER, int(this.vboSize)*4, gl.Ptr(this.vertices), gl.STATIC_DRAW)
-	} else {
-		gl.BufferSubData(gl.ARRAY_BUFFER, 0, len(this.vertices)*4, gl.Ptr(this.vertices))
-	}
+	setVerticesInVbo(&this.vertices, &this.vboSize, this.vbo)
+
 	gl.DrawArrays(gl.TRIANGLES, 0, int32(len(this.vertices)/24)*6)
 	gl.Enable(gl.DEPTH_TEST)
 

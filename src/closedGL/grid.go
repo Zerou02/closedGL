@@ -1,5 +1,7 @@
 package closed_gl
 
+/*
+
 import (
 	"fmt"
 
@@ -96,3 +98,4 @@ func (this *Grid) debugPrint() {
 
 	}
 }
+*/
