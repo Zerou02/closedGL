@@ -16,11 +16,16 @@ void main() {
   float dist = length(p);
 
   float distFromBorderCentre = abs(dist - fRadius);
-  // lerp: [0,borderThickness] -> [1,0] ^ [borderThickness,inf[ -> 0
-  float a = 1 - (1 / fBorderThickness * distFromBorderCentre);
+  // lerp: [0,borderThickness] -> [1,0] & [borderThickness,inf[ -> 0
+  float a = 1 - (distFromBorderCentre / fBorderThickness);
+
   if (dist < fRadius) {
     FragColour = fCentreColour;
   } else {
     FragColour = vec4(fBorderColour.rgb, a);
   }
+  // obiges branchless, (tatsächlich langsamer):
+  /*   float cond = int(dist < fRadius);
+    FragColour = cond * fCentreColour + (1 - cond) * vec4(fBorderColour.rgb, a);
+  */
 }

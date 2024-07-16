@@ -13,6 +13,8 @@ out float fBorderThickness;
 out vec2 fCentre;
 out float fRadius;
 
+const int borderMultipliers[8] = int[](1, -1, -1, -1, 1, 1, -1, 1);
+
 void main() {
   fCentreColour = centreColour;
   fBorderColour = borderColour;
@@ -20,5 +22,9 @@ void main() {
   fRadius = data.z / 2;
   fCentre = vec2(data.x + data.z / 2, data.y + data.z / 2);
 
-  gl_Position = projection * vec4(pos * data.z + data.xy, 0.0, 1.0);
+  vec2 borderOffsets = vec2(borderMultipliers[gl_VertexID * 2],
+                            borderMultipliers[gl_VertexID * 2 + 1]) *
+                       fBorderThickness;
+  gl_Position =
+      projection * vec4(pos * data.z + data.xy + borderOffsets, 0.0, 1.0);
 }

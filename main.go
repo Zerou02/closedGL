@@ -35,6 +35,7 @@ func StartClosedGL() {
 	var movAnim2 = closedGL.NewAnimation(-200, 0, 1, true, false)
 	var colourAnim = closedGL.NewAnimation(0, 1, 1, true, true)
 	var colourAnim2 = closedGL.NewAnimation(1, 0, 1, true, true)
+	var shiningAnim = closedGL.NewAnimation(0, 100, 1, true, true)
 
 	for !openGL.Window.Window.ShouldClose() {
 		var curr = glfw.GetTime()
@@ -62,6 +63,7 @@ func StartClosedGL() {
 		movAnim2.Process(float32(delta))
 		colourAnim.Process(float32(delta))
 		colourAnim2.Process(float32(delta))
+		shiningAnim.Process(float32(delta))
 
 		var start = time.Now()
 		openGL.DrawRect(glm.Vec4{145, 30, 10, 10}, glm.Vec4{0, 1, 1, 1})
@@ -71,10 +73,8 @@ func StartClosedGL() {
 		openGL.DrawRect(glm.Vec4{145 + 80, 30, 10, 40}, glm.Vec4{1, 1, 0, 1})
 		openGL.DrawLine(glm.Vec2{0, 0}, glm.Vec2{100, 100}, glm.Vec4{1, 0, 0, 1}, glm.Vec4{0, 1, 1, 1})
 
-		openGL.DrawCircle(glm.Vec2{500, 500}, glm.Vec4{1, 0, 0, 1}, glm.Vec4{1, 0, 0, 1}, 50, 1)
-		for i := 0; i < 1; i++ {
-			openGL.DrawTriangle([3]glm.Vec2{{100, 100}, {0, 350}, {200, 350}}, glm.Vec4{1, 1, 0, 1})
-		}
+		openGL.DrawTriangle([3]glm.Vec2{{100, 100}, {0, 350}, {200, 350}}, glm.Vec4{1, 1, 0, 1})
+		openGL.DrawCircle(glm.Vec2{500, 500}, glm.Vec4{1, 0, 0, 1}, glm.Vec4{1, 1, 0, 1}, 50, shiningAnim.GetValue())
 
 		openGL.DrawFPS(500, 0)
 		var end = time.Now()
