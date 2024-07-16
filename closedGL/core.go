@@ -66,7 +66,7 @@ func InitClosedGL(pWidth, pHeight float32) ClosedGLContext {
 	return con
 }
 
-func LimitFPS(val bool) {
+func (this *ClosedGLContext) LimitFPS(val bool) {
 	if val {
 		glfw.SwapInterval(1)
 	} else {
