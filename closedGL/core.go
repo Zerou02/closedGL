@@ -66,6 +66,14 @@ func InitClosedGL(pWidth, pHeight float32) ClosedGLContext {
 	return con
 }
 
+func LimitFPS(val bool) {
+	if val {
+		glfw.SwapInterval(1)
+	} else {
+		glfw.SwapInterval(0)
+	}
+}
+
 func initGlfw(width, height int) *glfw.Window {
 	glfw.Init()
 	glfw.WindowHint(glfw.Resizable, glfw.False)
