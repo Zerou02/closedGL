@@ -11,10 +11,10 @@ import (
 )
 
 func main() {
-	startClosedGL()
+	StartClosedGL()
 }
 
-func startClosedGL() {
+func StartClosedGL() {
 	runtime.LockOSThread()
 
 	var openGL = closedGL.InitClosedGL(800, 600)
