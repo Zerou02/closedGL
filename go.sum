@@ -1,0 +1,10 @@
+github.com/EngoEngine/glm v0.0.0-20170725114841-9c08f4d1f668 h1:Xz9xCyj4YTFam6pmzdwV8/pyQeYJEpA5ke91z0ovtHs=
+github.com/EngoEngine/glm v0.0.0-20170725114841-9c08f4d1f668/go.mod h1:PXaHlwWG1hTf+tp8q8AsJDgZ0epvvPeUw/wcfKu869Y=
+github.com/EngoEngine/math v1.0.4 h1:ejDfSg48ynB9T6btiu9EHjZmpQgW/zHf3IeC7SqXXv8=
+github.com/EngoEngine/math v1.0.4/go.mod h1:d8SnfwiaImse0lB3JuR91B2CShZmMxaTWaWZ/ZxDxAU=
+github.com/go-gl/gl v0.0.0-20231021071112-07e5d0ea2e71 h1:5BVwOaUSBTlVZowGO6VZGw2H/zl9nrd3eCZfYV+NfQA=
+github.com/go-gl/gl v0.0.0-20231021071112-07e5d0ea2e71/go.mod h1:9YTyiznxEY1fVinfM7RvRcjRHbw2xLBJ3AAGIT0I4Nw=
+github.com/go-gl/glfw v0.0.0-20240307211618-a69d953ea142 h1:IWIB0h17N0sGOrvh/8lBiDtx1xYt7m4kiCsoZ9sPa1M=
+github.com/go-gl/glfw v0.0.0-20240307211618-a69d953ea142/go.mod h1:wyvWpaEu9B/VQiV1jsPs7Mha9I7yto/HqIBw197ZAzk=
+neilpa.me/go-stbi v1.1.0 h1:UEsMe0xPKVinSUFGmEAl2v4UdfIJBbdtET4meOCcxVw=
+neilpa.me/go-stbi v1.1.0/go.mod h1:boQQ2VfdXnplejWStf+bmQYF5XLA/V+RhqrugwrZ59A=
