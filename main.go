@@ -74,7 +74,8 @@ func StartClosedGL() {
 		openGL.DrawLine(glm.Vec2{0, 0}, glm.Vec2{100, 100}, glm.Vec4{1, 0, 0, 1}, glm.Vec4{0, 1, 1, 1})
 
 		openGL.DrawTriangle([3]glm.Vec2{{100, 100}, {0, 350}, {200, 350}}, glm.Vec4{1, 1, 0, 1})
-		openGL.DrawCircle(glm.Vec2{500, 500}, glm.Vec4{1, 0, 0, 1}, glm.Vec4{1, 1, 0, 1}, 50, shiningAnim.GetValue())
+		openGL.DrawCircle(glm.Vec2{150, 150}, glm.Vec4{1, 0, 0, 1}, glm.Vec4{1, 1, 0, 1}, 50, shiningAnim.GetValue())
+		openGL.DrawCircle(glm.Vec2{150, 150}, glm.Vec4{1, 0, 1, 1}, glm.Vec4{1, 1, 0, 1}, 10, shiningAnim.GetValue())
 
 		openGL.DrawFPS(500, 0)
 		var end = time.Now()

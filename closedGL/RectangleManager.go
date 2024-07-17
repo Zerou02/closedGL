@@ -71,7 +71,7 @@ func (this *RectangleManager) createVertices(dim, colour glm.Vec4) {
 	this.amountQuads++
 }
 
-func (this *RectangleManager) Draw() {
+func (this *RectangleManager) draw() {
 	this.shader.use()
 	this.shader.setUniformMatrix4("projection", this.projection)
 	gl.Disable(gl.DEPTH_TEST)

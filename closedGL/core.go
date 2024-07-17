@@ -2,6 +2,7 @@ package closedGL
 
 import (
 	"strconv"
+	"unsafe"
 
 	"github.com/EngoEngine/glm"
 	"github.com/go-gl/gl/v4.1-core/gl"
@@ -24,6 +25,14 @@ func (this *Window) SetCursorPosCallback(fun glfw.CursorPosCallback) {
 	this.Window.SetCursorPosCallback(fun)
 }
 
+type PrimitiveMan interface {
+	beginDraw()
+	endDraw()
+}
+
+type depth = int
+type primitiveManPtr = unsafe.Pointer
+
 type ClosedGLContext struct {
 	Window              *Window
 	shaderCameraManager *ShaderCameraManager
@@ -35,6 +44,7 @@ type ClosedGLContext struct {
 	LineArr             *LineArr
 	CircleManager       *CircleManager
 	TriangleManager     *TriangleManager
+	primitiveManMap     map[depth]*[]unsafe.Pointer
 }
 
 func InitClosedGL(pWidth, pHeight float32) ClosedGLContext {
@@ -58,11 +68,16 @@ func InitClosedGL(pWidth, pHeight float32) ClosedGLContext {
 	var lineArr = NewLineArr(shaderManager.Shadermap["points"], &shaderManager.projection2D)
 	var triMan = newTriangleManager(shaderManager.Shadermap["points"], &shaderManager.projection2D)
 
+	var pMap = map[depth]*[]unsafe.Pointer{}
+	var man = newRect(shaderManager.Shadermap["rect"], &shaderManager.projection2D)
+	pMap[0] = &[]unsafe.Pointer{unsafe.Pointer(&man)}
 	var con = ClosedGLContext{
 		Window: &pWindow, shaderCameraManager: &shaderManager,
 		Camera: &c, Text: &text, KeyBoardManager: &key,
 		FPSCounter: &fpsCounter, rectangleManager: &rm,
-		LineArr: &lineArr, CircleManager: &cm, TriangleManager: &triMan}
+		LineArr: &lineArr, CircleManager: &cm, TriangleManager: &triMan,
+		primitiveManMap: pMap}
+
 	return con
 }
 
@@ -178,11 +193,21 @@ func (this *ClosedGLContext) DrawQuadraticBezierLerp(p1, p2, controlPoint glm.Ve
 	this.LineArr.AddQuadraticBezierLerp(p1, p2, controlPoint, colour1, colour2)
 }
 func (this *ClosedGLContext) EndDrawing() {
+
 	this.Text.draw()
-	this.rectangleManager.Draw()
+	this.rectangleManager.draw()
+	this.TriangleManager.Draw()
 	this.CircleManager.Draw()
 	this.LineArr.Draw()
-	this.TriangleManager.Draw()
+
+	for _, v := range this.primitiveManMap {
+		for _, x := range *v {
+			(*RectangleManager)(x).createVertices(glm.Vec4{0, 0, 400, 400}, glm.Vec4{0.25, 1, 0.25, 1})
+
+			(*RectangleManager)(x).draw()
+		}
+	}
+
 }
 
 func (this *ClosedGLContext) BeginDrawing() {
@@ -191,7 +216,11 @@ func (this *ClosedGLContext) BeginDrawing() {
 	this.CircleManager.beginDraw()
 	this.LineArr.beginDraw()
 	this.TriangleManager.beginDraw()
-
+	for _, v := range this.primitiveManMap {
+		for _, x := range *v {
+			(*RectangleManager)(x).beginDraw()
+		}
+	}
 }
 
 func (this *ClosedGLContext) DrawTriangle(pos [3]glm.Vec2, colour glm.Vec4) {
