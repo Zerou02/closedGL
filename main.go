@@ -66,16 +66,19 @@ func StartClosedGL() {
 		shiningAnim.Process(float32(delta))
 
 		var start = time.Now()
-		openGL.DrawRect(glm.Vec4{145, 30, 10, 10}, glm.Vec4{0, 1, 1, 1})
-		openGL.DrawRect(glm.Vec4{145 + 20, 30, 10, 40}, glm.Vec4{1, 0, 1, 1})
-		openGL.DrawRect(glm.Vec4{145 + 40, 30, 10, 40}, glm.Vec4{1, 1, 0, 1})
-		openGL.DrawRect(glm.Vec4{145 + 60, 30, 10, 40}, glm.Vec4{1, 0, 1, 1})
-		openGL.DrawRect(glm.Vec4{145 + 80, 30, 10, 40}, glm.Vec4{1, 1, 0, 1})
-		openGL.DrawLine(glm.Vec2{0, 0}, glm.Vec2{100, 100}, glm.Vec4{1, 0, 0, 1}, glm.Vec4{0, 1, 1, 1})
+		openGL.DrawRect(glm.Vec4{145, 30, 10, 10}, glm.Vec4{0, 1, 1, 1}, 0)
+		openGL.DrawRect(glm.Vec4{145 + 20, 30, 10, 40}, glm.Vec4{1, 0, 1, 1}, 0)
+		openGL.DrawRect(glm.Vec4{145 + 40, 30, 10, 40}, glm.Vec4{1, 1, 0, 1}, 0)
+		openGL.DrawRect(glm.Vec4{145 + 60, 30, 10, 40}, glm.Vec4{1, 0, 1, 1}, 0)
+		openGL.DrawRect(glm.Vec4{145 + 80, 30, 10, 40}, glm.Vec4{1, 1, 0, 1}, 0)
+		openGL.DrawLine(glm.Vec2{0, 0}, glm.Vec2{100, 100}, glm.Vec4{1, 0, 0, 1}, glm.Vec4{0, 1, 1, 1}, 0)
 
-		openGL.DrawTriangle([3]glm.Vec2{{100, 100}, {0, 350}, {200, 350}}, glm.Vec4{1, 1, 0, 1})
-		openGL.DrawCircle(glm.Vec2{150, 150}, glm.Vec4{1, 0, 0, 1}, glm.Vec4{1, 1, 0, 1}, 50, shiningAnim.GetValue())
-		openGL.DrawCircle(glm.Vec2{150, 150}, glm.Vec4{1, 0, 1, 1}, glm.Vec4{1, 1, 0, 1}, 10, shiningAnim.GetValue())
+		openGL.DrawTriangle([3]glm.Vec2{{100, 100}, {0, 350}, {200, 350}}, glm.Vec4{1, 1, 0, 1}, 1)
+		openGL.DrawCircle(glm.Vec2{150, 150}, glm.Vec4{1, 0, 0, 1}, glm.Vec4{1, 1, 0, 1}, 50, shiningAnim.GetValue(), 0)
+		openGL.DrawCircle(glm.Vec2{150, 150}, glm.Vec4{1, 0, 1, 1}, glm.Vec4{1, 1, 0, 1}, 10, shiningAnim.GetValue(), 0)
+
+		openGL.DrawRect(glm.Vec4{0, 50, 100, 100}, glm.Vec4{0, 1, 1, 1}, 2)
+		openGL.DrawRect(glm.Vec4{0, 50, 50, 50}, glm.Vec4{1, 0, 0, 1}, 1)
 
 		openGL.DrawFPS(500, 0)
 		var end = time.Now()

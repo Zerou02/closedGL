@@ -78,7 +78,7 @@ func (this *CircleManager) createVertices(centre glm.Vec2, colour, borderColour 
 	this.amountCircles++
 }
 
-func (this *CircleManager) Draw() {
+func (this *CircleManager) draw() {
 	this.shader.use()
 	this.shader.setUniformMatrix4("projection", this.projection)
 	gl.Disable(gl.DEPTH_TEST)

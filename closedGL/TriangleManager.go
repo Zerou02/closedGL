@@ -50,7 +50,7 @@ func (this *TriangleManager) createVertices(pos [3]glm.Vec2, colour glm.Vec4) {
 	this.amountTriangles++
 }
 
-func (this *TriangleManager) Draw() {
+func (this *TriangleManager) draw() {
 	this.shader.use()
 	gl.Disable(gl.CULL_FACE)
 	gl.Disable(gl.DEPTH_TEST)

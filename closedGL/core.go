@@ -1,6 +1,7 @@
 package closedGL
 
 import (
+	"sort"
 	"strconv"
 	"unsafe"
 
@@ -44,7 +45,9 @@ type ClosedGLContext struct {
 	LineArr             *LineArr
 	CircleManager       *CircleManager
 	TriangleManager     *TriangleManager
+	amountPrimitiveMans int
 	primitiveManMap     map[depth]*[]unsafe.Pointer
+	indexArr            []int
 }
 
 func InitClosedGL(pWidth, pHeight float32) ClosedGLContext {
@@ -68,15 +71,12 @@ func InitClosedGL(pWidth, pHeight float32) ClosedGLContext {
 	var lineArr = NewLineArr(shaderManager.Shadermap["points"], &shaderManager.projection2D)
 	var triMan = newTriangleManager(shaderManager.Shadermap["points"], &shaderManager.projection2D)
 
-	var pMap = map[depth]*[]unsafe.Pointer{}
-	var man = newRect(shaderManager.Shadermap["rect"], &shaderManager.projection2D)
-	pMap[0] = &[]unsafe.Pointer{unsafe.Pointer(&man)}
 	var con = ClosedGLContext{
 		Window: &pWindow, shaderCameraManager: &shaderManager,
 		Camera: &c, Text: &text, KeyBoardManager: &key,
 		FPSCounter: &fpsCounter, rectangleManager: &rm,
 		LineArr: &lineArr, CircleManager: &cm, TriangleManager: &triMan,
-		primitiveManMap: pMap}
+		primitiveManMap: map[depth]*[]unsafe.Pointer{}, amountPrimitiveMans: 4, indexArr: []int{}}
 
 	return con
 }
@@ -165,49 +165,116 @@ func (this *ClosedGLContext) DrawFPS(posX, posY int) {
 	this.Text.DrawText(posX, posY, "FPS:"+nr+"!")
 }
 
-func (this *ClosedGLContext) DrawRect(dim, colour glm.Vec4) {
-	this.rectangleManager.createVertices(dim, colour)
+func (this *ClosedGLContext) initEmptyMapAtDepth(depth int) {
+	var newArr = []unsafe.Pointer{}
+	for i := 0; i < this.amountPrimitiveMans; i++ {
+		newArr = append(newArr, nil)
+	}
+	var rm = this.createRectMan()
+	var cm = this.createCircleMan()
+	var lm = this.createLineMan()
+	var tm = this.createTriMan()
+
+	this.primitiveManMap[depth] = &newArr
+
+	this.setMapEntry(depth, 0, unsafe.Pointer(&rm))
+	this.setMapEntry(depth, 1, unsafe.Pointer(&cm))
+	this.setMapEntry(depth, 2, unsafe.Pointer(&lm))
+	this.setMapEntry(depth, 3, unsafe.Pointer(&tm))
+
+	this.indexArr = append(this.indexArr, depth)
+	sort.Ints(this.indexArr)
 }
 
-func (this *ClosedGLContext) DrawLine(dim1, dim2 glm.Vec2, colour1, colour2 glm.Vec4) {
-	this.LineArr.addLine(dim1, dim2, colour1, colour2)
+func (this *ClosedGLContext) createRectMan() RectangleManager {
+	return newRect(this.shaderCameraManager.Shadermap["rect"], &this.shaderCameraManager.projection2D)
 }
 
-func (this *ClosedGLContext) DrawPath(pos []glm.Vec2, colours []glm.Vec4) {
-	this.LineArr.AddPath(pos, colours)
+func (this *ClosedGLContext) createCircleMan() CircleManager {
+	return newCircleManger(this.shaderCameraManager.Shadermap["circle"], &this.shaderCameraManager.projection2D)
+}
+
+func (this *ClosedGLContext) createLineMan() LineArr {
+	return NewLineArr(this.shaderCameraManager.Shadermap["points"], &this.shaderCameraManager.projection2D)
+}
+
+func (this *ClosedGLContext) createTriMan() TriangleManager {
+	return newTriangleManager(this.shaderCameraManager.Shadermap["points"], &this.shaderCameraManager.projection2D)
+
+}
+func (this *ClosedGLContext) getMapEntry(depth int, idx int) unsafe.Pointer {
+	return (*this.primitiveManMap[depth])[idx]
+}
+
+func (this *ClosedGLContext) setMapEntry(depth int, idx int, ptr unsafe.Pointer) {
+	(*this.primitiveManMap[depth])[idx] = ptr
+}
+func (this *ClosedGLContext) DrawRect(dim, colour glm.Vec4, depth int) {
+	if this.primitiveManMap[depth] == nil {
+		this.initEmptyMapAtDepth(depth)
+	}
+	(*RectangleManager)(this.getMapEntry(depth, 0)).createVertices(dim, colour)
+}
+
+func (this *ClosedGLContext) DrawLine(dim1, dim2 glm.Vec2, colour1, colour2 glm.Vec4, depth int) {
+	if this.primitiveManMap[depth] == nil {
+		this.initEmptyMapAtDepth(depth)
+	}
+	(*LineArr)(this.getMapEntry(depth, 2)).addLine(dim1, dim2, colour1, colour2)
+}
+
+func (this *ClosedGLContext) DrawPath(pos []glm.Vec2, colours []glm.Vec4, depth int) {
+	if this.primitiveManMap[depth] == nil {
+		this.initEmptyMapAtDepth(depth)
+	}
+	(*LineArr)(this.getMapEntry(depth, 2)).AddPath(pos, colours)
 }
 
 // Basisfunktion für Kreise, andere rechnen in dieses Format um
-func (this *ClosedGLContext) DrawCircleFaster(upperLeft glm.Vec2, colour, borderColour glm.Vec4, diameter, borderThickness float32) {
-	this.CircleManager.createVertices(upperLeft, colour, borderColour, diameter, borderThickness)
+func (this *ClosedGLContext) DrawCircleFaster(upperLeft glm.Vec2, colour, borderColour glm.Vec4, diameter, borderThickness float32, depth int) {
+	if this.primitiveManMap[depth] == nil {
+		this.initEmptyMapAtDepth(depth)
+	}
+	(*CircleManager)(this.getMapEntry(depth, 1)).createVertices(upperLeft, colour, borderColour, diameter, borderThickness)
 }
 
-func (this *ClosedGLContext) DrawCircle(centre glm.Vec2, colour, borderColour glm.Vec4, radius, borderThickness float32) {
-	this.CircleManager.createVertices(glm.Vec2{centre[0] - radius, centre[1] - radius}, colour, borderColour, radius*2, borderThickness)
+func (this *ClosedGLContext) DrawCircle(centre glm.Vec2, colour, borderColour glm.Vec4, radius, borderThickness float32, depth int) {
+	if this.primitiveManMap[depth] == nil {
+		this.initEmptyMapAtDepth(depth)
+	}
+	(*CircleManager)(this.getMapEntry(depth, 1)).createVertices(glm.Vec2{centre[0] - radius, centre[1] - radius}, colour, borderColour, radius*2, borderThickness)
 }
-func (this *ClosedGLContext) DrawQuadraticBezier(p1, p2, controlPoint glm.Vec2, colour glm.Vec4) {
-	this.LineArr.AddQuadraticBezier(p1, p2, controlPoint, colour)
+func (this *ClosedGLContext) DrawQuadraticBezier(p1, p2, controlPoint glm.Vec2, colour glm.Vec4, depth int) {
+	if this.primitiveManMap[depth] == nil {
+		this.initEmptyMapAtDepth(depth)
+	}
+	(*LineArr)(this.getMapEntry(depth, 2)).AddQuadraticBezier(p1, p2, controlPoint, colour)
 }
 
-func (this *ClosedGLContext) DrawQuadraticBezierLerp(p1, p2, controlPoint glm.Vec2, colour1, colour2 glm.Vec4) {
-	this.LineArr.AddQuadraticBezierLerp(p1, p2, controlPoint, colour1, colour2)
+func (this *ClosedGLContext) DrawQuadraticBezierLerp(p1, p2, controlPoint glm.Vec2, colour1, colour2 glm.Vec4, depth int) {
+	if this.primitiveManMap[depth] == nil {
+		this.initEmptyMapAtDepth(depth)
+	}
+	(*LineArr)(this.getMapEntry(depth, 2)).AddQuadraticBezierLerp(p1, p2, controlPoint, colour1, colour2)
 }
+
 func (this *ClosedGLContext) EndDrawing() {
 
 	this.Text.draw()
-	this.rectangleManager.draw()
-	this.TriangleManager.Draw()
-	this.CircleManager.Draw()
-	this.LineArr.Draw()
-
-	for _, v := range this.primitiveManMap {
-		for _, x := range *v {
-			(*RectangleManager)(x).createVertices(glm.Vec4{0, 0, 400, 400}, glm.Vec4{0.25, 1, 0.25, 1})
-
-			(*RectangleManager)(x).draw()
+	for _, x := range this.indexArr {
+		var v = this.primitiveManMap[x]
+		for i, x := range *v {
+			if i == 0 {
+				(*RectangleManager)(x).draw()
+			} else if i == 1 {
+				(*CircleManager)(x).draw()
+			} else if i == 2 {
+				(*LineArr)(x).draw()
+			} else if i == 3 {
+				(*TriangleManager)(x).draw()
+			}
 		}
 	}
-
 }
 
 func (this *ClosedGLContext) BeginDrawing() {
@@ -216,13 +283,26 @@ func (this *ClosedGLContext) BeginDrawing() {
 	this.CircleManager.beginDraw()
 	this.LineArr.beginDraw()
 	this.TriangleManager.beginDraw()
+
 	for _, v := range this.primitiveManMap {
-		for _, x := range *v {
-			(*RectangleManager)(x).beginDraw()
+		for i, x := range *v {
+			if i == 0 {
+				(*RectangleManager)(x).beginDraw()
+			} else if i == 1 {
+				(*CircleManager)(x).beginDraw()
+			} else if i == 2 {
+				(*LineArr)(x).beginDraw()
+			} else if i == 3 {
+				(*TriangleManager)(x).beginDraw()
+			}
 		}
 	}
+
 }
 
-func (this *ClosedGLContext) DrawTriangle(pos [3]glm.Vec2, colour glm.Vec4) {
-	this.TriangleManager.createVertices(pos, colour)
+func (this *ClosedGLContext) DrawTriangle(pos [3]glm.Vec2, colour glm.Vec4, depth int) {
+	if this.primitiveManMap[depth] == nil {
+		this.initEmptyMapAtDepth(depth)
+	}
+	(*TriangleManager)(this.getMapEntry(depth, 3)).createVertices(pos, colour)
 }

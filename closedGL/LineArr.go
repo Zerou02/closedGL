@@ -43,7 +43,7 @@ func (this *LineArr) deleteBuffers() {
 
 }
 
-func (this *LineArr) Draw() {
+func (this *LineArr) draw() {
 	if this.amountPoints < 1 {
 		return
 	}
