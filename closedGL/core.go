@@ -131,8 +131,8 @@ func LoadImage(path string, format uint32) *uint32 {
 	return &texPtr
 }
 
-func (this *ClosedGLContext) ClearBG() {
-	gl.ClearColor(0.0, 0.0, 0.0, 1.0)
+func (this *ClosedGLContext) ClearBG(clearColour glm.Vec4) {
+	gl.ClearColor(clearColour[0], clearColour[1], clearColour[2], clearColour[3])
 	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 }
 

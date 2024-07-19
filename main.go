@@ -57,7 +57,7 @@ func StartClosedGL() {
 		}
 
 		openGL.BeginDrawing()
-		openGL.ClearBG()
+		openGL.ClearBG(glm.Vec4{0, 0, 0, 0})
 
 		movAnim.Process(float32(delta))
 		movAnim2.Process(float32(delta))
