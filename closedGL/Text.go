@@ -32,8 +32,8 @@ func NewText(font string, shader *Shader, projection *glm.Mat4) Text {
 	return text
 }
 
-func (this *Text) DrawText(posX, posY int, text string) {
-	this.createVertices(text, float32(posX), float32(posY))
+func (this *Text) DrawText(posX, posY int, text string, scale float32) {
+	this.createVertices(text, float32(posX), float32(posY), scale)
 }
 
 func (this *Text) clearBuffer() {
@@ -41,9 +41,9 @@ func (this *Text) clearBuffer() {
 	this.amountChars = 0
 }
 
-func (this *Text) createVertices(text string, posX, posY float32) {
-	var letterWidth float32 = 10
-	var letterHeight float32 = 10
+func (this *Text) createVertices(text string, posX, posY float32, scale float32) {
+	var letterWidth float32 = 10 * scale
+	var letterHeight float32 = 10 * scale
 	var spacing = 3
 	var stride = 4 * 6
 	this.dataBuffer.resizeCPUData((this.amountChars + len(text)) * stride)

@@ -20,7 +20,7 @@ func StartClosedGL() {
 	var openGL = closedGL.InitClosedGL(800, 600)
 	openGL.Window.SetScrollCallback(openGL.Camera.ScrollCb)
 	openGL.Window.SetCursorPosCallback(openGL.Camera.MouseCallback)
-
+	openGL.Window.Window.SetMouseButtonCallback(closedGL.StandardMouseClickCB)
 	var isWireframeMode = false
 
 	_ = isWireframeMode
@@ -80,7 +80,7 @@ func StartClosedGL() {
 		openGL.DrawRect(glm.Vec4{0, 50, 100, 100}, glm.Vec4{0, 1, 1, 1}, 2)
 		openGL.DrawRect(glm.Vec4{0, 50, 50, 50}, glm.Vec4{1, 0, 0, 1}, 1)
 
-		openGL.DrawFPS(500, 0)
+		openGL.DrawFPS(300, 0, 2)
 		var end = time.Now()
 		_, _ = end, start
 

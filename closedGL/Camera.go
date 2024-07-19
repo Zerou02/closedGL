@@ -102,3 +102,7 @@ func (c *Camera) MouseCallback(w *glfw.Window, xpos float64, ypos float64) {
 		c.pitch = -89
 	}
 }
+
+func StandardMouseClickCB(w *glfw.Window, button glfw.MouseButton, action glfw.Action, mod glfw.ModifierKey) {
+	//
+}

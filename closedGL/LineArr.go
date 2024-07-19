@@ -52,8 +52,8 @@ func (this *LineArr) draw() {
 	this.lineShader.setUniformMatrix4("projection", this.projection)
 
 	gl.BindVertexArray(this.vao)
-	this.masterVBO.copyToGPU()
 
+	this.masterVBO.copyToGPU()
 	gl.DrawElements(gl.LINES, int32(len(this.indices)), gl.UNSIGNED_SHORT, gl.Ptr(this.indices))
 }
 

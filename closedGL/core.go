@@ -26,6 +26,10 @@ func (this *Window) SetCursorPosCallback(fun glfw.CursorPosCallback) {
 	this.Window.SetCursorPosCallback(fun)
 }
 
+func (this *Window) SetMouseButtonCB(fun glfw.MouseButtonCallback) {
+	this.Window.SetMouseButtonCallback(fun)
+}
+
 type PrimitiveMan interface {
 	beginDraw()
 	endDraw()
@@ -159,10 +163,10 @@ func (this *ClosedGLContext) Free() {
 	glfw.Terminate()
 }
 
-func (this *ClosedGLContext) DrawFPS(posX, posY int) {
+func (this *ClosedGLContext) DrawFPS(posX, posY int, scale float32) {
 	var average = this.FPSCounter.FpsAverage
 	var nr = strconv.FormatInt(int64(average), 10)
-	this.Text.DrawText(posX, posY, "FPS:"+nr+"!")
+	this.Text.DrawText(posX, posY, "FPS:"+nr+"!", scale)
 }
 
 func (this *ClosedGLContext) initEmptyMapAtDepth(depth int) {
