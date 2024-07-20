@@ -1,6 +1,7 @@
 package closedGL
 
 import (
+	"runtime"
 	"sort"
 	"strconv"
 	"unsafe"
@@ -55,6 +56,8 @@ type ClosedGLContext struct {
 }
 
 func InitClosedGL(pWidth, pHeight float32) ClosedGLContext {
+	runtime.LockOSThread()
+
 	var width = pWidth
 	var height = pHeight
 	var window = initGlfw(int(width), int(height))

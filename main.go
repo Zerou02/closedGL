@@ -2,7 +2,6 @@ package main
 
 import (
 	_ "image/png"
-	"runtime"
 	"time"
 
 	"github.com/EngoEngine/glm"
@@ -15,7 +14,6 @@ func main() {
 }
 
 func StartClosedGL() {
-	runtime.LockOSThread()
 
 	var openGL = closedGL.InitClosedGL(800, 600)
 	openGL.Window.SetScrollCallback(openGL.Camera.ScrollCb)
@@ -37,6 +35,9 @@ func StartClosedGL() {
 	var colourAnim2 = closedGL.NewAnimation(1, 0, 1, true, true)
 	var shiningAnim = closedGL.NewAnimation(0, 100, 1, true, true)
 
+	var repAnim = closedGL.NewAnimation(0, 50, 1, false, true)
+	var countAnim = closedGL.NewAnimation(1, 200, 1, false, true)
+
 	for !openGL.Window.Window.ShouldClose() {
 		var curr = glfw.GetTime()
 		elapsed += curr - last
@@ -50,7 +51,6 @@ func StartClosedGL() {
 		}
 		var delta = openGL.FPSCounter.Delta
 		_ = delta
-
 		if openGL.KeyBoardManager.IsPressed(glfw.KeyF) {
 			isWireframeMode = !isWireframeMode
 			closedGL.SetWireFrameMode(isWireframeMode)
@@ -64,9 +64,11 @@ func StartClosedGL() {
 		colourAnim.Process(float32(delta))
 		colourAnim2.Process(float32(delta))
 		shiningAnim.Process(float32(delta))
+		repAnim.Process(float32(delta))
+		countAnim.Process(float32(delta))
 
 		var start = time.Now()
-		openGL.DrawRect(glm.Vec4{145, 30, 10, 10}, glm.Vec4{0, 1, 1, 1}, 0)
+		/* 	openGL.DrawRect(glm.Vec4{145, 30, 10, 10}, glm.Vec4{0, 1, 1, 1}, 0)
 		openGL.DrawRect(glm.Vec4{145 + 20, 30, 10, 40}, glm.Vec4{1, 0, 1, 1}, 0)
 		openGL.DrawRect(glm.Vec4{145 + 40, 30, 10, 40}, glm.Vec4{1, 1, 0, 1}, 0)
 		openGL.DrawRect(glm.Vec4{145 + 60, 30, 10, 40}, glm.Vec4{1, 0, 1, 1}, 0)
@@ -78,8 +80,19 @@ func StartClosedGL() {
 		openGL.DrawCircle(glm.Vec2{150, 150}, glm.Vec4{1, 0, 1, 1}, glm.Vec4{1, 1, 0, 1}, 10, shiningAnim.GetValue(), 0)
 
 		openGL.DrawRect(glm.Vec4{0, 50, 100, 100}, glm.Vec4{0, 1, 1, 1}, 2)
-		openGL.DrawRect(glm.Vec4{0, 50, 50, 50}, glm.Vec4{1, 0, 0, 1}, 1)
+		openGL.DrawRect(glm.Vec4{0, 50, 50, 50}, glm.Vec4{1, 0, 0, 1}, 1) */
 
+		for i := 0; i < 10; i++ {
+			openGL.DrawRect(glm.Vec4{float32(i*50) + repAnim.GetValue(), float32(i * 50), 50, 50}, glm.Vec4{1, 0, 0, 1}, i)
+			openGL.DrawCircle(glm.Vec2{float32(i*50) + repAnim.GetValue(), float32(i * 50)}, glm.Vec4{0, 1, 0, 1}, glm.Vec4{0, 1, 0, 1}, 20, 3, i+1)
+			openGL.DrawLine(glm.Vec2{0, 0}, glm.Vec2{800, 600}, glm.Vec4{1, 1, 0, 1}, glm.Vec4{1, 1, 0, 1}, i+1)
+		}
+
+		var str = ""
+		for i := 0; i < int(countAnim.GetValue()); i++ {
+			str += "a"
+		}
+		openGL.Text.DrawText(0, 400, str, 1)
 		openGL.DrawFPS(300, 0, 2)
 		var end = time.Now()
 		_, _ = end, start
