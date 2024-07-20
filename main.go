@@ -2,7 +2,8 @@ package main
 
 import (
 	_ "image/png"
-	"time"
+	"os"
+	"strings"
 
 	"github.com/EngoEngine/glm"
 	"github.com/Zerou02/closedGL/closedGL"
@@ -29,14 +30,26 @@ func StartClosedGL() {
 	var last = glfw.GetTime()
 	var frameCount = 0
 
-	var movAnim = closedGL.NewAnimation(75, 365, 1, true, true)
-	var movAnim2 = closedGL.NewAnimation(-200, 0, 1, true, false)
-	var colourAnim = closedGL.NewAnimation(0, 1, 1, true, true)
-	var colourAnim2 = closedGL.NewAnimation(1, 0, 1, true, true)
-	var shiningAnim = closedGL.NewAnimation(0, 100, 1, true, true)
+	var bytees, _ = os.ReadFile("./assets/intro.txt")
+	var contents = string(bytees)
+	var lines []string = []string{}
+	var amountChars = 0
+	var secondPerChars float32 = 0.03
+	for _, x := range strings.Split(contents, "\n") {
+		amountChars += len(x)
+		lines = append(lines, x)
+	}
+	var time = float32(amountChars) * secondPerChars
+	var anim = closedGL.NewAnimation(0, float32(amountChars), time, false, false)
 
-	var repAnim = closedGL.NewAnimation(0, 50, 1, false, true)
-	var countAnim = closedGL.NewAnimation(1, 200, 1, false, true)
+	var samples = []string{}
+	for i := 0; i < 60; i++ {
+		var sample = ""
+		for j := 0; j < i+1; j++ {
+			sample += "a"
+		}
+		samples = append(samples, sample)
+	}
 
 	for !openGL.Window.Window.ShouldClose() {
 		var curr = glfw.GetTime()
@@ -59,51 +72,44 @@ func StartClosedGL() {
 		openGL.BeginDrawing()
 		openGL.ClearBG(glm.Vec4{0, 0, 0, 0})
 
-		movAnim.Process(float32(delta))
-		movAnim2.Process(float32(delta))
-		colourAnim.Process(float32(delta))
-		colourAnim2.Process(float32(delta))
-		shiningAnim.Process(float32(delta))
-		repAnim.Process(float32(delta))
-		countAnim.Process(float32(delta))
+		anim.Process(float32(delta))
+		openGL.LimitFPS(true)
 
-		var start = time.Now()
-		/* 	openGL.DrawRect(glm.Vec4{145, 30, 10, 10}, glm.Vec4{0, 1, 1, 1}, 0)
-		openGL.DrawRect(glm.Vec4{145 + 20, 30, 10, 40}, glm.Vec4{1, 0, 1, 1}, 0)
-		openGL.DrawRect(glm.Vec4{145 + 40, 30, 10, 40}, glm.Vec4{1, 1, 0, 1}, 0)
-		openGL.DrawRect(glm.Vec4{145 + 60, 30, 10, 40}, glm.Vec4{1, 0, 1, 1}, 0)
-		openGL.DrawRect(glm.Vec4{145 + 80, 30, 10, 40}, glm.Vec4{1, 1, 0, 1}, 0)
-		openGL.DrawLine(glm.Vec2{0, 0}, glm.Vec2{100, 100}, glm.Vec4{1, 0, 0, 1}, glm.Vec4{0, 1, 1, 1}, 0)
+		if !anim.IsFinished() {
+			var currTextLen = anim.GetValue()
+			println("len", int(currTextLen))
+			_ = currTextLen
 
-		openGL.DrawTriangle([3]glm.Vec2{{100, 100}, {0, 350}, {200, 350}}, glm.Vec4{1, 1, 0, 1}, 1)
-		openGL.DrawCircle(glm.Vec2{150, 150}, glm.Vec4{1, 0, 0, 1}, glm.Vec4{1, 1, 0, 1}, 50, shiningAnim.GetValue(), 0)
-		openGL.DrawCircle(glm.Vec2{150, 150}, glm.Vec4{1, 0, 1, 1}, glm.Vec4{1, 1, 0, 1}, 10, shiningAnim.GetValue(), 0)
+			var lineToDraw = ""
+			for i := -1; i < int(currTextLen); i++ {
+				lineToDraw += "a"
+			}
+			/* 			for i := 0; i < len(lines); i++ {
+			if alreadyDrawn >= int(currTextLen) {
+				break
+			}
+			var line = lines[i]
+			var lineToDraw = ""
+			if len(line)+alreadyDrawn < int(currTextLen) {
+				alreadyDrawn += len(line)
+				lineToDraw = line
+			} else {
+				var copy = alreadyDrawn
+				for j := 0; j < int(currTextLen)-copy; j++ {
+					alreadyDrawn++
+					lineToDraw += string(line[j])
+				}
+			} */
+			//openGL.DrawRect(glm.Vec4{100 + currTextLen, 100, 200, 200}, glm.Vec4{1, 1, 1, 1}, int(currTextLen))
+			openGL.Text.DrawText(0, 100+50, samples[openGL.FPSCounter.FrameCount%len(samples)], 1)
+			openGL.DrawRect(glm.Vec4{100 + currTextLen, 100, 100, 100}, glm.Vec4{0, currTextLen / 128, 1, 1}, int(currTextLen))
+			openGL.DrawRect(glm.Vec4{100 + currTextLen, 150, 100, 100}, glm.Vec4{0, currTextLen / 128, 1, 1}, int(currTextLen))
+			openGL.DrawRect(glm.Vec4{100 + currTextLen, 250, 100, 100}, glm.Vec4{0, currTextLen / 128, 1, 1}, int(currTextLen))
 
-		openGL.DrawRect(glm.Vec4{0, 50, 100, 100}, glm.Vec4{0, 1, 1, 1}, 2)
-		openGL.DrawRect(glm.Vec4{0, 50, 50, 50}, glm.Vec4{1, 0, 0, 1}, 1) */
+			//	openGL.DrawFPS(0, 0, 1)
 
-		for i := 0; i < 10; i++ {
-			openGL.DrawRect(glm.Vec4{float32(i*50) + repAnim.GetValue(), float32(i * 50), 50, 50}, glm.Vec4{1, 0, 0, 1}, i)
-			openGL.DrawCircle(glm.Vec2{float32(i*50) + repAnim.GetValue(), float32(i * 50)}, glm.Vec4{0, 1, 0, 1}, glm.Vec4{0, 1, 0, 1}, 20, 3, i+1)
-			openGL.DrawLine(glm.Vec2{0, 0}, glm.Vec2{800, 600}, glm.Vec4{1, 1, 0, 1}, glm.Vec4{1, 1, 0, 1}, i+1)
 		}
-
-		var str = ""
-		for i := 0; i < int(countAnim.GetValue()); i++ {
-			str += "a"
-		}
-		openGL.Text.DrawText(0, 400, str, 1)
-		openGL.DrawFPS(300, 0, 2)
-		var end = time.Now()
-		_, _ = end, start
-
-		var start2 = time.Now()
 		openGL.EndDrawing()
-		var end2 = time.Now()
-		//		fmt.Printf("draw:%f\n", end2.Sub(start2).Seconds())
-
-		_, _ = end2, start2
-
 		openGL.Process()
 	}
 	openGL.Free()

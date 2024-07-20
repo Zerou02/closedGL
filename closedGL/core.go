@@ -46,10 +46,6 @@ type ClosedGLContext struct {
 	Text                *Text
 	KeyBoardManager     *KeyBoardManager
 	FPSCounter          *FPSCounter
-	rectangleManager    *RectangleManager
-	LineArr             *LineArr
-	CircleManager       *CircleManager
-	TriangleManager     *TriangleManager
 	amountPrimitiveMans int
 	primitiveManMap     map[depth]*[]unsafe.Pointer
 	indexArr            []int
@@ -73,16 +69,11 @@ func InitClosedGL(pWidth, pHeight float32) ClosedGLContext {
 	var shaderManager = newShaderCameraManager(float32(width), float32(height), &c)
 	text = NewText("default", shaderManager.Shadermap["text"], &shaderManager.projection2D)
 	var key = newKeyBoardManager(window)
-	var rm = newRect(shaderManager.Shadermap["rect"], &shaderManager.projection2D)
-	var cm = newCircleManger(shaderManager.Shadermap["circle"], &shaderManager.projection2D)
-	var lineArr = NewLineArr(shaderManager.Shadermap["points"], &shaderManager.projection2D)
-	var triMan = newTriangleManager(shaderManager.Shadermap["points"], &shaderManager.projection2D)
 
 	var con = ClosedGLContext{
 		Window: &pWindow, shaderCameraManager: &shaderManager,
 		Camera: &c, Text: &text, KeyBoardManager: &key,
-		FPSCounter: &fpsCounter, rectangleManager: &rm,
-		LineArr: &lineArr, CircleManager: &cm, TriangleManager: &triMan,
+		FPSCounter:      &fpsCounter,
 		primitiveManMap: map[depth]*[]unsafe.Pointer{}, amountPrimitiveMans: 4, indexArr: []int{}}
 
 	return con
@@ -266,7 +257,6 @@ func (this *ClosedGLContext) DrawQuadraticBezierLerp(p1, p2, controlPoint glm.Ve
 }
 
 func (this *ClosedGLContext) EndDrawing() {
-
 	this.Text.draw()
 	for _, x := range this.indexArr {
 		var v = this.primitiveManMap[x]
@@ -286,10 +276,6 @@ func (this *ClosedGLContext) EndDrawing() {
 
 func (this *ClosedGLContext) BeginDrawing() {
 	this.Text.clearBuffer()
-	this.rectangleManager.beginDraw()
-	this.CircleManager.beginDraw()
-	this.LineArr.beginDraw()
-	this.TriangleManager.beginDraw()
 
 	for _, v := range this.primitiveManMap {
 		for i, x := range *v {

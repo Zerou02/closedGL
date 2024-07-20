@@ -42,6 +42,7 @@ func (this *Text) clearBuffer() {
 }
 
 func (this *Text) createVertices(text string, posX, posY float32, scale float32) {
+	println(text)
 	var letterWidth float32 = 10 * scale
 	var letterHeight float32 = 10 * scale
 	var spacing = 3
@@ -72,6 +73,9 @@ func (this *Text) createVertices(text string, posX, posY float32, scale float32)
 
 		this.amountChars++
 	}
+	println("buffSize", this.dataBuffer.bufferSize, len(this.dataBuffer.cpuArr))
+
+	println("chards", this.amountChars)
 }
 func (this *Text) draw() {
 	this.shader.use()

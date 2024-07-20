@@ -112,7 +112,6 @@ func (this *BufferFloat) copyToGPU() {
 }
 func (this *BufferFloat) clear() {
 	this.cpuArr = []float32{}
-	this.copyToGPU()
 }
 
 func (this *BufferU16) resizeCPUData(newLenEntries int) {
@@ -151,7 +150,7 @@ func setVerticesInVbo(vertices *[]float32, vboSizeEntries *int, vbo uint32) {
 		return
 	}
 	gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
-	if len(*vertices) >= *vboSizeEntries {
+	if len(*vertices)*4 >= *vboSizeEntries {
 		*vboSizeEntries = len(*vertices) * 4
 		gl.BufferData(gl.ARRAY_BUFFER, *vboSizeEntries, gl.Ptr(*vertices), gl.DYNAMIC_DRAW)
 
