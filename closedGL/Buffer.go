@@ -112,6 +112,7 @@ func (this *BufferFloat) copyToGPU() {
 }
 func (this *BufferFloat) clear() {
 	this.cpuArr = []float32{}
+	this.copyToGPU()
 }
 
 func (this *BufferU16) resizeCPUData(newLenEntries int) {
