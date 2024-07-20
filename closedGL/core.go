@@ -49,6 +49,7 @@ type ClosedGLContext struct {
 	FPSCounter          *FPSCounter
 	amountPrimitiveMans int
 	primitiveManMap     map[depth]*[]unsafe.Pointer
+	config              map[string]string
 	indexArr            []int
 }
 
@@ -68,7 +69,12 @@ func InitClosedGL(pWidth, pHeight float32, name string) ClosedGLContext {
 
 	var c = newCamera(width, height)
 	var shaderManager = newShaderCameraManager(float32(width), float32(height), &c)
-	text = NewText("default", shaderManager.Shadermap["text"], &shaderManager.projection2D)
+	var config = parseConfig("./assets/config.ini")
+	if config["default_font"] != "" {
+		text = NewText(config["default_font"], shaderManager.Shadermap["text"], &shaderManager.projection2D)
+	} else {
+		text = NewText("default", shaderManager.Shadermap["text"], &shaderManager.projection2D)
+	}
 	var key = newKeyBoardManager(window)
 
 	var con = ClosedGLContext{
@@ -76,7 +82,11 @@ func InitClosedGL(pWidth, pHeight float32, name string) ClosedGLContext {
 		Camera: &c, Text: &text, KeyBoardManager: &key,
 		FPSCounter:      &fpsCounter,
 		primitiveManMap: map[depth]*[]unsafe.Pointer{}, amountPrimitiveMans: 4, indexArr: []int{},
-		audio: newAudio(),
+		config: config,
+		audio:  newAudio(),
+	}
+	if config["potato-friendliness"] != "" {
+		con.LimitFPS(strToBool(config["potato-friendliness"]))
 	}
 
 	return con

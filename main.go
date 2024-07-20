@@ -21,7 +21,6 @@ func StartClosedGL() {
 	var isWireframeMode = false
 
 	_ = isWireframeMode
-	glfw.SwapInterval(0)
 	openGL.Camera.CameraPos = glm.Vec3{0, 0, 0}
 
 	var elapsed float64 = 0

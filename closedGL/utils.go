@@ -2,6 +2,8 @@ package closedGL
 
 import (
 	"fmt"
+	"os"
+	"strings"
 
 	"github.com/EngoEngine/glm"
 )
@@ -88,4 +90,30 @@ func RleDecode(arr []byte) []byte {
 		}
 	}
 	return retBytes
+}
+
+func parseConfig(path string) map[string]string {
+	var retMap = map[string]string{}
+	var bytes, err = os.ReadFile(path)
+	if err != nil {
+		println("could not find config", err.Error())
+	}
+	var content = string(bytes)
+	for _, x := range strings.Split(content, "\n") {
+		var l = strings.Trim(x, " ")
+		if l == "" || l[0] == '[' {
+			continue
+		}
+		var splitted = strings.Split(l, "=")
+		retMap[splitted[0]] = splitted[1]
+	}
+	return retMap
+}
+
+func strToBool(str string) bool {
+	if str == "true" {
+		return true
+	} else {
+		return false
+	}
 }
