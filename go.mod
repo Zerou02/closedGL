@@ -9,4 +9,10 @@ require (
 	neilpa.me/go-stbi v1.1.0
 )
 
-require github.com/EngoEngine/math v1.0.4 // indirect
+require (
+	github.com/EngoEngine/math v1.0.4 // indirect
+	github.com/ebitengine/oto/v3 v3.2.0 // indirect
+	github.com/ebitengine/purego v0.7.0 // indirect
+	github.com/hajimehoshi/go-mp3 v0.3.4 // indirect
+	golang.org/x/sys v0.18.0 // indirect
+)

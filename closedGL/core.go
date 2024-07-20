@@ -44,6 +44,7 @@ type ClosedGLContext struct {
 	shaderCameraManager *ShaderCameraManager
 	Camera              *Camera
 	Text                *Text
+	audio               Audio
 	KeyBoardManager     *KeyBoardManager
 	FPSCounter          *FPSCounter
 	amountPrimitiveMans int
@@ -74,7 +75,9 @@ func InitClosedGL(pWidth, pHeight float32, name string) ClosedGLContext {
 		Window: &pWindow, shaderCameraManager: &shaderManager,
 		Camera: &c, Text: &text, KeyBoardManager: &key,
 		FPSCounter:      &fpsCounter,
-		primitiveManMap: map[depth]*[]unsafe.Pointer{}, amountPrimitiveMans: 4, indexArr: []int{}}
+		primitiveManMap: map[depth]*[]unsafe.Pointer{}, amountPrimitiveMans: 4, indexArr: []int{},
+		audio: newAudio(),
+	}
 
 	return con
 }
@@ -145,6 +148,7 @@ func (this *ClosedGLContext) Process() {
 	this.KeyBoardManager.Process()
 	this.FPSCounter.Process()
 	this.Camera.Process(this.Window.Window, float32(0.16))
+	this.audio.process()
 	glfw.PollEvents()
 	this.Window.Window.SwapBuffers()
 	if this.FPSCounter.Elapsed >= 0.5 {
@@ -298,4 +302,12 @@ func (this *ClosedGLContext) DrawTriangle(pos [3]glm.Vec2, colour glm.Vec4, dept
 		this.initEmptyMapAtDepth(depth)
 	}
 	(*TriangleManager)(this.getMapEntry(depth, 3)).createVertices(pos, colour)
+}
+
+func (this *ClosedGLContext) PlaySound(name string) {
+	this.audio.playSound(name)
+}
+
+func (this *ClosedGLContext) PlayMusic(name string) {
+	this.audio.streamMusic(name)
 }
