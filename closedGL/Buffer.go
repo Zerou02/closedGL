@@ -165,7 +165,7 @@ func setVerticesInVboU16(vertices *[]uint16, vboSizeEntries *int, vbo uint32) {
 		return
 	}
 	gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
-	if len(*vertices) >= *vboSizeEntries {
+	if len(*vertices)*2 >= *vboSizeEntries {
 		*vboSizeEntries = len(*vertices) * bytesPerEntry
 		gl.BufferData(gl.ARRAY_BUFFER, *vboSizeEntries, gl.Ptr(*vertices), gl.DYNAMIC_DRAW)
 	} else {

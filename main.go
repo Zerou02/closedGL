@@ -16,7 +16,7 @@ func main() {
 
 func StartClosedGL() {
 
-	var openGL = closedGL.InitClosedGL(800, 600)
+	var openGL = closedGL.InitClosedGL(800, 600, "demo")
 	openGL.Window.SetScrollCallback(openGL.Camera.ScrollCb)
 	openGL.Window.SetCursorPosCallback(openGL.Camera.MouseCallback)
 	openGL.Window.Window.SetMouseButtonCallback(closedGL.StandardMouseClickCB)

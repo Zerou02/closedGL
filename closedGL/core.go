@@ -51,12 +51,12 @@ type ClosedGLContext struct {
 	indexArr            []int
 }
 
-func InitClosedGL(pWidth, pHeight float32) ClosedGLContext {
+func InitClosedGL(pWidth, pHeight float32, name string) ClosedGLContext {
 	runtime.LockOSThread()
 
 	var width = pWidth
 	var height = pHeight
-	var window = initGlfw(int(width), int(height))
+	var window = initGlfw(int(width), int(height), name)
 	var fpsCounter = NewFPSCounter()
 	var pWindow = Window{
 		Window: window,
@@ -87,14 +87,14 @@ func (this *ClosedGLContext) LimitFPS(val bool) {
 	}
 }
 
-func initGlfw(width, height int) *glfw.Window {
+func initGlfw(width, height int, name string) *glfw.Window {
 	glfw.Init()
 	glfw.WindowHint(glfw.Resizable, glfw.False)
 	glfw.WindowHint(glfw.ContextVersionMajor, 4)
 	glfw.WindowHint(glfw.ContextVersionMinor, 1)
 	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
 	glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
-	var window, _ = glfw.CreateWindow(width, height, "fast blazinglycraft", nil, nil)
+	var window, _ = glfw.CreateWindow(width, height, name, nil, nil)
 	window.MakeContextCurrent()
 	return window
 }
