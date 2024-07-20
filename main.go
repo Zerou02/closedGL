@@ -57,7 +57,6 @@ func StartClosedGL() {
 		openGL.BeginDrawing()
 		openGL.ClearBG(glm.Vec4{0, 0, 0, 0})
 		var valueArr = anim.GetValueArr()
-		println(valueArr[0], valueArr[1])
 		openGL.DrawRect(glm.Vec4{0, 0, valueArr[0], valueArr[1]}, glm.Vec4{1, 1, 1, 1}, 1)
 		openGL.EndDrawing()
 		openGL.Process()
