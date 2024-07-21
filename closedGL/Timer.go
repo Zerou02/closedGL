@@ -5,7 +5,7 @@ type Timer struct {
 	repeat           bool
 }
 
-func newTimer(durationSec float32, repeat bool) Timer {
+func NewTimer(durationSec float32, repeat bool) Timer {
 	return Timer{
 		currS:     0,
 		targetDur: durationSec,
@@ -13,13 +13,13 @@ func newTimer(durationSec float32, repeat bool) Timer {
 	}
 }
 
-func (this *Timer) process(delta float32) {
-	if this.repeat && this.isTick() {
+func (this *Timer) Process(delta float32) {
+	if this.repeat && this.IsTick() {
 		this.currS = 0
 	}
 	this.currS += delta
 }
 
-func (this *Timer) isTick() bool {
+func (this *Timer) IsTick() bool {
 	return this.currS >= this.targetDur
 }
