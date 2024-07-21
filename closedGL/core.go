@@ -49,7 +49,7 @@ type ClosedGLContext struct {
 	FPSCounter          *FPSCounter
 	amountPrimitiveMans int
 	primitiveManMap     map[depth]*[]unsafe.Pointer
-	config              map[string]string
+	Config              map[string]string
 	indexArr            []int
 }
 
@@ -82,7 +82,7 @@ func InitClosedGL(pWidth, pHeight float32, name string) ClosedGLContext {
 		Camera: &c, Text: &text, KeyBoardManager: &key,
 		FPSCounter:      &fpsCounter,
 		primitiveManMap: map[depth]*[]unsafe.Pointer{}, amountPrimitiveMans: 4, indexArr: []int{},
-		config: config,
+		Config: config,
 		audio:  newAudio(),
 	}
 	if config["potato-friendliness"] != "" {
@@ -318,6 +318,6 @@ func (this *ClosedGLContext) PlaySound(name string) {
 	this.audio.playSound(name)
 }
 
-func (this *ClosedGLContext) PlayMusic(name string) {
-	this.audio.streamMusic(name)
+func (this *ClosedGLContext) PlayMusic(name string, volume float64) {
+	this.audio.streamMusic(name, volume)
 }

@@ -69,7 +69,7 @@ func (this *Audio) playSound(name string) {
 	this.sounds = append(this.sounds, player)
 }
 
-func (this *Audio) streamMusic(name string) {
+func (this *Audio) streamMusic(name string, volume float64) {
 	var fileBytes, err = os.Open("./assets/audio/" + name + ".mp3")
 	if err != nil {
 		panic("reading my-file.mp3 failed: " + err.Error())
@@ -80,6 +80,7 @@ func (this *Audio) streamMusic(name string) {
 	}
 	var player = this.ctx.NewPlayer(decodedMp3)
 	player.Play()
+	player.SetVolume(volume)
 	var music = Music{
 		player: player,
 		file:   fileBytes,
