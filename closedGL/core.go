@@ -319,5 +319,9 @@ func (this *ClosedGLContext) PlaySound(name string) {
 }
 
 func (this *ClosedGLContext) PlayMusic(name string, volume float64) {
-	this.audio.streamMusic(name, volume)
+	this.audio.streamMusic(name, volume, true)
+}
+
+func (this *ClosedGLContext) EndMusic(name string) {
+	this.audio.closeMusic(name)
 }

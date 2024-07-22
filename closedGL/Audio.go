@@ -17,6 +17,9 @@ type Audio struct {
 type Music struct {
 	player *oto.Player
 	file   *os.File
+	name   string
+	repeat bool
+	volume float64
 }
 
 func newAudio() Audio {
@@ -53,6 +56,9 @@ func (this *Audio) process() {
 			newMusic = append(newMusic, x)
 		} else {
 			x.file.Close()
+			if x.repeat {
+				this.streamMusic(x.name, x.volume, x.repeat)
+			}
 		}
 	}
 	this.music = newMusic
@@ -69,7 +75,7 @@ func (this *Audio) playSound(name string) {
 	this.sounds = append(this.sounds, player)
 }
 
-func (this *Audio) streamMusic(name string, volume float64) {
+func (this *Audio) streamMusic(name string, volume float64, repeat bool) {
 	var fileBytes, err = os.Open("./assets/audio/" + name + ".mp3")
 	if err != nil {
 		panic("reading my-file.mp3 failed: " + err.Error())
@@ -84,6 +90,21 @@ func (this *Audio) streamMusic(name string, volume float64) {
 	var music = Music{
 		player: player,
 		file:   fileBytes,
+		repeat: repeat,
+		name:   name,
+		volume: volume,
 	}
 	this.music = append(this.music, &music)
+}
+
+func (this *Audio) closeMusic(name string) {
+	var newMusic = []*Music{}
+	for _, x := range this.music {
+		if x.name != name {
+			newMusic = append(newMusic, x)
+		} else {
+			x.file.Close()
+		}
+	}
+	this.music = newMusic
 }

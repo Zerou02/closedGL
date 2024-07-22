@@ -27,11 +27,13 @@ func StartClosedGL() {
 	var last = glfw.GetTime()
 	var frameCount = 0
 
-	openGL.PlayMusic("bgm")
+	openGL.PlayMusic("bgm", 0.25)
 	var anim = closedGL.NewStaggeredAnimation([]closedGL.Animation{
 		closedGL.NewAnimation(100, 500, 1, false, false),
 		closedGL.NewAnimation(100, 500, 1, false, false),
 	})
+	openGL.EndMusic("bgm")
+	openGL.PlayMusic("bgm2", 0.25)
 
 	for !openGL.Window.Window.ShouldClose() {
 		var curr = glfw.GetTime()
