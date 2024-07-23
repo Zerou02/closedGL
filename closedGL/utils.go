@@ -3,6 +3,7 @@ package closedGL
 import (
 	"fmt"
 	"os"
+	"runtime"
 	"strings"
 
 	"github.com/EngoEngine/glm"
@@ -99,9 +100,13 @@ func parseConfig(path string) map[string]string {
 		println("could not find config", err.Error())
 	}
 	var content = string(bytes)
-	for _, x := range strings.Split(content, "\n") {
+	var linSep = "\n"
+	if runtime.GOOS == "windows" {
+		linSep = "\rn"
+	}
+	for _, x := range strings.Split(content, linSep) {
 		var l = strings.Trim(x, " ")
-		if l == "" || l[0] == '[' {
+		if l == "" || l[0] == '[' || l == " " {
 			continue
 		}
 		var splitted = strings.Split(l, "=")
