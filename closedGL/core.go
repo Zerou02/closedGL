@@ -81,7 +81,7 @@ func InitClosedGL(pWidth, pHeight float32, name string) ClosedGLContext {
 		Window: &pWindow, shaderCameraManager: &shaderManager,
 		Camera: &c, Text: &text, KeyBoardManager: &key,
 		FPSCounter:      &fpsCounter,
-		primitiveManMap: map[depth]*[]unsafe.Pointer{}, amountPrimitiveMans: 4, indexArr: []int{},
+		primitiveManMap: map[depth]*[]unsafe.Pointer{}, amountPrimitiveMans: 5, indexArr: []int{},
 		Config: config,
 		audio:  newAudio(),
 	}
@@ -186,6 +186,7 @@ func (this *ClosedGLContext) initEmptyMapAtDepth(depth int) {
 	var cm = this.createCircleMan()
 	var lm = this.createLineMan()
 	var tm = this.createTriMan()
+	var bm = this.createBezier()
 
 	this.primitiveManMap[depth] = &newArr
 
@@ -193,6 +194,7 @@ func (this *ClosedGLContext) initEmptyMapAtDepth(depth int) {
 	this.setMapEntry(depth, 1, unsafe.Pointer(&cm))
 	this.setMapEntry(depth, 2, unsafe.Pointer(&lm))
 	this.setMapEntry(depth, 3, unsafe.Pointer(&tm))
+	this.setMapEntry(depth, 4, unsafe.Pointer(&bm))
 
 	this.indexArr = append(this.indexArr, depth)
 	sort.Ints(this.indexArr)
@@ -210,6 +212,9 @@ func (this *ClosedGLContext) createLineMan() LineArr {
 	return NewLineArr(this.shaderCameraManager.Shadermap["points"], &this.shaderCameraManager.projection2D)
 }
 
+func (this *ClosedGLContext) createBezier() BezierShader {
+	return newBezier(this.shaderCameraManager.Shadermap["qBezier"], &this.shaderCameraManager.projection2D)
+}
 func (this *ClosedGLContext) createTriMan() TriangleManager {
 	return newTriangleManager(this.shaderCameraManager.Shadermap["points"], &this.shaderCameraManager.projection2D)
 
@@ -270,6 +275,14 @@ func (this *ClosedGLContext) DrawQuadraticBezierLerp(p1, p2, controlPoint glm.Ve
 	(*LineArr)(this.getMapEntry(depth, 2)).AddQuadraticBezierLerp(p1, p2, controlPoint, colour1, colour2)
 }
 
+func (this *ClosedGLContext) DrawBezier(p1, p2, cp glm.Vec2, depth int) {
+
+	if this.primitiveManMap[depth] == nil {
+		this.initEmptyMapAtDepth(depth)
+	}
+	(*BezierShader)(this.getMapEntry(depth, 4)).createVertices(p1, p2, cp)
+}
+
 func (this *ClosedGLContext) EndDrawing() {
 	this.Text.draw()
 	for _, x := range this.indexArr {
@@ -283,6 +296,8 @@ func (this *ClosedGLContext) EndDrawing() {
 				(*LineArr)(x).draw()
 			} else if i == 3 {
 				(*TriangleManager)(x).draw()
+			} else if i == 4 {
+				(*BezierShader)(x).draw()
 			}
 		}
 	}
@@ -301,6 +316,8 @@ func (this *ClosedGLContext) BeginDrawing() {
 				(*LineArr)(x).beginDraw()
 			} else if i == 3 {
 				(*TriangleManager)(x).beginDraw()
+			} else if i == 4 {
+				(*BezierShader)(x).beginDraw()
 			}
 		}
 	}

@@ -72,8 +72,11 @@ func (this *LineArr) addPoint(pos glm.Vec2, colour glm.Vec4) {
 }
 
 func (this *LineArr) addLine(pos1, pos2 glm.Vec2, colour1, colour2 glm.Vec4) {
+	println("cc")
 	this.addPoint(pos1, colour1)
 	this.addPoint(pos2, colour2)
+	println("ccd")
+
 }
 
 func (this *LineArr) AddPath(pos []glm.Vec2, colours []glm.Vec4) {

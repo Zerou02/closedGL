@@ -23,29 +23,10 @@ func StartClosedGL() {
 	_ = isWireframeMode
 	openGL.Camera.CameraPos = glm.Vec3{0, 0, 0}
 
-	var elapsed float64 = 0
-	var last = glfw.GetTime()
-	var frameCount = 0
-
-	openGL.PlayMusic("bgm", 0.25)
-	var anim = closedGL.NewStaggeredAnimation([]closedGL.Animation{
-		closedGL.NewAnimation(100, 500, 1, false, false),
-		closedGL.NewAnimation(100, 500, 1, false, false),
-	})
-	openGL.EndMusic("bgm")
-	openGL.PlayMusic("bgm2", 0.25)
-
+	openGL.LimitFPS(false)
+	var anim = closedGL.NewAnimation(100, 500, 3, false, true)
 	for !openGL.Window.Window.ShouldClose() {
-		var curr = glfw.GetTime()
-		elapsed += curr - last
-		last = curr
-		frameCount++
-		if elapsed > 1 {
-			closedGL.PrintlnFloat(float32(openGL.FPSCounter.FpsAverage))
 
-			elapsed = 0
-			frameCount = 0
-		}
 		var delta = openGL.FPSCounter.Delta
 		_ = delta
 		anim.Process(float32(delta))
@@ -56,9 +37,12 @@ func StartClosedGL() {
 		}
 
 		openGL.BeginDrawing()
+		openGL.DrawFPS(500, 0, 1)
 		openGL.ClearBG(glm.Vec4{0, 0, 0, 0})
-		var valueArr = anim.GetValueArr()
-		openGL.DrawRect(glm.Vec4{0, 0, valueArr[0], valueArr[1]}, glm.Vec4{1, 1, 1, 1}, 1)
+		openGL.DrawRect(glm.Vec4{0, 0, 10, 10}, glm.Vec4{1, 1, 1, 1}, 1)
+		openGL.DrawQuadraticBezier(glm.Vec2{100, 100}, glm.Vec2{200, 200}, glm.Vec2{300, 300}, glm.Vec4{1, 1, 1, 1}, 2)
+		openGL.DrawBezier(glm.Vec2{100, 100}, glm.Vec2{200, 200}, glm.Vec2{300, 300}, 1)
+
 		openGL.EndDrawing()
 		openGL.Process()
 	}
