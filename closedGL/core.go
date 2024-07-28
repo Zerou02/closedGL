@@ -51,7 +51,6 @@ type ClosedGLContext struct {
 	primitiveManMap     map[depth]*[]unsafe.Pointer
 	Config              map[string]string
 	indexArr            []int
-	compShader          Shader
 }
 
 func InitClosedGL(pWidth, pHeight float32, name string) ClosedGLContext {
@@ -104,7 +103,6 @@ func InitClosedGL(pWidth, pHeight float32, name string) ClosedGLContext {
 	gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, TEXTURE_WIDTH, TEXTURE_HEIGHT, 0, gl.RGBA, gl.FLOAT, nil)
 	gl.BindImageTexture(0, texture, 0, false, 0, gl.READ_WRITE, gl.RGBA32F)
 
-	con.compShader = initCompShader("./assets/test.comp")
 	return con
 }
 
@@ -323,9 +321,6 @@ func (this *ClosedGLContext) EndDrawing() {
 			}
 		}
 	}
-	this.compShader.use()
-	gl.DispatchCompute(512, 512, 1)
-	gl.MemoryBarrier(gl.SHADER_IMAGE_ACCESS_BARRIER_BIT)
 }
 
 func (this *ClosedGLContext) BeginDrawing() {
@@ -358,11 +353,11 @@ func (this *ClosedGLContext) DrawTriangle(pos [3]glm.Vec2, colour glm.Vec4, dept
 	(*TriangleManager)(this.getMapEntry(depth, 3)).createVertices(pos, colour)
 }
 
-func (this *ClosedGLContext) DrawSprite(depth int) {
+func (this *ClosedGLContext) DrawSprite(pos glm.Vec4, path string, depth int) {
 	if this.primitiveManMap[depth] == nil {
 		this.initEmptyMapAtDepth(depth)
 	}
-	(*SpriteManager)(this.getMapEntry(depth, 5)).createVertices(glm.Vec4{0, 0, 200, 200}, glm.Vec4{1, 1, 1, 1})
+	(*SpriteManager)(this.getMapEntry(depth, 5)).createVertices(pos, path)
 
 }
 

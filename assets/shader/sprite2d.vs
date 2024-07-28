@@ -2,8 +2,6 @@
 layout(location = 0) in vec2 pos;
 layout(location = 1) in vec2 texCoord;
 layout(location = 2) in vec4 offset;
-layout(location = 3) in vec4 colour;
-layout(location = 4) in vec4 colour2;
 
 uniform mat4 projection;
 

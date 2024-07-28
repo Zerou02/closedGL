@@ -43,7 +43,7 @@ func StartClosedGL() {
 
 		openGL.BeginDrawing()
 		openGL.DrawFPS(500, 0, 1)
-		openGL.DrawSprite(1)
+		openGL.DrawSprite(glm.Vec4{0, 0, 200, 200}, "./assets/sprites/fence.png", 1)
 		openGL.ClearBG(glm.Vec4{0, 0, 0, 0})
 
 		openGL.EndDrawing()
