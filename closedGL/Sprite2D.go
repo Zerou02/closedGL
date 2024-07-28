@@ -13,6 +13,7 @@ type SpriteManager struct {
 	instanceBuffer BufferFloat
 	baseVBO        BufferFloat
 	indices        []byte
+	tex            *uint32
 }
 
 func newSpriteMane(shader *Shader, projection *glm.Mat4) SpriteManager {
@@ -22,13 +23,16 @@ func newSpriteMane(shader *Shader, projection *glm.Mat4) SpriteManager {
 	rect.vao = genVAO()
 	rect.baseVBO = genSingularBufferFloat(rect.vao, 0, 2, gl.FLOAT, false, 0)
 	rect.instanceBuffer = BufferFloat{
-		buffer:     generateInterleavedVBOFloat(rect.vao, 1, []int{4, 4}),
+		buffer:     generateInterleavedVBOFloat(rect.vao, 1, []int{4, 4, 4}),
 		bufferSize: 0,
 		cpuArr:     []float32{},
 	}
 	gl.BindBuffer(gl.ARRAY_BUFFER, rect.instanceBuffer.buffer)
 	gl.VertexAttribDivisor(1, 1)
 	gl.VertexAttribDivisor(2, 1)
+	gl.VertexAttribDivisor(3, 1)
+
+	rect.tex = LoadImage("./assets/sprites/fence.png", gl.RGBA)
 
 	var quadBaseData = []float32{
 		1.0, 0.0, //top r
@@ -55,7 +59,7 @@ func (this *SpriteManager) deleteBuffers() {
 }
 
 func (this *SpriteManager) createVertices(dim, colour glm.Vec4) {
-	var stride uint32 = 8
+	var stride uint32 = 12
 
 	this.instanceBuffer.resizeCPUData(int(this.amountQuads+1) * int(stride))
 
@@ -63,21 +67,35 @@ func (this *SpriteManager) createVertices(dim, colour glm.Vec4) {
 	this.instanceBuffer.cpuArr[this.amountQuads*stride+1] = dim[1]
 	this.instanceBuffer.cpuArr[this.amountQuads*stride+2] = dim[2]
 	this.instanceBuffer.cpuArr[this.amountQuads*stride+3] = dim[3]
-	this.instanceBuffer.cpuArr[this.amountQuads*stride+4] = colour[0]
-	this.instanceBuffer.cpuArr[this.amountQuads*stride+5] = colour[1]
-	this.instanceBuffer.cpuArr[this.amountQuads*stride+6] = colour[2]
-	this.instanceBuffer.cpuArr[this.amountQuads*stride+7] = colour[3]
+
+	this.instanceBuffer.cpuArr[this.amountQuads*stride+4] = 1
+	this.instanceBuffer.cpuArr[this.amountQuads*stride+5] = 0
+	this.instanceBuffer.cpuArr[this.amountQuads*stride+6] = 1
+	this.instanceBuffer.cpuArr[this.amountQuads*stride+7] = 0
+
+	this.instanceBuffer.cpuArr[this.amountQuads*stride+8] = 0
+	this.instanceBuffer.cpuArr[this.amountQuads*stride+9] = 0
+	this.instanceBuffer.cpuArr[this.amountQuads*stride+10] = 1
+	this.instanceBuffer.cpuArr[this.amountQuads*stride+11] = 1
 
 	this.amountQuads++
+
 }
 
 func (this *SpriteManager) draw() {
-	this.shader.use()
-	this.shader.setUniformMatrix4("projection", this.projection)
-	gl.Disable(gl.DEPTH_TEST)
-	gl.BindVertexArray(this.vao)
+	for i := 0; i < 5000; i++ {
+		this.beginDraw()
+		this.createVertices(glm.Vec4{float32(i), float32(i), 100, 200}, glm.Vec4{1, 1, 1, 1})
+		this.shader.use()
+		this.shader.setUniformMatrix4("projection", this.projection)
+		gl.ActiveTexture(gl.TEXTURE0)
+		gl.BindTexture(gl.TEXTURE_2D, *this.tex)
+		this.shader.setUniform1i("tex", 0)
+		gl.Disable(gl.DEPTH_TEST)
+		gl.BindVertexArray(this.vao)
 
-	this.instanceBuffer.copyToGPU()
-	gl.DrawElementsInstanced(gl.TRIANGLES, 6, gl.UNSIGNED_BYTE, gl.Ptr(this.indices), int32(this.amountQuads))
-	gl.Enable(gl.DEPTH_TEST)
+		this.instanceBuffer.copyToGPU()
+		gl.DrawElementsInstanced(gl.TRIANGLES, 6, gl.UNSIGNED_BYTE, gl.Ptr(this.indices), 1)
+		gl.Enable(gl.DEPTH_TEST)
+	}
 }
