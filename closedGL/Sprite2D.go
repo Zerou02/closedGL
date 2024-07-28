@@ -14,6 +14,9 @@ type SpriteManager struct {
 	baseVBO        BufferFloat
 	indices        []byte
 	tex            *uint32
+	ssbo           SSBOU64
+	textures       []uint32
+	handles        []uint64
 }
 
 func newSpriteMane(shader *Shader, projection *glm.Mat4) SpriteManager {
@@ -32,6 +35,11 @@ func newSpriteMane(shader *Shader, projection *glm.Mat4) SpriteManager {
 	gl.VertexAttribDivisor(2, 1)
 	gl.VertexAttribDivisor(3, 1)
 
+	rect.ssbo = genSSBOU64(1)
+
+	var cArr = []uint64{0}
+	rect.ssbo.cpuArr = cArr
+
 	rect.tex = LoadImage("./assets/sprites/fence.png", gl.RGBA)
 
 	var quadBaseData = []float32{
@@ -43,6 +51,22 @@ func newSpriteMane(shader *Shader, projection *glm.Mat4) SpriteManager {
 	rect.baseVBO.cpuArr = quadBaseData
 	rect.baseVBO.copyToGPU()
 
+	var textureData = [32 * 32 * 3]byte{}
+	for i := 0; i < len(textureData); i++ {
+		textureData[i] = 1
+	}
+
+	var numInstances = 10
+
+	for i := 0; i < numInstances; i++ {
+		var texture = *LoadImage("./assets/sprites/fence.png", gl.RGBA)
+		var handle = gl.GetTextureHandleARB(texture)
+		if handle == 0 {
+			panic("123")
+		}
+		rect.handles = append(rect.handles, handle)
+	}
+	rect.ssbo.cpuArr = rect.handles
 	return rect
 }
 
@@ -83,19 +107,20 @@ func (this *SpriteManager) createVertices(dim, colour glm.Vec4) {
 }
 
 func (this *SpriteManager) draw() {
-	for i := 0; i < 5000; i++ {
-		this.beginDraw()
-		this.createVertices(glm.Vec4{float32(i), float32(i), 100, 200}, glm.Vec4{1, 1, 1, 1})
-		this.shader.use()
-		this.shader.setUniformMatrix4("projection", this.projection)
-		gl.ActiveTexture(gl.TEXTURE0)
-		gl.BindTexture(gl.TEXTURE_2D, *this.tex)
-		this.shader.setUniform1i("tex", 0)
-		gl.Disable(gl.DEPTH_TEST)
-		gl.BindVertexArray(this.vao)
+	this.shader.use()
 
-		this.instanceBuffer.copyToGPU()
-		gl.DrawElementsInstanced(gl.TRIANGLES, 6, gl.UNSIGNED_BYTE, gl.Ptr(this.indices), 1)
-		gl.Enable(gl.DEPTH_TEST)
+	for i := 0; i < len(this.handles); i++ {
+		gl.MakeTextureHandleResidentARB(this.handles[i])
+	}
+	this.shader.setUniformMatrix4("projection", this.projection)
+	gl.Disable(gl.DEPTH_TEST)
+	gl.BindVertexArray(this.vao)
+	this.ssbo.copyToGPU()
+	this.instanceBuffer.copyToGPU()
+	gl.DrawElementsInstanced(gl.TRIANGLES, 6, gl.UNSIGNED_BYTE, gl.Ptr(this.indices), 1)
+	gl.Enable(gl.DEPTH_TEST)
+
+	for i := 0; i < len(this.handles); i++ {
+		gl.MakeTextureHandleNonResidentARB(this.handles[i])
 	}
 }

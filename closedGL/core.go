@@ -362,7 +362,8 @@ func (this *ClosedGLContext) DrawSprite(depth int) {
 	if this.primitiveManMap[depth] == nil {
 		this.initEmptyMapAtDepth(depth)
 	}
-	(*SpriteManager)(this.getMapEntry(depth, 5)).createVertices(glm.Vec4{0, 0, 100, 100}, glm.Vec4{1, 1, 1, 1})
+	(*SpriteManager)(this.getMapEntry(depth, 5)).createVertices(glm.Vec4{0, 0, 200, 200}, glm.Vec4{1, 1, 1, 1})
+
 }
 
 func (this *ClosedGLContext) PlaySound(name string) {

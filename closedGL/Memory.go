@@ -35,3 +35,14 @@ func extendArrayVec4(arr *[]glm.Vec4, newLenEntries int) {
 		*arr = newArr
 	}
 }
+
+func extendArrayU64(arr *[]uint64, newLenEntries int) {
+	if newLenEntries != 0 && len(*arr) == 0 {
+		*arr = make([]uint64, 1)
+	}
+	for newLenEntries >= len(*arr) {
+		var newArr = make([]uint64, len(*arr)*2)
+		copy(newArr, *arr)
+		*arr = newArr
+	}
+}

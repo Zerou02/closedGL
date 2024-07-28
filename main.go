@@ -43,7 +43,6 @@ func StartClosedGL() {
 
 		openGL.BeginDrawing()
 		openGL.DrawFPS(500, 0, 1)
-		openGL.DrawRect(glm.Vec4{0, 0, 50, 50}, glm.Vec4{1, 1, 0, 1}, 1)
 		openGL.DrawSprite(1)
 		openGL.ClearBG(glm.Vec4{0, 0, 0, 0})
 
