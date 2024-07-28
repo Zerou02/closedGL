@@ -24,16 +24,16 @@ func newSpriteMane(shader *Shader, projection *glm.Mat4) SpriteManager {
 	var rect = SpriteManager{shader: shader, projection: projection, amountQuads: 0, indices: indices}
 
 	rect.vao = genVAO()
-	rect.baseVBO = genSingularBufferFloat(rect.vao, 0, 2, gl.FLOAT, false, 0)
-	rect.instanceBuffer = BufferFloat{
-		buffer:     generateInterleavedVBOFloat(rect.vao, 1, []int{4, 4, 4}),
-		bufferSize: 0,
-		cpuArr:     []float32{},
-	}
+	rect.baseVBO = generateInterleavedVBOFloat2(rect.vao, 0, []int{2, 2})
+	gl.BindBuffer(gl.ARRAY_BUFFER, rect.baseVBO.buffer)
+	gl.VertexAttribDivisor(0, 0)
+	gl.VertexAttribDivisor(1, 0)
+	rect.instanceBuffer = generateInterleavedVBOFloat2(rect.vao, 2, []int{4, 4, 4})
+
 	gl.BindBuffer(gl.ARRAY_BUFFER, rect.instanceBuffer.buffer)
-	gl.VertexAttribDivisor(1, 1)
 	gl.VertexAttribDivisor(2, 1)
 	gl.VertexAttribDivisor(3, 1)
+	gl.VertexAttribDivisor(4, 1)
 
 	rect.ssbo = genSSBOU64(1)
 
@@ -43,18 +43,14 @@ func newSpriteMane(shader *Shader, projection *glm.Mat4) SpriteManager {
 	rect.tex = LoadImage("./assets/sprites/fence.png", gl.RGBA)
 
 	var quadBaseData = []float32{
-		1.0, 0.0, //top r
-		0.0, 0.0, // top l
-		1.0, 1.0, // bottom r
-		0.0, 1.0, // bottom l,
+		//pos,uv
+		1.0, 0.0, 1.0, 0.0, //top r
+		0.0, 0.0, 0.0, 0.0, // top l
+		1.0, 1.0, 1.0, 1.0, // bottom r
+		0.0, 1.0, 0.0, 1.0, // bottom l,
 	}
 	rect.baseVBO.cpuArr = quadBaseData
 	rect.baseVBO.copyToGPU()
-
-	var textureData = [32 * 32 * 3]byte{}
-	for i := 0; i < len(textureData); i++ {
-		textureData[i] = 1
-	}
 
 	var numInstances = 10
 
