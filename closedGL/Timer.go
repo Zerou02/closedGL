@@ -3,6 +3,7 @@ package closedGL
 type Timer struct {
 	currS, targetDur float32
 	repeat           bool
+	finished         bool
 }
 
 func NewTimer(durationSec float32, repeat bool) Timer {
@@ -10,6 +11,7 @@ func NewTimer(durationSec float32, repeat bool) Timer {
 		currS:     0,
 		targetDur: durationSec,
 		repeat:    repeat,
+		finished:  false,
 	}
 }
 
@@ -21,5 +23,9 @@ func (this *Timer) Process(delta float32) {
 }
 
 func (this *Timer) IsTick() bool {
-	return this.currS >= this.targetDur
+	var retVal = !this.finished && this.currS >= this.targetDur
+	if retVal {
+		this.finished = true
+	}
+	return retVal
 }

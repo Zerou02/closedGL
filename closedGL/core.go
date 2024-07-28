@@ -51,6 +51,7 @@ type ClosedGLContext struct {
 	primitiveManMap     map[depth]*[]unsafe.Pointer
 	Config              map[string]string
 	indexArr            []int
+	compShader          Shader
 }
 
 func InitClosedGL(pWidth, pHeight float32, name string) ClosedGLContext {
@@ -81,7 +82,7 @@ func InitClosedGL(pWidth, pHeight float32, name string) ClosedGLContext {
 		Window: &pWindow, shaderCameraManager: &shaderManager,
 		Camera: &c, Text: &text, KeyBoardManager: &key,
 		FPSCounter:      &fpsCounter,
-		primitiveManMap: map[depth]*[]unsafe.Pointer{}, amountPrimitiveMans: 5, indexArr: []int{},
+		primitiveManMap: map[depth]*[]unsafe.Pointer{}, amountPrimitiveMans: 6, indexArr: []int{},
 		Config: config,
 		audio:  newAudio(),
 	}
@@ -89,6 +90,21 @@ func InitClosedGL(pWidth, pHeight float32, name string) ClosedGLContext {
 		con.LimitFPS(strToBool(config["potato-friendliness"]))
 	}
 
+	const TEXTURE_WIDTH = 512
+	const TEXTURE_HEIGHT = 512
+	var texture uint32
+
+	gl.GenTextures(1, &texture)
+	gl.ActiveTexture(gl.TEXTURE0)
+	gl.BindTexture(gl.TEXTURE_2D, texture)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
+	gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, TEXTURE_WIDTH, TEXTURE_HEIGHT, 0, gl.RGBA, gl.FLOAT, nil)
+	gl.BindImageTexture(0, texture, 0, false, 0, gl.READ_WRITE, gl.RGBA32F)
+
+	con.compShader = initCompShader("./assets/test.comp")
 	return con
 }
 
@@ -104,7 +120,7 @@ func initGlfw(width, height int, name string) *glfw.Window {
 	glfw.Init()
 	glfw.WindowHint(glfw.Resizable, glfw.False)
 	glfw.WindowHint(glfw.ContextVersionMajor, 4)
-	glfw.WindowHint(glfw.ContextVersionMinor, 1)
+	glfw.WindowHint(glfw.ContextVersionMinor, 6)
 	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
 	glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
 	var window, _ = glfw.CreateWindow(width, height, name, nil, nil)
@@ -187,6 +203,7 @@ func (this *ClosedGLContext) initEmptyMapAtDepth(depth int) {
 	var lm = this.createLineMan()
 	var tm = this.createTriMan()
 	var bm = this.createBezier()
+	var sm = this.createSpriteMan()
 
 	this.primitiveManMap[depth] = &newArr
 
@@ -195,6 +212,7 @@ func (this *ClosedGLContext) initEmptyMapAtDepth(depth int) {
 	this.setMapEntry(depth, 2, unsafe.Pointer(&lm))
 	this.setMapEntry(depth, 3, unsafe.Pointer(&tm))
 	this.setMapEntry(depth, 4, unsafe.Pointer(&bm))
+	this.setMapEntry(depth, 5, unsafe.Pointer(&sm))
 
 	this.indexArr = append(this.indexArr, depth)
 	sort.Ints(this.indexArr)
@@ -217,7 +235,9 @@ func (this *ClosedGLContext) createBezier() BezierShader {
 }
 func (this *ClosedGLContext) createTriMan() TriangleManager {
 	return newTriangleManager(this.shaderCameraManager.Shadermap["points"], &this.shaderCameraManager.projection2D)
-
+}
+func (this *ClosedGLContext) createSpriteMan() SpriteManager {
+	return newSpriteMane(this.shaderCameraManager.Shadermap["sprite2d"], &this.shaderCameraManager.projection2D)
 }
 func (this *ClosedGLContext) getMapEntry(depth int, idx int) unsafe.Pointer {
 	return (*this.primitiveManMap[depth])[idx]
@@ -298,9 +318,14 @@ func (this *ClosedGLContext) EndDrawing() {
 				(*TriangleManager)(x).draw()
 			} else if i == 4 {
 				(*BezierShader)(x).draw()
+			} else if i == 5 {
+				(*SpriteManager)(x).draw()
 			}
 		}
 	}
+	this.compShader.use()
+	gl.DispatchCompute(512, 512, 1)
+	gl.MemoryBarrier(gl.SHADER_IMAGE_ACCESS_BARRIER_BIT)
 }
 
 func (this *ClosedGLContext) BeginDrawing() {
@@ -318,6 +343,8 @@ func (this *ClosedGLContext) BeginDrawing() {
 				(*TriangleManager)(x).beginDraw()
 			} else if i == 4 {
 				(*BezierShader)(x).beginDraw()
+			} else if i == 5 {
+				(*SpriteManager)(x).beginDraw()
 			}
 		}
 	}
@@ -329,6 +356,13 @@ func (this *ClosedGLContext) DrawTriangle(pos [3]glm.Vec2, colour glm.Vec4, dept
 		this.initEmptyMapAtDepth(depth)
 	}
 	(*TriangleManager)(this.getMapEntry(depth, 3)).createVertices(pos, colour)
+}
+
+func (this *ClosedGLContext) DrawSprite(depth int) {
+	if this.primitiveManMap[depth] == nil {
+		this.initEmptyMapAtDepth(depth)
+	}
+	(*SpriteManager)(this.getMapEntry(depth, 5)).createVertices(glm.Vec4{0, 0, 100, 100}, glm.Vec4{1, 1, 1, 1})
 }
 
 func (this *ClosedGLContext) PlaySound(name string) {

@@ -1,68 +1,83 @@
 package closedGL
 
-/*
 import (
 	"github.com/EngoEngine/glm"
 	"github.com/go-gl/gl/v4.1-core/gl"
 )
 
-type Sprite2D struct {
-	shader    *Shader
-	texture   *uint32
-	pos, size glm.Vec2
-	Tint      glm.Vec4
-	vao, vbo  uint32
-	Visible   bool
+type SpriteManager struct {
+	shader         *Shader
+	projection     *glm.Mat4
+	vao            uint32
+	amountQuads    uint32
+	instanceBuffer BufferFloat
+	baseVBO        BufferFloat
+	indices        []byte
 }
 
-func newSprite2D(s *Shader, pos, size glm.Vec2, tint glm.Vec4, texturePath string) Sprite2D {
-	var tex = LoadImage(texturePath, gl.RGBA)
-	var sprite = Sprite2D{shader: s, texture: tex, pos: pos, size: size, Tint: tint, Visible: true}
-	generateBuffers(&sprite.vao, &sprite.vbo, nil, fullQuad, 0, indicesQuad, []int{3, 2})
-	return sprite
-}
+func newSpriteMane(shader *Shader, projection *glm.Mat4) SpriteManager {
+	var indices = []byte{0, 1, 2, 2, 1, 3}
+	var rect = SpriteManager{shader: shader, projection: projection, amountQuads: 0, indices: indices}
 
-func (this *Sprite2D) Process(delta float32) {
-	 var a = this.velocity.Mul(delta)
-	 var b = a.Mul(this.speed)
-	 this.move(b)
-}
-
-func (this *Sprite2D) Free() {
-	gl.DeleteBuffers(1, &this.vao)
-	gl.DeleteBuffers(1, &this.vbo)
-	gl.DeleteTextures(1, this.texture)
-
-}
-func (this *Sprite2D) Draw() {
-	if !this.Visible {
-		return
+	rect.vao = genVAO()
+	rect.baseVBO = genSingularBufferFloat(rect.vao, 0, 2, gl.FLOAT, false, 0)
+	rect.instanceBuffer = BufferFloat{
+		buffer:     generateInterleavedVBOFloat(rect.vao, 1, []int{4, 4}),
+		bufferSize: 0,
+		cpuArr:     []float32{},
 	}
+	gl.BindBuffer(gl.ARRAY_BUFFER, rect.instanceBuffer.buffer)
+	gl.VertexAttribDivisor(1, 1)
+	gl.VertexAttribDivisor(2, 1)
+
+	var quadBaseData = []float32{
+		1.0, 0.0, //top r
+		0.0, 0.0, // top l
+		1.0, 1.0, // bottom r
+		0.0, 1.0, // bottom l,
+	}
+	rect.baseVBO.cpuArr = quadBaseData
+	rect.baseVBO.copyToGPU()
+
+	return rect
+}
+
+func (this *SpriteManager) beginDraw() {
+	this.amountQuads = 0
+	this.instanceBuffer.clear()
+}
+
+func (this *SpriteManager) deleteBuffers() {
+	gl.DeleteBuffers(1, &this.vao)
+	gl.DeleteBuffers(1, &this.baseVBO.buffer)
+	gl.DeleteBuffers(1, &this.instanceBuffer.buffer)
+
+}
+
+func (this *SpriteManager) createVertices(dim, colour glm.Vec4) {
+	var stride uint32 = 8
+
+	this.instanceBuffer.resizeCPUData(int(this.amountQuads+1) * int(stride))
+
+	this.instanceBuffer.cpuArr[this.amountQuads*stride+0] = dim[0]
+	this.instanceBuffer.cpuArr[this.amountQuads*stride+1] = dim[1]
+	this.instanceBuffer.cpuArr[this.amountQuads*stride+2] = dim[2]
+	this.instanceBuffer.cpuArr[this.amountQuads*stride+3] = dim[3]
+	this.instanceBuffer.cpuArr[this.amountQuads*stride+4] = colour[0]
+	this.instanceBuffer.cpuArr[this.amountQuads*stride+5] = colour[1]
+	this.instanceBuffer.cpuArr[this.amountQuads*stride+6] = colour[2]
+	this.instanceBuffer.cpuArr[this.amountQuads*stride+7] = colour[3]
+
+	this.amountQuads++
+}
+
+func (this *SpriteManager) draw() {
 	this.shader.use()
-	var model = createTransformation(glm.Vec3{0, 0, 0}, glm.Vec3{this.pos.X(), this.pos.Y(), 0}, glm.Vec3{this.size.X(), this.size.Y(), 0})
-	this.shader.setUniformMatrix4("model", &model)
-	this.shader.setUniformVec4("colour", &this.Tint)
-	gl.ActiveTexture(gl.TEXTURE0)
-	gl.BindTexture(gl.TEXTURE_2D, *this.texture)
-	this.shader.setUniform1i("tex", 0)
+	this.shader.setUniformMatrix4("projection", this.projection)
+	gl.Disable(gl.DEPTH_TEST)
 	gl.BindVertexArray(this.vao)
-	gl.BindBuffer(gl.ARRAY_BUFFER, this.vbo)
-	gl.DrawArrays(gl.TRIANGLES, 0, 6)
-}
 
-func (this *Sprite2D) Move(vec glm.Vec2) {
-	this.pos.AddWith(&vec)
+	this.instanceBuffer.copyToGPU()
+	gl.DrawElementsInstanced(gl.TRIANGLES, 6, gl.UNSIGNED_BYTE, gl.Ptr(this.indices), int32(this.amountQuads))
+	gl.Enable(gl.DEPTH_TEST)
 }
-
-func (this *Sprite2D) MoveTo(vec glm.Vec2) {
-	this.pos = vec
-}
-
-func (this *Sprite2D) colAabb(s Sprite2D) bool {
-	return aabbAabbCol(glm.Vec4{this.pos[0], this.pos[1], this.size[0], this.size[1]}, glm.Vec4{s.pos[0], s.pos[1], s.size[0], s.size[1]})
-}
-
-func (this *Sprite2D) colCircle(s Sprite2D) (bool, Direction, glm.Vec2) {
-	return aabbCircleCol(glm.Vec3{s.pos[0], s.pos[1], s.size[1] - 25}, glm.Vec4{this.pos[0], this.pos[1], this.size[0], this.size[1]})
-}
-*/

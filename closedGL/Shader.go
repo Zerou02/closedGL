@@ -23,8 +23,8 @@ func initShader(vertPath, fragPath string) Shader {
 	if err2 != nil {
 		println("Could not find frag shader")
 	}
-	var vertS = shader.compileShader(string(vert)+"\x00", true)
-	var fragS = shader.compileShader(string(frag)+"\x00", false)
+	var vertS = shader.compileShader(string(vert)+"\x00", true, false)
+	var fragS = shader.compileShader(string(frag)+"\x00", false, false)
 
 	gl.AttachShader(shader.prog, vertS)
 	gl.AttachShader(shader.prog, fragS)
@@ -42,9 +42,24 @@ func initShader(vertPath, fragPath string) Shader {
 	return shader
 }
 
+func initCompShader(path string) Shader {
+	var shader = Shader{0}
+	shader.prog = gl.CreateProgram()
+	var compute = shader.compileShader(path, false, true)
+	gl.AttachShader(shader.prog, compute)
+	gl.LinkProgram(shader.prog)
+	var succ int32 = 0
+	gl.GetProgramiv(shader.prog, gl.LINK_STATUS, &succ)
+	var s [512]uint8
+	if succ == 0 {
+		println("ERROR")
+		gl.GetProgramInfoLog(shader.prog, 512, nil, &s[0])
+		fmt.Printf("%s", s)
+	}
+	return shader
+}
+
 func initShaderFromName(name string) Shader {
-	//	shader
-	//
 	return initShader("./assets/shader/"+name+".vs", "./assets/shader/"+name+".fs")
 }
 
@@ -92,10 +107,13 @@ func (s *Shader) setUniform2fv(name string, value glm.Vec2) {
 	gl.Uniform2f(location, value[0], value[1])
 }
 
-func (s *Shader) compileShader(shaderSrc string, vertex bool) uint32 {
+func (s *Shader) compileShader(shaderSrc string, vertex bool, compute bool) uint32 {
 	var stype uint32 = gl.FRAGMENT_SHADER
 	if vertex {
 		stype = gl.VERTEX_SHADER
+	}
+	if compute {
+		stype = gl.COMPUTE_SHADER
 	}
 	var shader = gl.CreateShader(stype)
 	var vertSrc, _ = gl.Strs(shaderSrc)

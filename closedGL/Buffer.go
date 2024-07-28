@@ -145,6 +145,30 @@ func generateInterleavedVBOFloat(vao uint32, startIdx int, vertexAttribBytes []i
 	return vbo
 }
 
+func generateInterleavedVBOFloat2(vao uint32, startIdx int, vertexAttribBytes []int) BufferFloat {
+	gl.BindVertexArray(vao)
+	var vbo uint32
+	gl.GenBuffers(1, &vbo)
+	gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
+
+	var stride = 0
+	for i := 0; i < len(vertexAttribBytes); i++ {
+		stride += int(vertexAttribBytes[i])
+	}
+
+	var currOffset = 0
+	for i := startIdx; i < startIdx+len(vertexAttribBytes); i++ {
+		gl.EnableVertexAttribArray(uint32(i))
+		gl.VertexAttribPointerWithOffset(uint32(i), int32(vertexAttribBytes[i-startIdx]), gl.FLOAT, false, int32(stride*4), uintptr(currOffset)*4)
+		currOffset += vertexAttribBytes[i-startIdx]
+	}
+	return BufferFloat{
+		buffer:     vbo,
+		bufferSize: 0,
+		cpuArr:     []float32{},
+	}
+}
+
 func setVerticesInVbo(vertices *[]float32, vboSizeEntries *int, vbo uint32) {
 	if len(*vertices) == 0 {
 		return

@@ -24,24 +24,28 @@ func StartClosedGL() {
 	openGL.Camera.CameraPos = glm.Vec3{0, 0, 0}
 
 	openGL.LimitFPS(false)
+	var timer = closedGL.NewTimer(1, false)
 	var anim = closedGL.NewAnimation(100, 500, 3, false, true)
 	for !openGL.Window.Window.ShouldClose() {
 
 		var delta = openGL.FPSCounter.Delta
 		_ = delta
 		anim.Process(float32(delta))
+		timer.Process(float32(delta))
 
 		if openGL.KeyBoardManager.IsPressed(glfw.KeyF) {
 			isWireframeMode = !isWireframeMode
 			closedGL.SetWireFrameMode(isWireframeMode)
 		}
+		if timer.IsTick() {
+			println(openGL.FPSCounter.FpsAverage)
+		}
 
 		openGL.BeginDrawing()
 		openGL.DrawFPS(500, 0, 1)
+		openGL.DrawRect(glm.Vec4{0, 0, 50, 50}, glm.Vec4{1, 1, 0, 1}, 1)
+		openGL.DrawSprite(1)
 		openGL.ClearBG(glm.Vec4{0, 0, 0, 0})
-		openGL.DrawRect(glm.Vec4{0, 0, 10, 10}, glm.Vec4{1, 1, 1, 1}, 1)
-		openGL.DrawQuadraticBezier(glm.Vec2{100, 100}, glm.Vec2{200, 200}, glm.Vec2{300, 300}, glm.Vec4{1, 1, 1, 1}, 2)
-		openGL.DrawBezier(glm.Vec2{100, 100}, glm.Vec2{200, 200}, glm.Vec2{300, 300}, 1)
 
 		openGL.EndDrawing()
 		openGL.Process()
