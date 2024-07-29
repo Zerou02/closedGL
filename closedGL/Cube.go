@@ -17,6 +17,7 @@ type Cube struct {
 	amountCubes    uint32
 	textureMane    TextureMane
 	ssbo           SSBOU64
+	indices        []byte
 }
 
 func NewCube(shader *Shader, camera *Camera, projection *glm.Mat4, pos glm.Vec3) Cube {
@@ -30,6 +31,14 @@ func NewCube(shader *Shader, camera *Camera, projection *glm.Mat4, pos glm.Vec3)
 	retCube.ssbo = genSSBOU64(1)
 	gl.BindBuffer(gl.ARRAY_BUFFER, retCube.instanceBuffer.buffer)
 	gl.VertexAttribDivisor(2, 1)
+	retCube.indices = []byte{
+		0, 1, 2, 2, 3, 0,
+		4, 5, 6, 6, 7, 4,
+		8, 9, 10, 10, 11, 8,
+		12, 13, 14, 14, 15, 12,
+		16, 17, 18, 18, 19, 16,
+		20, 21, 22, 22, 23, 20,
+	}
 
 	retCube.baseBuffer.copyToGPU()
 	return retCube
@@ -41,7 +50,7 @@ func (this *Cube) beginDraw() {
 	this.ssbo.clear()
 }
 
-func (this *Cube) createVertices(colour glm.Vec4, pos glm.Vec3, texPath string) {
+func (this *Cube) createVertices(pos glm.Vec3, texPath string) {
 	var stride uint32 = 3
 
 	this.instanceBuffer.resizeCPUData(int(this.amountCubes+1) * int(stride))
@@ -67,6 +76,6 @@ func (this *Cube) draw() {
 	gl.BindVertexArray(this.vao)
 	this.instanceBuffer.copyToGPU()
 	this.ssbo.copyToGPU()
-	gl.DrawArraysInstanced(gl.TRIANGLES, 0, 6*6, int32(this.amountCubes))
+	gl.DrawElementsInstanced(gl.TRIANGLES, 6*6, gl.UNSIGNED_BYTE, gl.Ptr(this.indices), int32(this.amountCubes))
 	this.textureMane.makeNonResident()
 }

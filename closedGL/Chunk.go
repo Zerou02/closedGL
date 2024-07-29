@@ -1,5 +1,7 @@
 package closedGL
 
+/* package closedGL
+
 import (
 	"math"
 
@@ -259,3 +261,4 @@ func (this *Chunk) faceCullCube2(cubeIdx int) []int {
 	}
 	return allowedFaces
 }
+*/

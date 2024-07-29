@@ -295,7 +295,6 @@ func (this *ClosedGLContext) DrawBezier(p1, p2, cp glm.Vec2, depth int) {
 }
 
 func (this *ClosedGLContext) EndDrawing() {
-	this.Text.draw()
 	for _, x := range this.indexArr {
 		var v = this.primitiveManMap[x]
 		for i, x := range *v {
@@ -316,6 +315,8 @@ func (this *ClosedGLContext) EndDrawing() {
 			}
 		}
 	}
+	this.Text.draw()
+
 }
 
 func (this *ClosedGLContext) BeginDrawing() {
@@ -357,11 +358,11 @@ func (this *ClosedGLContext) DrawSprite(pos glm.Vec4, path string, depth int) {
 	(*SpriteManager)(this.getMapEntry(depth, 5)).createVertices(pos, path)
 }
 
-func (this *ClosedGLContext) DrawCube(pos glm.Vec3, colour glm.Vec4, path string, depth int) {
+func (this *ClosedGLContext) DrawCube(pos glm.Vec3, path string, depth int) {
 	if this.primitiveManMap[depth] == nil {
 		this.initEmptyMapAtDepth(depth)
 	}
-	(*Cube)(this.getMapEntry(depth, 6)).createVertices(colour, pos, path)
+	(*Cube)(this.getMapEntry(depth, 6)).createVertices(pos, path)
 }
 
 func (this *ClosedGLContext) PlaySound(name string) {

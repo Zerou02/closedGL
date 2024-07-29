@@ -36,7 +36,7 @@ func (c *Camera) Process(w *glfw.Window, deltaTime float32) {
 	c.cameraDir[2] = float32(math.Sin(float64((glm.DegToRad(c.yaw))))) * float32(math.Cos(float64(glm.DegToRad(c.pitch))))
 	c.cameraFront = c.cameraDir.Normalized()
 
-	var speed float32 = 2
+	var speed float32 = 15
 	var forward = c.cameraFront.Mul(speed)
 	forward = forward.Mul(deltaTime)
 	var sidewards = c.cameraFront.Cross(&c.cameraUp)
