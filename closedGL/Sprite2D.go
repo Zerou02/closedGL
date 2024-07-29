@@ -23,16 +23,13 @@ func newSpriteMane(shader *Shader, projection *glm.Mat4) SpriteManager {
 	var rect = SpriteManager{shader: shader, projection: projection, amountQuads: 0, indices: indices, handleMap: map[string]uint64{}}
 
 	rect.vao = genVAO()
-	rect.baseVBO = generateInterleavedVBOFloat2(rect.vao, 0, []int{2, 2})
+	rect.baseVBO = generateInterleavedVBOFloat2(rect.vao, 0, []int{4})
 	gl.BindBuffer(gl.ARRAY_BUFFER, rect.baseVBO.buffer)
 	gl.VertexAttribDivisor(0, 0)
-	gl.VertexAttribDivisor(1, 0)
-	rect.instanceBuffer = generateInterleavedVBOFloat2(rect.vao, 2, []int{4})
+	rect.instanceBuffer = generateInterleavedVBOFloat2(rect.vao, 1, []int{4})
 
 	gl.BindBuffer(gl.ARRAY_BUFFER, rect.instanceBuffer.buffer)
-	gl.VertexAttribDivisor(2, 1)
-	gl.VertexAttribDivisor(3, 1)
-	gl.VertexAttribDivisor(4, 1)
+	gl.VertexAttribDivisor(1, 1)
 
 	rect.ssbo = genSSBOU64(1)
 

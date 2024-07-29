@@ -7,9 +7,9 @@ out vec4 FragColor;
 layout(binding = 1, std430) readonly buffer ssbo { sampler2D values[]; };
 
 in vec2 fUV;
+in float fInstanceID;
 
 void main() {
-  sampler2D tex = values[0];
-  vec4 sampled = texture(tex, fUV);
-  FragColor = vec4(sampled);
+  sampler2D tex = values[int(fInstanceID)];
+  FragColor = texture(tex, fUV);
 }

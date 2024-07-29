@@ -145,10 +145,9 @@ func LoadImage(path string, format uint32) *uint32 {
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
-
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
-
 	gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RGBA, int32(img.Bounds().Max.X), int32(img.Bounds().Max.Y), 0, format, gl.UNSIGNED_BYTE, gl.Ptr(img.Pix))
+
 	return &texPtr
 }
 
@@ -371,4 +370,8 @@ func (this *ClosedGLContext) PlayMusic(name string, volume float64) {
 
 func (this *ClosedGLContext) EndMusic(name string) {
 	this.audio.closeMusic(name)
+}
+
+func (this *ClosedGLContext) WindowShouldClose() bool {
+	return this.Window.Window.ShouldClose()
 }
