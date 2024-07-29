@@ -36,21 +36,25 @@ func (c *Camera) Process(w *glfw.Window, deltaTime float32) {
 	c.cameraDir[2] = float32(math.Sin(float64((glm.DegToRad(c.yaw))))) * float32(math.Cos(float64(glm.DegToRad(c.pitch))))
 	c.cameraFront = c.cameraDir.Normalized()
 
-	var speed float32 = 0.2
-	/* 	if w.GetKey(glfw.KeyW) == glfw.Press {
-	   		c.CameraPos = c.CameraPos.AddNP(c.cameraFront.Scale(speed).Scale(float32(deltaTime)))
-	   	}
-	   	if w.GetKey(glfw.KeyS) == glfw.Press {
-	   		c.CameraPos = c.CameraPos.SubNP(c.cameraFront.Scale(speed).Scale(float32(deltaTime)))
-	   	}
-	   	if w.GetKey(glfw.KeyA) == glfw.Press {
-	   		var b = c.cameraFront.CrossNP(c.cameraUp).NormalizedNP().Scale(speed).Scale(float32(deltaTime))
-	   		c.CameraPos = c.CameraPos.Sub(&b)
-	   	}
-	   	if w.GetKey(glfw.KeyD) == glfw.Press {
-	   		var b = c.cameraFront.CrossNP(c.cameraUp).NormalizedNP().Scale(speed).Scale(float32(deltaTime))
-	   		c.CameraPos = c.CameraPos.Add(&b)
-	   	} */
+	var speed float32 = 0.02
+	var forward = c.cameraFront.Mul(speed)
+	forward = forward.Mul(deltaTime)
+	var sidewards = c.cameraFront.Cross(&c.cameraUp)
+	sidewards.Normalized()
+	sidewards = sidewards.Mul(speed)
+	sidewards = sidewards.Mul(deltaTime)
+	if w.GetKey(glfw.KeyW) == glfw.Press {
+		c.CameraPos = c.CameraPos.Add(&forward)
+	}
+	if w.GetKey(glfw.KeyS) == glfw.Press {
+		c.CameraPos = c.CameraPos.Sub(&forward)
+	}
+	if w.GetKey(glfw.KeyA) == glfw.Press {
+		c.CameraPos = c.CameraPos.Sub(&sidewards)
+	}
+	if w.GetKey(glfw.KeyD) == glfw.Press {
+		c.CameraPos = c.CameraPos.Add(&sidewards)
+	}
 	if w.GetKey(glfw.KeyQ) == glfw.Press {
 		c.CameraPos.AddWith(&glm.Vec3{0, speed * deltaTime, 0})
 	}
@@ -58,13 +62,12 @@ func (c *Camera) Process(w *glfw.Window, deltaTime float32) {
 		c.CameraPos.AddWith(&glm.Vec3{0, -speed * deltaTime, 0})
 
 	}
-	//var a = c.cameraFront.AddNP(c.CameraPos)
-	//	c.lookAtMat = glm.LookAtV(&c.CameraPos, &a, &(c.cameraUp))
+	var a = c.cameraFront.Add(&c.CameraPos)
+	c.lookAtMat = glm.LookAtV(&c.CameraPos, &a, &(c.cameraUp))
 
 	if c.isOrtho {
 		c.perspective = glm.Ortho2D(0, 800, 0, 600)
 		c.lookAtMat = glm.Ident4()
-
 	} else {
 		c.perspective = glm.Perspective(glm.DegToRad(float32(c.fov)), c.aspect, 0.1, 100)
 	}
@@ -101,8 +104,4 @@ func (c *Camera) MouseCallback(w *glfw.Window, xpos float64, ypos float64) {
 	if c.pitch <= -89 {
 		c.pitch = -89
 	}
-}
-
-func StandardMouseClickCB(w *glfw.Window, button glfw.MouseButton, action glfw.Action, mod glfw.ModifierKey) {
-	//
 }

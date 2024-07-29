@@ -53,6 +53,7 @@ func (this *SpriteManager) loadTex(path string) {
 	if this.handleMap[path] != 0 {
 		return
 	}
+
 	var texture = *LoadImage(path, gl.RGBA)
 	var handle = gl.GetTextureHandleARB(texture)
 	if handle == 0 {

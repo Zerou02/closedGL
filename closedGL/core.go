@@ -210,6 +210,7 @@ func (this *ClosedGLContext) initEmptyMapAtDepth(depth int) {
 	this.setMapEntry(depth, 3, unsafe.Pointer(&tm))
 	this.setMapEntry(depth, 4, unsafe.Pointer(&bm))
 	this.setMapEntry(depth, 5, unsafe.Pointer(&sm))
+	this.setMapEntry(depth, 5, unsafe.Pointer(&sm))
 
 	this.indexArr = append(this.indexArr, depth)
 	sort.Ints(this.indexArr)
@@ -235,6 +236,10 @@ func (this *ClosedGLContext) createTriMan() TriangleManager {
 }
 func (this *ClosedGLContext) createSpriteMan() SpriteManager {
 	return newSpriteMane(this.shaderCameraManager.Shadermap["sprite2d"], &this.shaderCameraManager.projection2D)
+}
+
+func (this *ClosedGLContext) CreateCube(tex *uint32) Cube {
+	return NewCube(this.shaderCameraManager.Shadermap["baseCube"], this.shaderCameraManager.camera, &this.shaderCameraManager.Projection3D, tex, glm.Vec3{0, 0, 0})
 }
 func (this *ClosedGLContext) getMapEntry(depth int, idx int) unsafe.Pointer {
 	return (*this.primitiveManMap[depth])[idx]
