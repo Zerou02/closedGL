@@ -6,41 +6,67 @@ import (
 )
 
 type Cube struct {
-	shader     *Shader
-	camera     *Camera
-	projection *glm.Mat4
-	tex        *Texture
-	position   glm.Vec3
-	vao        uint32
-	isInner    bool
-	buffer     BufferFloat
+	shader         *Shader
+	camera         *Camera
+	projection     *glm.Mat4
+	position       glm.Vec3
+	vao            uint32
+	isInner        bool
+	baseBuffer     BufferFloat
+	instanceBuffer BufferFloat
+	amountCubes    uint32
+	textureMane    TextureMane
+	ssbo           SSBOU64
 }
 
-func NewCube(shader *Shader, camera *Camera, projection *glm.Mat4, tex *Texture, pos glm.Vec3) Cube {
-	var retCube = Cube{shader: shader, camera: camera, projection: projection, tex: tex, position: pos, isInner: false}
+func NewCube(shader *Shader, camera *Camera, projection *glm.Mat4, pos glm.Vec3) Cube {
+	var retCube = Cube{shader: shader, camera: camera, projection: projection, position: pos, isInner: false, amountCubes: 0, textureMane: newTextureMane()}
 	//TODO:Fix
 	retCube.vao = genVAO()
-	retCube.buffer = generateInterleavedVBOFloat2(retCube.vao, 0, []int{3, 2})
-	retCube.buffer.cpuArr = cube
-	retCube.buffer.copyToGPU()
+	retCube.baseBuffer = generateInterleavedVBOFloat2(retCube.vao, 0, []int{3, 2})
+	retCube.baseBuffer.cpuArr = cube
+	retCube.baseBuffer.copyToGPU()
+	retCube.instanceBuffer = generateInterleavedVBOFloat2(retCube.vao, 2, []int{3})
+	retCube.ssbo = genSSBOU64(1)
+	gl.BindBuffer(gl.ARRAY_BUFFER, retCube.instanceBuffer.buffer)
+	gl.VertexAttribDivisor(2, 1)
+
+	retCube.baseBuffer.copyToGPU()
 	return retCube
 }
 
-func (this *Cube) Draw() {
+func (this *Cube) beginDraw() {
+	this.amountCubes = 0
+	this.instanceBuffer.clear()
+	this.ssbo.clear()
+}
+
+func (this *Cube) createVertices(colour glm.Vec4, pos glm.Vec3, texPath string) {
+	var stride uint32 = 3
+
+	this.instanceBuffer.resizeCPUData(int(this.amountCubes+1) * int(stride))
+	this.ssbo.resizeCPUData(int(this.amountCubes+1) * 1)
+
+	this.instanceBuffer.cpuArr[this.amountCubes*stride+0] = pos[0]
+	this.instanceBuffer.cpuArr[this.amountCubes*stride+1] = pos[1]
+	this.instanceBuffer.cpuArr[this.amountCubes*stride+2] = pos[2]
+
+	this.textureMane.loadTex(texPath)
+	this.ssbo.cpuArr[this.amountCubes] = this.textureMane.getHandle(texPath)
+
+	this.amountCubes++
+}
+
+func (this *Cube) draw() {
 	this.shader.use()
-	gl.Disable(gl.CULL_FACE)
+	this.textureMane.makeResident()
+
 	this.shader.setUniformMatrix4("view", &this.camera.lookAtMat)
-	//var proj = glm.Ident4()
 	this.shader.setUniformMatrix4("projection", &this.camera.perspective)
-	//	var model = glm.Translate3D(this.position[0], this.position[1], this.position[2])
-	//	this.shader.setUniformMatrix4("model", &model)
-	this.shader.setUniform1i("tex", 0)
 
 	gl.BindVertexArray(this.vao)
-	this.buffer.copyToGPU()
-	gl.ActiveTexture(gl.TEXTURE0)
-	gl.BindTexture(gl.TEXTURE_2D, *this.tex)
-	gl.DrawArrays(gl.TRIANGLES, 0, int32(len(cube)/(3+2)))
-	gl.Enable(gl.CULL_FACE)
-
+	this.instanceBuffer.copyToGPU()
+	this.ssbo.copyToGPU()
+	gl.DrawArraysInstanced(gl.TRIANGLES, 0, 6*6, int32(this.amountCubes))
+	this.textureMane.makeNonResident()
 }

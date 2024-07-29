@@ -14,13 +14,12 @@ type SpriteManager struct {
 	baseVBO        BufferFloat
 	indices        []byte
 	ssbo           SSBOU64
-	textures       []uint32
-	handleMap      map[string]uint64
+	textureMane    TextureMane
 }
 
 func newSpriteMane(shader *Shader, projection *glm.Mat4) SpriteManager {
 	var indices = []byte{0, 1, 2, 2, 1, 3}
-	var rect = SpriteManager{shader: shader, projection: projection, amountQuads: 0, indices: indices, handleMap: map[string]uint64{}}
+	var rect = SpriteManager{shader: shader, projection: projection, amountQuads: 0, indices: indices, textureMane: newTextureMane()}
 
 	rect.vao = genVAO()
 	rect.baseVBO = generateInterleavedVBOFloat2(rect.vao, 0, []int{4})
@@ -49,20 +48,6 @@ func newSpriteMane(shader *Shader, projection *glm.Mat4) SpriteManager {
 	return rect
 }
 
-func (this *SpriteManager) loadTex(path string) {
-	if this.handleMap[path] != 0 {
-		return
-	}
-
-	var texture = *LoadImage(path, gl.RGBA)
-	var handle = gl.GetTextureHandleARB(texture)
-	if handle == 0 {
-		panic("invalid textureHandle")
-	}
-	this.textures = append(this.textures, texture)
-	this.handleMap[path] = handle
-}
-
 func (this *SpriteManager) beginDraw() {
 	this.amountQuads = 0
 	this.instanceBuffer.clear()
@@ -87,20 +72,15 @@ func (this *SpriteManager) createVertices(dim glm.Vec4, texPath string) {
 	this.instanceBuffer.cpuArr[this.amountQuads*stride+2] = dim[2]
 	this.instanceBuffer.cpuArr[this.amountQuads*stride+3] = dim[3]
 
-	this.loadTex(texPath)
-	this.ssbo.cpuArr[this.amountQuads] = this.handleMap[texPath]
+	this.textureMane.loadTex(texPath)
+	this.ssbo.cpuArr[this.amountQuads] = this.textureMane.getHandle(texPath)
 
 	this.amountQuads++
-
 }
 
 func (this *SpriteManager) draw() {
 	this.shader.use()
-
-	for _, v := range this.handleMap {
-		gl.MakeTextureHandleResidentARB(v)
-	}
-
+	this.textureMane.makeResident()
 	this.shader.setUniformMatrix4("projection", this.projection)
 	gl.Disable(gl.DEPTH_TEST)
 	gl.BindVertexArray(this.vao)
@@ -108,8 +88,5 @@ func (this *SpriteManager) draw() {
 	this.instanceBuffer.copyToGPU()
 	gl.DrawElementsInstanced(gl.TRIANGLES, 6, gl.UNSIGNED_BYTE, gl.Ptr(this.indices), int32(this.amountQuads))
 	gl.Enable(gl.DEPTH_TEST)
-
-	for _, v := range this.handleMap {
-		gl.MakeTextureHandleNonResidentARB(v)
-	}
+	this.textureMane.makeNonResident()
 }

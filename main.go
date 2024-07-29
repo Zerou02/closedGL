@@ -5,7 +5,7 @@ import (
 
 	"github.com/EngoEngine/glm"
 	"github.com/Zerou02/closedGL/closedGL"
-	"github.com/go-gl/gl/v4.1-core/gl"
+	"github.com/go-gl/glfw/v3.2/glfw"
 )
 
 func main() {
@@ -16,16 +16,20 @@ func StartClosedGL() {
 
 	var openGL = closedGL.InitClosedGL(800, 600, "demo")
 	openGL.LimitFPS(false)
-	var tex = closedGL.LoadImage("./assets/sprites/fence.png", gl.RGBA)
-	var cube = openGL.CreateCube(tex)
+	var val = true
 	for !openGL.WindowShouldClose() {
+		if openGL.KeyBoardManager.IsPressed(glfw.KeyF) {
+			val = !val
+			closedGL.SetWireFrameMode(val)
+		}
 		openGL.BeginDrawing()
 		openGL.ClearBG(glm.Vec4{0, 0, 0, 0})
 		openGL.DrawFPS(500, 0, 1)
-		//openGL.DrawSprite(glm.Vec4{0, 0, 200, 200}, "./assets/sprites/fence.png", 1)
-		cube.Draw()
-		/* openGL.DrawSprite(glm.Vec4{1, 1, 200, 200}, "./assets/sprites/fence2.png", 1)
-		openGL.DrawSprite(glm.Vec4{2, 2, 200, 200}, "./assets/sprites/fence3.png", 1) */
+		openGL.DrawSprite(glm.Vec4{0, 0, 20, 20}, "./assets/sprites/fence.png", 1)
+		var amount = 4_000
+		for i := 0; i < amount; i++ {
+			openGL.DrawCube(glm.Vec3{float32(i % (amount / 10)), float32(i / (amount / 10)), 0}, glm.Vec4{1, 1, 1, 1}, "./assets/sprites/fence.png", 1)
+		}
 
 		openGL.EndDrawing()
 		openGL.Process()

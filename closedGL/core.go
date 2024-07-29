@@ -81,27 +81,13 @@ func InitClosedGL(pWidth, pHeight float32, name string) ClosedGLContext {
 		Window: &pWindow, shaderCameraManager: &shaderManager,
 		Camera: &c, Text: &text, KeyBoardManager: &key,
 		FPSCounter:      &fpsCounter,
-		primitiveManMap: map[depth]*[]unsafe.Pointer{}, amountPrimitiveMans: 6, indexArr: []int{},
+		primitiveManMap: map[depth]*[]unsafe.Pointer{}, amountPrimitiveMans: 7, indexArr: []int{},
 		Config: config,
 		audio:  newAudio(),
 	}
 	if config["potato-friendliness"] != "" {
 		con.LimitFPS(strToBool(config["potato-friendliness"]))
 	}
-
-	const TEXTURE_WIDTH = 512
-	const TEXTURE_HEIGHT = 512
-	var texture uint32
-
-	gl.GenTextures(1, &texture)
-	gl.ActiveTexture(gl.TEXTURE0)
-	gl.BindTexture(gl.TEXTURE_2D, texture)
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
-	gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, TEXTURE_WIDTH, TEXTURE_HEIGHT, 0, gl.RGBA, gl.FLOAT, nil)
-	gl.BindImageTexture(0, texture, 0, false, 0, gl.READ_WRITE, gl.RGBA32F)
 
 	return con
 }
@@ -170,7 +156,7 @@ func (this *ClosedGLContext) Process() {
 	}
 	this.KeyBoardManager.Process()
 	this.FPSCounter.Process()
-	this.Camera.Process(this.Window.Window, float32(0.16))
+	this.Camera.Process(this.Window.Window, float32(this.FPSCounter.Delta))
 	this.audio.process()
 	glfw.PollEvents()
 	this.Window.Window.SwapBuffers()
@@ -201,6 +187,7 @@ func (this *ClosedGLContext) initEmptyMapAtDepth(depth int) {
 	var tm = this.createTriMan()
 	var bm = this.createBezier()
 	var sm = this.createSpriteMan()
+	var cube = this.CreateCube()
 
 	this.primitiveManMap[depth] = &newArr
 
@@ -211,6 +198,7 @@ func (this *ClosedGLContext) initEmptyMapAtDepth(depth int) {
 	this.setMapEntry(depth, 4, unsafe.Pointer(&bm))
 	this.setMapEntry(depth, 5, unsafe.Pointer(&sm))
 	this.setMapEntry(depth, 5, unsafe.Pointer(&sm))
+	this.setMapEntry(depth, 6, unsafe.Pointer(&cube))
 
 	this.indexArr = append(this.indexArr, depth)
 	sort.Ints(this.indexArr)
@@ -238,9 +226,10 @@ func (this *ClosedGLContext) createSpriteMan() SpriteManager {
 	return newSpriteMane(this.shaderCameraManager.Shadermap["sprite2d"], &this.shaderCameraManager.projection2D)
 }
 
-func (this *ClosedGLContext) CreateCube(tex *uint32) Cube {
-	return NewCube(this.shaderCameraManager.Shadermap["baseCube"], this.shaderCameraManager.camera, &this.shaderCameraManager.Projection3D, tex, glm.Vec3{0, 0, 0})
+func (this *ClosedGLContext) CreateCube() Cube {
+	return NewCube(this.shaderCameraManager.Shadermap["baseCube"], this.shaderCameraManager.camera, &this.shaderCameraManager.Projection3D, glm.Vec3{0, 0, 0})
 }
+
 func (this *ClosedGLContext) getMapEntry(depth int, idx int) unsafe.Pointer {
 	return (*this.primitiveManMap[depth])[idx]
 }
@@ -322,6 +311,8 @@ func (this *ClosedGLContext) EndDrawing() {
 				(*BezierShader)(x).draw()
 			} else if i == 5 {
 				(*SpriteManager)(x).draw()
+			} else if i == 6 {
+				(*Cube)(x).draw()
 			}
 		}
 	}
@@ -344,6 +335,8 @@ func (this *ClosedGLContext) BeginDrawing() {
 				(*BezierShader)(x).beginDraw()
 			} else if i == 5 {
 				(*SpriteManager)(x).beginDraw()
+			} else if i == 6 {
+				(*Cube)(x).beginDraw()
 			}
 		}
 	}
@@ -362,7 +355,13 @@ func (this *ClosedGLContext) DrawSprite(pos glm.Vec4, path string, depth int) {
 		this.initEmptyMapAtDepth(depth)
 	}
 	(*SpriteManager)(this.getMapEntry(depth, 5)).createVertices(pos, path)
+}
 
+func (this *ClosedGLContext) DrawCube(pos glm.Vec3, colour glm.Vec4, path string, depth int) {
+	if this.primitiveManMap[depth] == nil {
+		this.initEmptyMapAtDepth(depth)
+	}
+	(*Cube)(this.getMapEntry(depth, 6)).createVertices(colour, pos, path)
 }
 
 func (this *ClosedGLContext) PlaySound(name string) {
