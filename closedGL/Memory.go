@@ -46,3 +46,14 @@ func extendArrayU64(arr *[]uint64, newLenEntries int) {
 		*arr = newArr
 	}
 }
+
+func extendArrayU32(arr *[]uint32, newLenEntries int) {
+	if newLenEntries != 0 && len(*arr) == 0 {
+		*arr = make([]uint32, 1)
+	}
+	for newLenEntries >= len(*arr) {
+		var newArr = make([]uint32, len(*arr)*2)
+		copy(newArr, *arr)
+		*arr = newArr
+	}
+}

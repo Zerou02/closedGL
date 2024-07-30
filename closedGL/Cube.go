@@ -9,26 +9,24 @@ type Cube struct {
 	shader         *Shader
 	camera         *Camera
 	projection     *glm.Mat4
-	position       glm.Vec3
 	vao            uint32
-	isInner        bool
 	baseBuffer     BufferFloat
 	instanceBuffer BufferFloat
 	amountCubes    uint32
 	textureMane    TextureMane
-	ssbo           SSBOU64
+	ssbo           SSBOU32
 	indices        []byte
 }
 
 func NewCube(shader *Shader, camera *Camera, projection *glm.Mat4, pos glm.Vec3) Cube {
-	var retCube = Cube{shader: shader, camera: camera, projection: projection, position: pos, isInner: false, amountCubes: 0, textureMane: newTextureMane()}
+	var retCube = Cube{shader: shader, camera: camera, projection: projection, amountCubes: 0, textureMane: newTextureMane()}
 	//TODO:Fix
 	retCube.vao = genVAO()
 	retCube.baseBuffer = generateInterleavedVBOFloat2(retCube.vao, 0, []int{3, 2})
 	retCube.baseBuffer.cpuArr = cube
 	retCube.baseBuffer.copyToGPU()
 	retCube.instanceBuffer = generateInterleavedVBOFloat2(retCube.vao, 2, []int{3})
-	retCube.ssbo = genSSBOU64(1)
+	retCube.ssbo = genSSBOU32(1)
 	gl.BindBuffer(gl.ARRAY_BUFFER, retCube.instanceBuffer.buffer)
 	gl.VertexAttribDivisor(2, 1)
 	retCube.indices = []byte{
@@ -52,16 +50,24 @@ func (this *Cube) beginDraw() {
 
 func (this *Cube) createVertices(pos glm.Vec3, texPath string) {
 	var stride uint32 = 3
+	var ssboStride uint32 = 4
 
 	this.instanceBuffer.resizeCPUData(int(this.amountCubes+1) * int(stride))
-	this.ssbo.resizeCPUData(int(this.amountCubes+1) * 1)
+	this.ssbo.resizeCPUData(int(this.amountCubes+1) * int(ssboStride))
 
 	this.instanceBuffer.cpuArr[this.amountCubes*stride+0] = pos[0]
 	this.instanceBuffer.cpuArr[this.amountCubes*stride+1] = pos[1]
 	this.instanceBuffer.cpuArr[this.amountCubes*stride+2] = pos[2]
 
 	this.textureMane.loadTex(texPath)
-	this.ssbo.cpuArr[this.amountCubes] = this.textureMane.getHandle(texPath)
+
+	var handle = this.textureMane.getHandle(texPath)
+	var lower uint32 = uint32(handle & 0xffff_ffff)
+	var upper uint32 = uint32((handle >> 32) & 0xffff_ffff)
+	this.ssbo.cpuArr[this.amountCubes*ssboStride+0] = lower
+	this.ssbo.cpuArr[this.amountCubes*ssboStride+1] = upper
+	this.ssbo.cpuArr[this.amountCubes*ssboStride+2] = 0b111_111
+	this.ssbo.cpuArr[this.amountCubes*ssboStride+3] = 0b111_111
 
 	this.amountCubes++
 }
@@ -76,6 +82,6 @@ func (this *Cube) draw() {
 	gl.BindVertexArray(this.vao)
 	this.instanceBuffer.copyToGPU()
 	this.ssbo.copyToGPU()
-	gl.DrawElementsInstanced(gl.TRIANGLES, 6*6, gl.UNSIGNED_BYTE, gl.Ptr(this.indices), int32(this.amountCubes))
+	gl.DrawArraysInstanced(gl.TRIANGLES, 0, 36, int32(this.amountCubes))
 	this.textureMane.makeNonResident()
 }

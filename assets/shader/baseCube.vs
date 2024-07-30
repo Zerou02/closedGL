@@ -8,7 +8,17 @@ uniform mat4 projection;
 uniform mat4 view;
 
 out vec2 texCoord;
-out float fInstanceID;
+out flat uvec2 fSampler;
+out uint fData;
+out float fVertID;
+
+struct Data {
+  uvec2 handle;
+  uint mask;
+  uint mask2;
+};
+
+layout(binding = 1, std430) readonly buffer ssbo { Data values[]; };
 
 void main() {
   // column-major
@@ -16,5 +26,7 @@ void main() {
                     translate.y, translate.z, 1);
   gl_Position = projection * view * model * vec4(pos, 1.0f);
   texCoord = uv;
-  fInstanceID = gl_InstanceID;
+  fSampler = values[gl_InstanceID].handle;
+  fData = values[gl_InstanceID].mask;
+  fVertID = gl_VertexID;
 }

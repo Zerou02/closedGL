@@ -7,49 +7,49 @@ var cube = []float32{
 	0.5, 0.5, 0.5, 1.0, 1.0, //vorne rechts oben
 	0.5, 0.5, -0.5, 1.0, 0.0, //hinten rechts oben
 	-0.5, 0.5, -0.5, 0.0, 0.0, //hinten links oben
-	//	-0.5, 0.5, -0.5, 0.0, 0.0, //hinten links oben
+	-0.5, 0.5, -0.5, 0.0, 0.0, //hinten links oben
 	-0.5, 0.5, 0.5, 0.0, 1.0, //vorne links oben
-	//	0.5, 0.5, 0.5, 1.0, 1.0, //vorne rechts oben
+	0.5, 0.5, 0.5, 1.0, 1.0, //vorne rechts oben
 
 	//vorne
 	-0.5, -0.5, 0.5, 0.0, 1.0, //vorne links unten
 	0.5, -0.5, 0.5, 1.0, 1.0, //vorne rechts unten
 	0.5, 0.5, 0.5, 1.0, 0.0, //vorne rechts oben
-	//	0.5, 0.5, 0.5, 1.0, 0.0, //vorne rechts oben
+	0.5, 0.5, 0.5, 1.0, 0.0, //vorne rechts oben
 	-0.5, 0.5, 0.5, 0.0, 0.0, //vorne links oben
-	//-0.5, -0.5, 0.5, 0.0, 1.0, //vorne links unten
+	-0.5, -0.5, 0.5, 0.0, 1.0, //vorne links unten
 
 	//links
 	-0.5, 0.5, 0.5, 1.0, 0.0, //vorne links oben
 	-0.5, 0.5, -0.5, 0.0, 0.0, //hinten links oben
 	-0.5, -0.5, -0.5, 0.0, 1.0, //hinten links unten
-	//	-0.5, -0.5, -0.5, 0.0, 1.0, //hinten links unten
+	-0.5, -0.5, -0.5, 0.0, 1.0, //hinten links unten
 	-0.5, -0.5, 0.5, 1.0, 1.0, //vorne links unten
-	//-0.5, 0.5, 0.5, 1.0, 0.0, //vorne links oben
+	-0.5, 0.5, 0.5, 1.0, 0.0, //vorne links oben
 
 	// rechts
 	0.5, -0.5, -0.5, 1.0, 1.0, //hinten rechts unten
 	0.5, 0.5, -0.5, 1.0, 0.0, //hinten rechts oben
 	0.5, 0.5, 0.5, 0.0, 0.0, //vorne rechts oben
-	//	0.5, -0.5, -0.5, 1.0, 1.0, //hinten rechts unten
+	0.5, -0.5, -0.5, 1.0, 1.0, //hinten rechts unten
 	0.5, 0.5, 0.5, 0.0, 0.0, //vorne rechts oben
-	//	0.5, -0.5, 0.5, 0.0, 1.0, //vorne rechts unten
+	0.5, -0.5, 0.5, 0.0, 1.0, //vorne rechts unten
 
 	//hinten
 	0.5, 0.5, -0.5, 0.0, 0.0, //hinten rechts oben
 	0.5, -0.5, -0.5, 0.0, 1.0, //hinten rechts unten
 	-0.5, -0.5, -0.5, 1.0, 1.0, //hinten links unten
-	//	-0.5, -0.5, -0.5, 1.0, 1.0, //hinten links unten
+	-0.5, -0.5, -0.5, 1.0, 1.0, //hinten links unten
 	-0.5, 0.5, -0.5, 1.0, 0.0, //hinten links oben
-	//	0.5, 0.5, -0.5, 0.0, 0.0, //hinten rechts oben
+	0.5, 0.5, -0.5, 0.0, 0.0, //hinten rechts oben
 
 	//unten
 	-0.5, -0.5, -0.5, 1.0, 0.0, //links unten hinten
 	0.5, -0.5, -0.5, 0.0, 0.0, //hinten rechts unten
 	0.5, -0.5, 0.5, 0.0, 1.0, //vorne rechts unten
-	//	0.5, -0.5, 0.5, 0.0, 1.0, //vorne rechts unten
+	0.5, -0.5, 0.5, 0.0, 1.0, //vorne rechts unten
 	-0.5, -0.5, 0.5, 1.0, 1.0, //vorne links unten
-	// -0.5, -0.5, -0.5, 1.0, 0.0, //hinten links unten
+	-0.5, -0.5, -0.5, 1.0, 0.0, //hinten links unten
 }
 
 var cubeVertices = []float32{

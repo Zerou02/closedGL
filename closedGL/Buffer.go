@@ -23,6 +23,12 @@ type SSBOU64 struct {
 	bindingPoint uint32
 }
 
+type SSBOU32 struct {
+	buffer       uint32
+	cpuArr       []uint32
+	bindingPoint uint32
+}
+
 type BufferFloat struct {
 	buffer     uint32
 	bufferSize int
@@ -89,6 +95,26 @@ func (this *SSBOU64) copyToGPU() {
 	gl.BufferData(gl.SHADER_STORAGE_BUFFER, len(this.cpuArr)*8, gl.Ptr(this.cpuArr), gl.DYNAMIC_DRAW)
 }
 
+func genSSBOU32(bindingPoint uint32) SSBOU32 {
+	return SSBOU32{
+		buffer:       genSSBO(),
+		cpuArr:       []uint32{},
+		bindingPoint: bindingPoint,
+	}
+}
+
+func (this *SSBOU32) clear() {
+	this.cpuArr = []uint32{}
+}
+
+func (this *SSBOU32) resizeCPUData(newLenEntries int) {
+	extendArrayU32(&this.cpuArr, newLenEntries)
+}
+
+func (this *SSBOU32) copyToGPU() {
+	gl.BindBufferBase(gl.SHADER_STORAGE_BUFFER, this.bindingPoint, this.buffer)
+	gl.BufferData(gl.SHADER_STORAGE_BUFFER, len(this.cpuArr)*4, gl.Ptr(this.cpuArr), gl.DYNAMIC_DRAW)
+}
 func genSingularVBO(vao, index uint32, elementsPerEntry int32, dataType uint32, normalized bool, instanceCount uint32) uint32 {
 	var vbo uint32 = 0
 	gl.BindVertexArray(vao)
