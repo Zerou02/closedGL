@@ -44,35 +44,45 @@ func NewCube(shader *Shader, camera *Camera, projection *glm.Mat4, pos glm.Vec3)
 
 func (this *Cube) beginDraw() {
 	this.amountCubes = 0
-	this.instanceBuffer.clear()
-	this.ssbo.clear()
+	//this.instanceBuffer.clear()
+	//this.ssbo.clear()
 }
 
-func (this *Cube) createVertices(pos glm.Vec3, texPath string) {
+func (this *Cube) createVertices(pos glm.Vec3, texPath string, ctx *ClosedGLContext) {
 	var stride uint32 = 3
-	var ssboStride uint32 = 4
+	var ssboStride uint32 = 2
 
+	ctx.Logger.Start("resize")
 	this.instanceBuffer.resizeCPUData(int(this.amountCubes+1) * int(stride))
 	this.ssbo.resizeCPUData(int(this.amountCubes+1) * int(ssboStride))
+	ctx.Logger.End("resize")
 
+	ctx.Logger.Start("inst")
 	this.instanceBuffer.cpuArr[this.amountCubes*stride+0] = pos[0]
 	this.instanceBuffer.cpuArr[this.amountCubes*stride+1] = pos[1]
 	this.instanceBuffer.cpuArr[this.amountCubes*stride+2] = pos[2]
 
+	ctx.Logger.End("inst")
+	ctx.Logger.Start("tex")
+
 	this.textureMane.loadTex(texPath)
 
-	var handle = this.textureMane.getHandle(texPath)
+	//var handle = this.textureMane.getHandle(texPath)
+	var handle = 0
 	var lower uint32 = uint32(handle & 0xffff_ffff)
 	var upper uint32 = uint32((handle >> 32) & 0xffff_ffff)
 	this.ssbo.cpuArr[this.amountCubes*ssboStride+0] = lower
 	this.ssbo.cpuArr[this.amountCubes*ssboStride+1] = upper
-	this.ssbo.cpuArr[this.amountCubes*ssboStride+2] = 0b111_111
-	this.ssbo.cpuArr[this.amountCubes*ssboStride+3] = 0b111_111
 
 	this.amountCubes++
+	ctx.Logger.End("tex")
+
 }
 
 func (this *Cube) draw() {
+	if this.amountCubes == 0 {
+		return
+	}
 	this.shader.use()
 	this.textureMane.makeResident()
 

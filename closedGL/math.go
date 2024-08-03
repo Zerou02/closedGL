@@ -218,7 +218,7 @@ func neededDecimalPlacesToNextInt(x float64) int {
 }
 
 // x,y,z
-func idxToPos3(idx, x, y, z int) (int, int, int) {
+func IdxToPos3(idx, x, y, z int) (int, int, int) {
 	var yComp int = idx / int(x*z)
 	var normalizedXIdx = idx - yComp*int(x*y)
 	var xComp, zCom = IdxToGridPos(normalizedXIdx, int(y), int(z))
@@ -226,7 +226,7 @@ func idxToPos3(idx, x, y, z int) (int, int, int) {
 }
 
 // pos = Vec{y,z,x}
-func pos3ToIdx(posX, posY, posZ int, dimX, dimY, dimZ int) int {
+func Pos3ToIdx(posX, posY, posZ int, dimX, dimY, dimZ int) int {
 	var yLevel = posY * dimX * dimZ
 	var idx = GridPosToIdx(posX, posZ, dimX)
 	return yLevel + idx

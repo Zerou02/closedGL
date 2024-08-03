@@ -47,6 +47,7 @@ type ClosedGLContext struct {
 	audio               Audio
 	KeyBoardManager     *KeyBoardManager
 	FPSCounter          *FPSCounter
+	Logger              PerfLogger
 	amountPrimitiveMans int
 	primitiveManMap     map[depth]*[]unsafe.Pointer
 	Config              map[string]string
@@ -84,6 +85,7 @@ func InitClosedGL(pWidth, pHeight float32, name string) ClosedGLContext {
 		primitiveManMap: map[depth]*[]unsafe.Pointer{}, amountPrimitiveMans: 7, indexArr: []int{},
 		Config: config,
 		audio:  newAudio(),
+		Logger: NewLogger(),
 	}
 	if config["potato-friendliness"] != "" {
 		con.LimitFPS(strToBool(config["potato-friendliness"]))
@@ -362,7 +364,7 @@ func (this *ClosedGLContext) DrawCube(pos glm.Vec3, path string, depth int) {
 	if this.primitiveManMap[depth] == nil {
 		this.initEmptyMapAtDepth(depth)
 	}
-	(*Cube)(this.getMapEntry(depth, 6)).createVertices(pos, path)
+	(*Cube)(this.getMapEntry(depth, 6)).createVertices(pos, path, this)
 }
 
 func (this *ClosedGLContext) PlaySound(name string) {
