@@ -40,6 +40,12 @@ type BufferU16 struct {
 	cpuArr     []uint16
 }
 
+type BufferU32 struct {
+	buffer     uint32
+	bufferSize int
+	cpuArr     []uint32
+}
+
 func genVAO() uint32 {
 	var vao uint32 = 0
 	gl.GenVertexArrays(1, &vao)
@@ -177,6 +183,17 @@ func (this *BufferU16) clear() {
 	this.cpuArr = []uint16{}
 }
 
+func (this *BufferU32) resizeCPUData(newLenEntries int) {
+	extendArrayU32(&this.cpuArr, newLenEntries)
+}
+
+func (this *BufferU32) copyToGPU() {
+	setVerticesInVboU32(&this.cpuArr, &this.bufferSize, this.buffer)
+}
+func (this *BufferU32) clear() {
+	this.cpuArr = []uint32{}
+}
+
 func generateInterleavedVBOFloat(vao uint32, startIdx int, vertexAttribBytes []int) uint32 {
 	gl.BindVertexArray(vao)
 	var vbo uint32
@@ -221,6 +238,31 @@ func generateInterleavedVBOFloat2(vao uint32, startIdx int, vertexAttribBytes []
 	}
 }
 
+func generateInterleavedVBOU32(vao uint32, startIdx int, vertexAttribBytes []int) BufferU32 {
+	gl.BindVertexArray(vao)
+	var vbo uint32
+	gl.GenBuffers(1, &vbo)
+	gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
+
+	var stride = 0
+	for i := 0; i < len(vertexAttribBytes); i++ {
+		stride += int(vertexAttribBytes[i])
+	}
+
+	var bytePerType = 4
+	var currOffset = 0
+	for i := startIdx; i < startIdx+len(vertexAttribBytes); i++ {
+		gl.EnableVertexAttribArray(uint32(i))
+		gl.VertexAttribPointerWithOffset(uint32(i), int32(vertexAttribBytes[i-startIdx]), gl.UNSIGNED_INT, false, int32(stride*bytePerType), uintptr(currOffset)*uintptr(bytePerType))
+		currOffset += vertexAttribBytes[i-startIdx]
+	}
+	return BufferU32{
+		buffer:     vbo,
+		bufferSize: 0,
+		cpuArr:     []uint32{},
+	}
+}
+
 func setVerticesInVbo(vertices *[]float32, vboSizeEntries *int, vbo uint32) {
 	if len(*vertices) == 0 {
 		return
@@ -241,7 +283,21 @@ func setVerticesInVboU16(vertices *[]uint16, vboSizeEntries *int, vbo uint32) {
 		return
 	}
 	gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
-	if len(*vertices)*2 >= *vboSizeEntries {
+	if len(*vertices)*bytesPerEntry >= *vboSizeEntries {
+		*vboSizeEntries = len(*vertices) * bytesPerEntry
+		gl.BufferData(gl.ARRAY_BUFFER, *vboSizeEntries, gl.Ptr(*vertices), gl.DYNAMIC_DRAW)
+	} else {
+		gl.BufferSubData(gl.ARRAY_BUFFER, 0, len(*vertices)*bytesPerEntry, gl.Ptr(*vertices))
+	}
+}
+
+func setVerticesInVboU32(vertices *[]uint32, vboSizeEntries *int, vbo uint32) {
+	var bytesPerEntry = 4
+	if len(*vertices) == 0 {
+		return
+	}
+	gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
+	if len(*vertices)*bytesPerEntry >= *vboSizeEntries {
 		*vboSizeEntries = len(*vertices) * bytesPerEntry
 		gl.BufferData(gl.ARRAY_BUFFER, *vboSizeEntries, gl.Ptr(*vertices), gl.DYNAMIC_DRAW)
 	} else {

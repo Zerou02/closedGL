@@ -1,15 +1,18 @@
 #version 460 core
-layout(location = 0) in vec3 pos;
-layout(location = 1) in vec2 uv;
+layout(location = 0) in vec2 handle;
+layout(location = 1) in vec3 pos;
+layout(location = 2) in vec2 uv;
 
-layout(location = 2) in vec3 translate;
+layout(location = 3) in vec3 translate;
 
 uniform mat4 projection;
 uniform mat4 view;
 
 out vec2 texCoord;
-out flat uvec2 fSampler;
+out flat vec2 fSampler;
+out flat uvec2 fSamplerSSBO;
 
+out flat float test;
 struct Data {
   uvec2 handle;
 };
@@ -22,5 +25,10 @@ void main() {
                     translate.y, translate.z, 1);
   gl_Position = projection * view * model * vec4(pos, 1.0f);
   texCoord = uv;
-  fSampler = values[gl_InstanceID].handle;
+  fSampler = handle;
+  fSamplerSSBO = values[0].handle;
+  test = 0;
+  if (uvec2(fSampler) == fSamplerSSBO) {
+    test = 1;
+  }
 }
