@@ -367,6 +367,27 @@ func (this *ClosedGLContext) DrawCube(pos glm.Vec3, path string, depth int) {
 	(*Cube)(this.getMapEntry(depth, 6)).createVertices(pos, path, this)
 }
 
+func (this *ClosedGLContext) DrawCubeMesh(mesh *CubeMesh, depth int) {
+	if this.primitiveManMap[depth] == nil {
+		this.initEmptyMapAtDepth(depth)
+	}
+	(*Cube)(this.getMapEntry(depth, 6)).drawMesh(mesh, this)
+}
+
+func (this *ClosedGLContext) InitCubeMesh(depth int) {
+	if this.primitiveManMap[depth] == nil {
+		this.initEmptyMapAtDepth(depth)
+	}
+	(*Cube)(this.getMapEntry(depth, 6)).initMesh()
+}
+
+func (this *ClosedGLContext) CopyCurrCubeMesh(depth int) CubeMesh {
+	if this.primitiveManMap[depth] == nil {
+		this.initEmptyMapAtDepth(depth)
+	}
+	return (*Cube)(this.getMapEntry(depth, 6)).copyCurrMesh()
+}
+
 func (this *ClosedGLContext) PlaySound(name string) {
 	this.audio.playSound(name)
 }

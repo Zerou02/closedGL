@@ -122,3 +122,12 @@ func strToBool(str string) bool {
 		return false
 	}
 }
+
+func ContainsString(arr []string, x string) bool {
+	for _, y := range arr {
+		if y == x {
+			return true
+		}
+	}
+	return false
+}

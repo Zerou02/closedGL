@@ -9,6 +9,7 @@ type Chunk struct {
 	origin, size glm.Vec3
 	ctx          *closedGL.ClosedGLContext
 	cubes        []uint16
+	mesh         closedGL.CubeMesh
 }
 
 func NewChunk(origin, size glm.Vec3, ctx *closedGL.ClosedGLContext) Chunk {
@@ -22,22 +23,24 @@ func NewChunk(origin, size glm.Vec3, ctx *closedGL.ClosedGLContext) Chunk {
 			cubeArr[i] = 0
 		}
 	}
+	ret.CreateMesh()
 	return ret
 }
 
-func (this *Chunk) Draw() {
+func (this *Chunk) CreateMesh() {
+	this.ctx.InitCubeMesh(1)
 	for i := 0; i < len(this.cubes); i++ {
 		var c = this.cubes[i]
-		if c&1 == 0 || true {
-			this.ctx.Logger.Start("idx")
+		if c&1 == 0 {
 			var x, y, z = closedGL.IdxToPos3(i, int(this.size[0]), int(this.size[1]), int(this.size[2]))
-			this.ctx.Logger.End("idx")
-			this.ctx.Logger.Start("cube")
-			this.ctx.DrawCube(glm.Vec3{float32(x) + this.origin[0], float32(y) + this.origin[1], float32(z) + this.origin[2]}, "./assets/sprites/fence.png", 1)
-			this.ctx.Logger.End("cube")
-
+			this.ctx.DrawCube(glm.Vec3{float32(x) + this.origin[0], float32(y) + this.origin[1], float32(z) + this.origin[2]}, "./assets/sprites/fence_small.png", 1)
 		}
 	}
+	this.mesh = this.ctx.CopyCurrCubeMesh(1)
+}
+
+func (this *Chunk) Draw() {
+	this.ctx.DrawCubeMesh(&this.mesh, 1)
 }
 
 // surrounded on all sides

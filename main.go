@@ -18,9 +18,12 @@ func StartClosedGL() {
 	var openGL = closedGL.InitClosedGL(800, 600, "demo")
 	openGL.LimitFPS(false)
 	var val = true
-	var chunk = ynnebcraft.NewChunk(glm.Vec3{0, -16, 0}, glm.Vec3{32, 32, 32}, &openGL)
-	var chunk2 = ynnebcraft.NewChunk(glm.Vec3{32, 0, 0}, glm.Vec3{32, 32, 32}, &openGL)
-	_, _ = chunk2, chunk
+	var chunks = []ynnebcraft.Chunk{}
+
+	for i := 0; i < 1; i++ {
+		chunks = append(chunks, ynnebcraft.NewChunk(glm.Vec3{float32(i) * 32, 0, 0}, glm.Vec3{32, 32, 32}, &openGL))
+	}
+	openGL.Logger.Enabled = false
 	for !openGL.WindowShouldClose() {
 		if openGL.KeyBoardManager.IsPressed(glfw.KeyF) {
 			val = !val
@@ -30,22 +33,12 @@ func StartClosedGL() {
 		openGL.BeginDrawing()
 		openGL.ClearBG(glm.Vec4{0, 0, 0, 0})
 		openGL.DrawFPS(500, 0, 1)
-		openGL.DrawSprite(glm.Vec4{0, 0, 20, 20}, "./assets/sprites/fence.png", 1)
-		openGL.Logger.Start("idx")
-		/* 		for i := 0; i < 10_000; i++ {
-		   			var a, b, c = closedGL.IdxToPos3(i, 100, 100, 100)
-		   			_, _, _ = a, b, c
-		   		}
-		   		openGL.Logger.End("idx")
-		   		openGL.Logger.Start("cubes")
-		   		for i := 0; i < 10_000; i++ {
-		   			var a, b, c = closedGL.IdxToPos3(i, 100, 100, 100)
-		   			openGL.DrawCube(glm.Vec3{float32(a), float32(b), float32(c)}, "./assets/sprites/fence.png", 1)
-		   		}
-		   		openGL.Logger.End("cubes") */
+		openGL.DrawSprite(glm.Vec4{0, 0, 20, 20}, "./assets/sprites/fence_small.png", 1)
+
 		openGL.Logger.Start("cpu")
-		chunk.Draw()
-		chunk2.Draw()
+		for i := 0; i < len(chunks); i++ {
+			chunks[i].Draw()
+		}
 		openGL.Logger.End("cpu")
 		openGL.Logger.Start("gpu")
 
