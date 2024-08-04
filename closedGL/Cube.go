@@ -8,23 +8,21 @@ import (
 type CubeMesh struct {
 	baseBuffer     BufferFloat
 	instanceBuffer BufferFloat
-	uintBuffer     BufferU32
 	amountCubes    uint32
-	textureMane    TextureMane
-	ssbo           SSBOU32
 	vao            uint32
 }
 
 type Cube struct {
-	shader     *Shader
-	camera     *Camera
-	projection *glm.Mat4
-	currMesh   CubeMesh
-	indices    []byte
+	shader      *Shader
+	camera      *Camera
+	projection  *glm.Mat4
+	currMesh    CubeMesh
+	textureMane TextureMane
+	indices     []byte
 }
 
 func NewCube(shader *Shader, camera *Camera, projection *glm.Mat4, pos glm.Vec3) Cube {
-	var retCube = Cube{shader: shader, camera: camera, projection: projection}
+	var retCube = Cube{shader: shader, camera: camera, projection: projection, textureMane: newTextureMane()}
 	retCube.initMesh()
 	retCube.indices = []byte{
 		0, 1, 2, 2, 3, 0,
@@ -40,58 +38,41 @@ func NewCube(shader *Shader, camera *Camera, projection *glm.Mat4, pos glm.Vec3)
 
 func (this *Cube) initMesh() {
 	var vao = genVAO()
-	var baseBuffer = generateInterleavedVBOFloat2(vao, 1, []int{3, 2})
+	var baseBuffer = generateInterleavedVBOFloat2(vao, 0, []int{3, 2})
 	baseBuffer.cpuArr = cube
 	baseBuffer.copyToGPU()
-	var instanceBuffer = generateInterleavedVBOFloat2(vao, 3, []int{3})
-
-	var uintBuffer = generateInterleavedVBOU32(vao, 0, []int{2})
-	var ssbo = genSSBOU32(1)
+	var instanceBuffer = generateInterleavedVBOFloat2(vao, 2, []int{3, 2})
 	gl.BindBuffer(gl.ARRAY_BUFFER, instanceBuffer.buffer)
-	gl.VertexAttribDivisor(3, 1)
-	gl.BindBuffer(gl.ARRAY_BUFFER, uintBuffer.buffer)
-	gl.VertexAttribDivisor(0, 1)
-
-	gl.VertexAttribDivisor(3, 1)
+	gl.VertexAttribDivisor(2, 1)
 
 	this.currMesh = CubeMesh{
 		vao:            vao,
 		baseBuffer:     baseBuffer,
 		instanceBuffer: instanceBuffer,
 		amountCubes:    this.currMesh.amountCubes,
-		ssbo:           ssbo,
-		uintBuffer:     uintBuffer,
-		textureMane:    newTextureMane(),
 	}
 }
 
 func (this *Cube) beginDraw() {
 	this.currMesh.amountCubes = 0
-	//this.instanceBuffer.clear()
-	//this.ssbo.clear()
 }
 
 func (this *Cube) createVertices(pos glm.Vec3, texPath string, ctx *ClosedGLContext) {
-	var stride uint32 = 3
-	var ssboStride uint32 = 2
+	var stride uint32 = 5
 
 	this.currMesh.instanceBuffer.resizeCPUData(int(this.currMesh.amountCubes+1) * int(stride))
-	this.currMesh.ssbo.resizeCPUData(int(this.currMesh.amountCubes+1) * int(ssboStride))
-	this.currMesh.uintBuffer.resizeCPUData(int(this.currMesh.amountCubes+1) * int(ssboStride))
 
 	this.currMesh.instanceBuffer.cpuArr[this.currMesh.amountCubes*stride+0] = pos[0]
 	this.currMesh.instanceBuffer.cpuArr[this.currMesh.amountCubes*stride+1] = pos[1]
 	this.currMesh.instanceBuffer.cpuArr[this.currMesh.amountCubes*stride+2] = pos[2]
 
-	this.currMesh.textureMane.loadTex(texPath)
+	this.textureMane.loadTex(texPath)
 
-	var handle = this.currMesh.textureMane.getHandle(texPath)
+	var handle = this.textureMane.getHandle(texPath)
 	var lower uint32 = uint32(handle & 0xffff_ffff)
 	var upper uint32 = uint32((handle >> 32) & 0xffff_ffff)
-	this.currMesh.ssbo.cpuArr[this.currMesh.amountCubes*ssboStride+0] = lower
-	this.currMesh.ssbo.cpuArr[this.currMesh.amountCubes*ssboStride+1] = upper
-	this.currMesh.uintBuffer.cpuArr[this.currMesh.amountCubes*ssboStride+0] = lower
-	this.currMesh.uintBuffer.cpuArr[this.currMesh.amountCubes*ssboStride+1] = upper
+	this.currMesh.instanceBuffer.cpuArr[this.currMesh.amountCubes*stride+3] = float32(lower)
+	this.currMesh.instanceBuffer.cpuArr[this.currMesh.amountCubes*stride+4] = float32(upper)
 
 	this.currMesh.amountCubes++
 }
@@ -99,10 +80,16 @@ func (this *Cube) createVertices(pos glm.Vec3, texPath string, ctx *ClosedGLCont
 func (this *Cube) copyCurrMesh() CubeMesh {
 	gl.BindVertexArray(this.currMesh.vao)
 	this.currMesh.instanceBuffer.copyToGPU()
-	this.currMesh.ssbo.copyToGPU()
-	this.currMesh.uintBuffer.copyToGPU()
 	this.currMesh.instanceBuffer.cpuArr = []float32{}
-	return this.currMesh
+	this.currMesh.baseBuffer.cpuArr = []float32{}
+	var retMesh = CubeMesh{
+		baseBuffer:     this.currMesh.baseBuffer.copy(),
+		instanceBuffer: this.currMesh.instanceBuffer.copy(),
+		amountCubes:    this.currMesh.amountCubes,
+		vao:            this.currMesh.vao,
+	}
+	this.currMesh = CubeMesh{}
+	return retMesh
 }
 
 func (this *Cube) draw() {
@@ -110,45 +97,30 @@ func (this *Cube) draw() {
 		return
 	}
 	this.shader.use()
-	this.currMesh.textureMane.makeResident()
+	this.textureMane.makeResident()
 
 	this.shader.setUniformMatrix4("view", &this.camera.lookAtMat)
 	this.shader.setUniformMatrix4("projection", &this.camera.perspective)
 
 	gl.BindVertexArray(this.currMesh.vao)
 	this.currMesh.instanceBuffer.copyToGPU()
-	this.currMesh.ssbo.copyToGPU()
 	gl.DrawArraysInstanced(gl.TRIANGLES, 0, 36, int32(this.currMesh.amountCubes))
-	this.currMesh.textureMane.makeNonResident()
+	this.textureMane.makeNonResident()
 }
 
 func (this *Cube) drawMesh(mesh *CubeMesh, ctx *ClosedGLContext) {
 	if mesh.amountCubes == 0 {
 		return
 	}
-	//
-	println(mesh.ssbo.cpuArr[0])
-	println(mesh.ssbo.cpuArr[1])
-	println(mesh.uintBuffer.cpuArr[0])
-	println(mesh.uintBuffer.cpuArr[1])
-
 	this.shader.use()
-	ctx.Logger.Start("resident")
-	mesh.textureMane.makeResident()
-	ctx.Logger.End("resident")
-
-	ctx.Logger.Start("uniform")
+	this.textureMane.makeResident()
 
 	this.shader.setUniformMatrix4("view", &this.camera.lookAtMat)
 	this.shader.setUniformMatrix4("projection", &this.camera.perspective)
 
-	ctx.Logger.End("uniform")
-	ctx.Logger.Start("bind")
-	gl.BindVertexArray(this.currMesh.vao)
-	mesh.ssbo.copyToGPU()
-	ctx.Logger.End("bind")
+	gl.BindVertexArray(mesh.vao)
 
 	gl.DrawArraysInstanced(gl.TRIANGLES, 0, 36, int32(mesh.amountCubes))
-	mesh.textureMane.makeNonResident()
+	this.textureMane.makeNonResident()
 
 }

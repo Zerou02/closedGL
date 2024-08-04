@@ -69,6 +69,7 @@ func InitClosedGL(pWidth, pHeight float32, name string) ClosedGLContext {
 	initOpenGL(width, height)
 
 	var c = newCamera(width, height)
+	//glfw.GetCurrentContext().SetScrollCallback(c.MouseCallback)
 	var shaderManager = newShaderCameraManager(float32(width), float32(height), &c)
 	var config = parseConfig("./assets/config.ini")
 	if config["default_font"] != "" {

@@ -39,3 +39,16 @@ func (this *TextureMane) makeNonResident() {
 		gl.MakeTextureHandleNonResidentARB(v)
 	}
 }
+
+func (this *TextureMane) copy() TextureMane {
+	var newArr = make([]uint32, len(this.textures))
+	copy(newArr, this.textures)
+	var newMap = map[string]uint64{}
+	for k, v := range this.handleMap {
+		newMap[k] = v
+	}
+	return TextureMane{
+		textures:  newArr,
+		handleMap: newMap,
+	}
+}

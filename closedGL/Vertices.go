@@ -50,6 +50,7 @@ var cube = []float32{
 	0.5, -0.5, 0.5, 0.0, 1.0, //vorne rechts unten
 	-0.5, -0.5, 0.5, 1.0, 1.0, //vorne links unten
 	-0.5, -0.5, -0.5, 1.0, 0.0, //hinten links unten
+
 }
 
 var cubeVertices = []float32{

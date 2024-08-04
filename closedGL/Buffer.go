@@ -168,8 +168,19 @@ func (this *BufferFloat) resizeCPUData(newLenEntries int) {
 func (this *BufferFloat) copyToGPU() {
 	setVerticesInVbo(&this.cpuArr, &this.bufferSize, this.buffer)
 }
+
 func (this *BufferFloat) clear() {
 	this.cpuArr = []float32{}
+}
+
+func (this *BufferFloat) copy() BufferFloat {
+	this.cpuArr = []float32{}
+	var newArr = make([]float32, len(this.cpuArr))
+	return BufferFloat{
+		buffer:     this.buffer,
+		bufferSize: this.bufferSize,
+		cpuArr:     newArr,
+	}
 }
 
 func (this *BufferU16) resizeCPUData(newLenEntries int) {
