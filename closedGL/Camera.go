@@ -70,7 +70,7 @@ func (c *Camera) Process(w *glfw.Window, deltaTime float32) {
 		c.perspective = glm.Ortho2D(0, 800, 0, 600)
 		c.lookAtMat = glm.Ident4()
 	} else {
-		c.perspective = glm.Perspective(glm.DegToRad(float32(c.fov)), c.aspect, 0.1, 100)
+		c.perspective = glm.Perspective(glm.DegToRad(float32(c.fov)), c.aspect, 0.1, 1000)
 	}
 }
 

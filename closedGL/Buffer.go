@@ -135,6 +135,16 @@ func (this *SSBOU32) copyToGPU() {
 	gl.BufferData(gl.SHADER_STORAGE_BUFFER, len(this.cpuArr)*4, gl.Ptr(this.cpuArr), gl.DYNAMIC_DRAW)
 }
 
+func (this *SSBOU32) copy() SSBOU32 {
+	var newArr = make([]uint32, len(this.cpuArr))
+	copy(newArr, this.cpuArr)
+	return SSBOU32{
+		buffer:       this.buffer,
+		bindingPoint: this.bindingPoint,
+		cpuArr:       newArr,
+	}
+}
+
 func genSSBOU8(bindingPoint uint32) SSBOU8 {
 	return SSBOU8{
 		buffer:       genSSBO(),
@@ -209,7 +219,6 @@ func (this *BufferFloat) clear() {
 }
 
 func (this *BufferFloat) copy() BufferFloat {
-	this.cpuArr = []float32{}
 	var newArr = make([]float32, len(this.cpuArr))
 	copy(newArr, this.cpuArr)
 	return BufferFloat{
@@ -242,11 +251,8 @@ func (this *BufferU32) clear() {
 }
 
 func (this *BufferU32) copy() BufferU32 {
-	this.cpuArr = []uint32{}
-	var newArr = []uint32{}
-	for _, x := range this.cpuArr {
-		newArr = append(newArr, x)
-	}
+	var newArr = make([]uint32, len(this.cpuArr))
+	copy(newArr, this.cpuArr)
 	return BufferU32{
 		buffer:     this.buffer,
 		bufferSize: this.bufferSize,
@@ -266,8 +272,8 @@ func (this *BufferU8) clear() {
 }
 
 func (this *BufferU8) copy() BufferU8 {
-	this.cpuArr = []uint8{}
 	var newArr = make([]uint8, len(this.cpuArr))
+	copy(newArr, this.cpuArr)
 	return BufferU8{
 		buffer:     this.buffer,
 		bufferSize: this.bufferSize,

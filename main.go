@@ -86,7 +86,9 @@ func StartClosedGL() {
 	var chunks = []ynnebcraft.Chunk{}
 
 	for i := 0; i < 10; i++ {
-		chunks = append(chunks, ynnebcraft.NewChunk(glm.Vec3{float32(i) * 16, 0, 0}, glm.Vec3{16, 16, 16}, &openGL))
+		for j := 0; j < 10; j++ {
+			chunks = append(chunks, ynnebcraft.NewChunk(glm.Vec3{float32(i) * 32, 0, float32(j) * 32}, glm.Vec3{32, 32, 32}, &openGL))
+		}
 	}
 	openGL.Logger.Enabled = false
 	for !openGL.WindowShouldClose() {

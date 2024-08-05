@@ -18,6 +18,7 @@ func NewChunk(origin, size glm.Vec3, ctx *closedGL.ClosedGLContext) Chunk {
 	var cubeArr = make([]uint16, amountCubes)
 	var ret = Chunk{origin: origin, size: size, ctx: ctx, cubes: cubeArr}
 
+	closedGL.PrintlnFloat(origin[0])
 	ret.setTransparency(0, true)
 	ret.setTransparency(1, true)
 	ret.setTransparency(2, true)
@@ -31,7 +32,7 @@ func NewChunk(origin, size glm.Vec3, ctx *closedGL.ClosedGLContext) Chunk {
 }
 
 func (this *Chunk) CreateMesh() {
-	this.ctx.InitCubeMesh(1)
+	this.ctx.InitCubeMesh(this.origin, 1)
 	for i := 0; i < len(this.cubes); i++ {
 		var c = this.cubes[i]
 		if !this.isTransparent(c) {
@@ -39,8 +40,7 @@ func (this *Chunk) CreateMesh() {
 			var faceMask = c & 63
 			for j := 0; j < 6; j++ {
 				if (faceMask>>j)&1 == 1 {
-					this.ctx.DrawCube(glm.Vec3{float32(x) + this.origin[0], float32(y) + this.origin[1], float32(z) + this.origin[2]}, "./assets/sprites/fence_small.png", byte(j), 1)
-
+					this.ctx.DrawCube(glm.Vec3{float32(x), float32(y), float32(z)}, "./assets/sprites/sheet1.png", byte(j), 1, 0+j, 1)
 				}
 			}
 		}

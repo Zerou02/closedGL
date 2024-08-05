@@ -230,7 +230,7 @@ func (this *ClosedGLContext) createSpriteMan() SpriteManager {
 }
 
 func (this *ClosedGLContext) CreateCube() Cube {
-	return NewCube(this.shaderCameraManager.Shadermap["baseCube"], this.shaderCameraManager.camera, &this.shaderCameraManager.Projection3D, glm.Vec3{0, 0, 0})
+	return NewCube(this.shaderCameraManager.Shadermap["baseCube"], this.shaderCameraManager.camera, &this.shaderCameraManager.Projection3D)
 }
 
 func (this *ClosedGLContext) getMapEntry(depth int, idx int) unsafe.Pointer {
@@ -361,25 +361,25 @@ func (this *ClosedGLContext) DrawSprite(pos glm.Vec4, path string, depth int) {
 	(*SpriteManager)(this.getMapEntry(depth, 5)).createVertices(pos, path)
 }
 
-func (this *ClosedGLContext) DrawCube(pos glm.Vec3, path string, side byte, depth int) {
+func (this *ClosedGLContext) DrawCube(pos glm.Vec3, path string, side byte, depth int, texIdX, texIdY int) {
 	if this.primitiveManMap[depth] == nil {
 		this.initEmptyMapAtDepth(depth)
 	}
-	(*Cube)(this.getMapEntry(depth, 6)).createVertices(pos, path, side)
+	(*Cube)(this.getMapEntry(depth, 6)).createVertices(pos, path, side, texIdX, texIdY)
 }
 
 func (this *ClosedGLContext) DrawCubeMesh(mesh *CubeMesh, depth int) {
 	if this.primitiveManMap[depth] == nil {
 		this.initEmptyMapAtDepth(depth)
 	}
-	(*Cube)(this.getMapEntry(depth, 6)).drawMesh(mesh, this)
+	(*Cube)(this.getMapEntry(depth, 6)).drawMesh(mesh)
 }
 
-func (this *ClosedGLContext) InitCubeMesh(depth int) {
+func (this *ClosedGLContext) InitCubeMesh(anchor glm.Vec3, depth int) {
 	if this.primitiveManMap[depth] == nil {
 		this.initEmptyMapAtDepth(depth)
 	}
-	(*Cube)(this.getMapEntry(depth, 6)).initMesh()
+	(*Cube)(this.getMapEntry(depth, 6)).initMesh(anchor)
 }
 
 func (this *ClosedGLContext) CopyCurrCubeMesh(depth int) CubeMesh {
