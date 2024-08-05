@@ -17,6 +17,12 @@ type SSBOVec4 struct {
 	bindingPoint uint32
 }
 
+type SSBOU8 struct {
+	buffer       uint32
+	cpuArr       []uint8
+	bindingPoint uint32
+}
+
 type SSBOU64 struct {
 	buffer       uint32
 	cpuArr       []uint64
@@ -34,6 +40,13 @@ type BufferFloat struct {
 	bufferSize int
 	cpuArr     []float32
 }
+
+type BufferU8 struct {
+	buffer     uint32
+	bufferSize int
+	cpuArr     []uint8
+}
+
 type BufferU16 struct {
 	buffer     uint32
 	bufferSize int
@@ -121,6 +134,28 @@ func (this *SSBOU32) copyToGPU() {
 	gl.BindBufferBase(gl.SHADER_STORAGE_BUFFER, this.bindingPoint, this.buffer)
 	gl.BufferData(gl.SHADER_STORAGE_BUFFER, len(this.cpuArr)*4, gl.Ptr(this.cpuArr), gl.DYNAMIC_DRAW)
 }
+
+func genSSBOU8(bindingPoint uint32) SSBOU8 {
+	return SSBOU8{
+		buffer:       genSSBO(),
+		cpuArr:       []uint8{},
+		bindingPoint: bindingPoint,
+	}
+}
+
+func (this *SSBOU8) clear() {
+	this.cpuArr = []uint8{}
+}
+
+func (this *SSBOU8) resizeCPUData(newLenEntries int) {
+	extendArrayU8(&this.cpuArr, newLenEntries)
+}
+
+func (this *SSBOU8) copyToGPU() {
+	gl.BindBufferBase(gl.SHADER_STORAGE_BUFFER, this.bindingPoint, this.buffer)
+	gl.BufferData(gl.SHADER_STORAGE_BUFFER, len(this.cpuArr)*1, gl.Ptr(this.cpuArr), gl.DYNAMIC_DRAW)
+}
+
 func genSingularVBO(vao, index uint32, elementsPerEntry int32, dataType uint32, normalized bool, instanceCount uint32) uint32 {
 	var vbo uint32 = 0
 	gl.BindVertexArray(vao)
@@ -176,6 +211,7 @@ func (this *BufferFloat) clear() {
 func (this *BufferFloat) copy() BufferFloat {
 	this.cpuArr = []float32{}
 	var newArr = make([]float32, len(this.cpuArr))
+	copy(newArr, this.cpuArr)
 	return BufferFloat{
 		buffer:     this.buffer,
 		bufferSize: this.bufferSize,
@@ -205,6 +241,39 @@ func (this *BufferU32) clear() {
 	this.cpuArr = []uint32{}
 }
 
+func (this *BufferU32) copy() BufferU32 {
+	this.cpuArr = []uint32{}
+	var newArr = []uint32{}
+	for _, x := range this.cpuArr {
+		newArr = append(newArr, x)
+	}
+	return BufferU32{
+		buffer:     this.buffer,
+		bufferSize: this.bufferSize,
+		cpuArr:     newArr,
+	}
+}
+func (this *BufferU8) resizeCPUData(newLenEntries int) {
+	extendArrayU8(&this.cpuArr, newLenEntries)
+}
+
+func (this *BufferU8) copyToGPU() {
+	setVerticesInVboU8(&this.cpuArr, &this.bufferSize, this.buffer)
+}
+
+func (this *BufferU8) clear() {
+	this.cpuArr = []uint8{}
+}
+
+func (this *BufferU8) copy() BufferU8 {
+	this.cpuArr = []uint8{}
+	var newArr = make([]uint8, len(this.cpuArr))
+	return BufferU8{
+		buffer:     this.buffer,
+		bufferSize: this.bufferSize,
+		cpuArr:     newArr,
+	}
+}
 func generateInterleavedVBOFloat(vao uint32, startIdx int, vertexAttribBytes []int) uint32 {
 	gl.BindVertexArray(vao)
 	var vbo uint32
@@ -264,13 +333,37 @@ func generateInterleavedVBOU32(vao uint32, startIdx int, vertexAttribBytes []int
 	var currOffset = 0
 	for i := startIdx; i < startIdx+len(vertexAttribBytes); i++ {
 		gl.EnableVertexAttribArray(uint32(i))
-		gl.VertexAttribPointerWithOffset(uint32(i), int32(vertexAttribBytes[i-startIdx]), gl.UNSIGNED_INT, false, int32(stride*bytePerType), uintptr(currOffset)*uintptr(bytePerType))
+		gl.VertexAttribIPointerWithOffset(uint32(i), int32(vertexAttribBytes[i-startIdx]), gl.UNSIGNED_INT, int32(stride*bytePerType), uintptr(currOffset*bytePerType))
 		currOffset += vertexAttribBytes[i-startIdx]
 	}
 	return BufferU32{
 		buffer:     vbo,
 		bufferSize: 0,
 		cpuArr:     []uint32{},
+	}
+}
+
+func generateInterleavedVBOU8(vao uint32, startIdx int, vertexAttribBytes []int) BufferU8 {
+	gl.BindVertexArray(vao)
+	var vbo uint32
+	gl.GenBuffers(1, &vbo)
+	gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
+
+	var stride = 0
+	for i := 0; i < len(vertexAttribBytes); i++ {
+		stride += int(vertexAttribBytes[i])
+	}
+
+	var currOffset = 0
+	for i := startIdx; i < startIdx+len(vertexAttribBytes); i++ {
+		gl.EnableVertexAttribArray(uint32(i))
+		gl.VertexAttribIPointerWithOffset(uint32(i), int32(vertexAttribBytes[i-startIdx]), gl.UNSIGNED_BYTE, int32(stride*1), uintptr(currOffset)*1)
+		currOffset += vertexAttribBytes[i-startIdx]
+	}
+	return BufferU8{
+		buffer:     vbo,
+		bufferSize: 0,
+		cpuArr:     []uint8{},
 	}
 }
 
@@ -304,6 +397,20 @@ func setVerticesInVboU16(vertices *[]uint16, vboSizeEntries *int, vbo uint32) {
 
 func setVerticesInVboU32(vertices *[]uint32, vboSizeEntries *int, vbo uint32) {
 	var bytesPerEntry = 4
+	if len(*vertices) == 0 {
+		return
+	}
+	gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
+	if len(*vertices)*bytesPerEntry >= *vboSizeEntries {
+		*vboSizeEntries = len(*vertices) * bytesPerEntry
+		gl.BufferData(gl.ARRAY_BUFFER, *vboSizeEntries, gl.Ptr(*vertices), gl.DYNAMIC_DRAW)
+	} else {
+		gl.BufferSubData(gl.ARRAY_BUFFER, 0, len(*vertices)*bytesPerEntry, gl.Ptr(*vertices))
+	}
+}
+
+func setVerticesInVboU8(vertices *[]uint8, vboSizeEntries *int, vbo uint32) {
+	var bytesPerEntry = 1
 	if len(*vertices) == 0 {
 		return
 	}
