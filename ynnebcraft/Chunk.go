@@ -59,15 +59,17 @@ func NewChunk(origin, size glm.Vec3, ctx *closedGL.ClosedGLContext) Chunk {
 	ret.faceCullCubes()
 
 	//	ret.greedyMesh2dMesh()
+	/*
+		for _, x := range ret.frontBuffer[0] {
+			if (x.pos[0] != 0 && x.pos[1] != 0 && x.pos[2] != 0) || x.id != 0 {
 
-	for _, x := range ret.frontBuffer[0] {
-		if x.pos[0] != 0 && x.pos[1] != 0 && x.pos[2] != 0 {
-
-			closedGL.PrintlnFloat(x.pos[0])
-			closedGL.PrintlnFloat(x.pos[1])
-			closedGL.PrintlnFloat(x.pos[2])
-		}
-	}
+				closedGL.PrintlnFloat(x.pos[0])
+				closedGL.PrintlnFloat(x.pos[1])
+				closedGL.PrintlnFloat(x.pos[2])
+				println(x.id, "--")
+			}
+		} */
+	println(ret.frontBuffer[0][0].id)
 	//var up = ret.createUpDownVertices("up")
 	//var down = ret.createUpDownVertices("down")
 	//var left = ret.createLeftRightVertices("left")
@@ -75,11 +77,8 @@ func NewChunk(origin, size glm.Vec3, ctx *closedGL.ClosedGLContext) Chunk {
 
 	//var front = ret.createFrontBackVertices()
 	for i := 0; i < 32; i++ {
-		//	ret.greedyMesh2dPlane(up[i])
-		//	ret.greedyMesh2dPlane(down[i])
-		//	ret.greedyMesh2dPlane(down[i])
+		ret.greedyMesh2dPlane(ret.rightBuffer[i], i, "left")
 	}
-	ret.greedyMesh2dPlane(ret.frontBuffer[0])
 
 	/* for _, x := range down[0] {
 		if x.pos[0] != 0 && x.pos[1] != 0 && x.pos[2] != 0 {
@@ -144,7 +143,7 @@ func (this *Chunk) createFrontBackVertices() [32][32 * 32]CubeFace {
 	return faces
 }
 
-func (this *Chunk) greedyMesh2dPlane(plane [32 * 32]CubeFace) {
+func (this *Chunk) greedyMesh2dPlane(plane [32 * 32]CubeFace, sliceID int, dir string) {
 	var currType uint = 0
 
 	var x, z = -1, 0
@@ -159,7 +158,7 @@ func (this *Chunk) greedyMesh2dPlane(plane [32 * 32]CubeFace) {
 		}
 		//mesh
 		if (x == 31 || entry.alreadyMeshed || entry.id != currType) && currType != 0 {
-			println(startX, x, z)
+			println(startX, x, z, currType)
 			//extend rightward
 			//off-by-one hack. Don't know why, don't care
 			if x == 31 {
@@ -185,14 +184,24 @@ func (this *Chunk) greedyMesh2dPlane(plane [32 * 32]CubeFace) {
 					j++
 				}
 			}
-			this.faceBuffer = append(this.faceBuffer, CubeFace{
+			var face = CubeFace{
 				id:            currType,
-				pos:           glm.Vec3{float32(startX), 0, float32(z)},
+				pos:           glm.Vec3{float32(startX), float32(sliceID), float32(z)},
 				sizeX:         uint(xSteps),
 				sizeY:         uint(j),
 				side:          0,
 				alreadyMeshed: true,
-			})
+			}
+			if dir == "front" {
+				face.pos[2] = float32(sliceID)
+				face.pos[1] = float32(z)
+			} else if dir == "left" {
+				face.pos[0] = float32(sliceID)
+				face.pos[2] = float32(startX)
+				face.pos[1] = float32(z)
+
+			}
+			this.faceBuffer = append(this.faceBuffer, face)
 			currType = 0
 			x = -1
 			z = 0
@@ -205,103 +214,6 @@ func (this *Chunk) greedyMesh2dPlane(plane [32 * 32]CubeFace) {
 			finished = true
 		}
 	}
-}
-
-func (this *Chunk) greedyMesh2dMesh() {
-	this.faceBuffer = []CubeFace{}
-	var sides = this.columns["up"]
-	var currType = 0
-	var x, y, z = -1, 0, 0
-	var stepsX = 0
-
-	var finished = false
-	for !finished {
-		x++
-		stepsX++
-
-		var next = &sides[closedGL.GridPosToIdx(x, z, 32)][y]
-		println(x, z, y, currType, next.alreadyMeshed)
-
-		if currType == 0 && next.id != 0 && !next.alreadyMeshed {
-			currType = int(next.id)
-			stepsX = 0
-			x = int(next.pos[0])
-			z = int(next.pos[2])
-			println("curr", x, z, y)
-			continue
-		}
-		if z == 31 && x == 31 {
-			if currType != 0 {
-				next.alreadyMeshed = true
-
-				this.faceBuffer = append(this.faceBuffer, CubeFace{
-					id:            uint(currType),
-					pos:           glm.Vec3{float32(x), float32(y), float32(z)},
-					sizeX:         uint(stepsX),
-					sizeY:         uint(1),
-					side:          0,
-					alreadyMeshed: true,
-				})
-			}
-			if y == 31 {
-				finished = true
-			} else {
-				y++
-				x = -1
-				z = 0
-				stepsX = 0
-				currType = 0
-			}
-		}
-		if (int(next.id) != currType || x == 31 || next.alreadyMeshed) && currType != 0 {
-			println("i", stepsX, z)
-			var i = 0 //stepsZ
-			var valid = true
-			var min = stepsX
-			for valid {
-				var innerValid = true
-				for j := 0; j < min; j++ {
-					if int(sides[closedGL.GridPosToIdx(x-stepsX+j, z+i, 32)][y].id) != currType {
-						innerValid = false
-					}
-				}
-				if innerValid {
-					println("inner", i)
-					for j := 0; j <= stepsX; j++ {
-						sides[closedGL.GridPosToIdx(x-stepsX+j, z+i, 32)][y].alreadyMeshed = true
-					}
-				}
-				println(i, min)
-				i++
-				if !innerValid || i == 32 || i == min {
-					valid = false
-					break
-				}
-
-			}
-			this.faceBuffer = append(this.faceBuffer, CubeFace{
-				id:            uint(currType),
-				pos:           glm.Vec3{float32(x - stepsX), float32(y), float32(z)},
-				sizeX:         uint(stepsX),
-				sizeY:         uint(i),
-				side:          0,
-				alreadyMeshed: true,
-			})
-			x = -1
-			currType = 0
-			stepsX = 0
-			z++
-			/* 			println(z, i)
-			   			if z+i >= 32 {
-			   				finished = true
-			   			} */
-		}
-		if x == 31 {
-			x = -1
-			z++
-		}
-	}
-
 }
 
 func (this *Chunk) CreateMesh() {
