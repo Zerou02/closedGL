@@ -1,8 +1,6 @@
 package closedGL
 
 import (
-	"strconv"
-
 	"github.com/EngoEngine/glm"
 	"github.com/go-gl/gl/v4.1-core/gl"
 )
@@ -134,9 +132,6 @@ func (this *Cube) findIdxOfTex(path string) uint32 {
 }
 
 func (this *Cube) copyCurrMesh() CubeMesh {
-	println(strconv.FormatInt(int64(this.currMesh.instanceBuffer.cpuArr[0]), 2))
-	println("u", this.currMesh.instanceBuffer.cpuArr[0]>>23&31)
-	println("v", this.currMesh.instanceBuffer.cpuArr[0]>>18&31)
 
 	gl.BindVertexArray(this.currMesh.vao)
 	this.currMesh.instanceBuffer.copyToGPU()

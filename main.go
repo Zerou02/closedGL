@@ -85,8 +85,8 @@ func StartClosedGL() {
 	var val = true
 	var chunks = []ynnebcraft.Chunk{}
 
-	for i := 0; i < 10; i++ {
-		for j := 0; j < 10; j++ {
+	for i := 0; i < 1; i++ {
+		for j := 0; j < 1; j++ {
 			chunks = append(chunks, ynnebcraft.NewChunk(glm.Vec3{float32(i) * 32, 0, float32(j) * 32}, glm.Vec3{32, 32, 32}, &openGL))
 		}
 	}
@@ -100,6 +100,13 @@ func StartClosedGL() {
 		openGL.BeginDrawing()
 		openGL.ClearBG(glm.Vec4{0, 0, 0, 0})
 		openGL.DrawFPS(500, 0, 1)
+		openGL.Text.DrawText(500, 50, "x:"+strconv.FormatFloat(float64(openGL.Camera.CameraFront[0]), 'f', 2, 64), 1)
+		openGL.Text.DrawText(500, 75, "y:"+strconv.FormatFloat(float64(openGL.Camera.CameraFront[1]), 'f', 2, 64), 1)
+		openGL.Text.DrawText(500, 100, "z:"+strconv.FormatFloat(float64(openGL.Camera.CameraFront[2]), 'f', 2, 64), 1)
+
+		openGL.Text.DrawText(600, 50, "x:"+strconv.FormatFloat(float64(openGL.Camera.CameraPos[0]), 'f', 2, 64), 1)
+		openGL.Text.DrawText(600, 75, "y:"+strconv.FormatFloat(float64(openGL.Camera.CameraPos[1]), 'f', 2, 64), 1)
+		openGL.Text.DrawText(600, 100, "z:"+strconv.FormatFloat(float64(openGL.Camera.CameraPos[2]), 'f', 2, 64), 1)
 		openGL.DrawSprite(glm.Vec4{0, 0, 20, 20}, "./assets/sprites/fence_small.png", 1)
 
 		openGL.Logger.Start("cpu")
@@ -114,6 +121,7 @@ func StartClosedGL() {
 		openGL.Logger.End("all")
 		openGL.Logger.Print()
 		openGL.Process()
+
 	}
 	openGL.Free()
 }
