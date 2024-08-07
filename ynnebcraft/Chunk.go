@@ -58,35 +58,16 @@ func NewChunk(origin, size glm.Vec3, ctx *closedGL.ClosedGLContext) Chunk {
 	ret.setTransparency(closedGL.Pos3ToIdx(2, 2, 2, int(size[0]), int(size[1]), int(size[2])), true)
 	ret.faceCullCubes()
 
-	//	ret.greedyMesh2dMesh()
-	/*
-		for _, x := range ret.frontBuffer[0] {
-			if (x.pos[0] != 0 && x.pos[1] != 0 && x.pos[2] != 0) || x.id != 0 {
-
-				closedGL.PrintlnFloat(x.pos[0])
-				closedGL.PrintlnFloat(x.pos[1])
-				closedGL.PrintlnFloat(x.pos[2])
-				println(x.id, "--")
-			}
-		} */
-	println(ret.frontBuffer[0][0].id)
-	//var up = ret.createUpDownVertices("up")
-	//var down = ret.createUpDownVertices("down")
-	//var left = ret.createLeftRightVertices("left")
-	//var right = ret.createLeftRightVertices("right")
-
-	//var front = ret.createFrontBackVertices()
+	ctx.Logger.Start("greedyMesh")
 	for i := 0; i < 32; i++ {
-		ret.greedyMesh2dPlane(ret.rightBuffer[i], i, "left")
+		ret.greedyMesh2dPlane(ret.leftBuffer[i], i, "left")
+		ret.greedyMesh2dPlane(ret.rightBuffer[i], i, "right")
+		ret.greedyMesh2dPlane(ret.frontBuffer[i], i, "front")
+		ret.greedyMesh2dPlane(ret.backBuffer[i], i, "back")
+		ret.greedyMesh2dPlane(ret.upBuffer[i], i, "up")
+		ret.greedyMesh2dPlane(ret.downBuffer[i], i, "down")
 	}
-
-	/* for _, x := range down[0] {
-		if x.pos[0] != 0 && x.pos[1] != 0 && x.pos[2] != 0 {
-			println(x.pos[0])
-			println(x.pos[1])
-			println(x.pos[2])
-		}
-	} */
+	ctx.Logger.End("greedyMesh")
 
 	println("len", len(ret.faceBuffer))
 	for _, x := range ret.faceBuffer {
@@ -149,6 +130,13 @@ func (this *Chunk) greedyMesh2dPlane(plane [32 * 32]CubeFace, sliceID int, dir s
 	var x, z = -1, 0
 	var startX = 0
 	var finished = false
+	var sideMap = map[string]byte{}
+	sideMap["up"] = 0
+	sideMap["front"] = 1
+	sideMap["left"] = 2
+	sideMap["right"] = 3
+	sideMap["back"] = 4
+	sideMap["down"] = 5
 	for !finished {
 		x++
 		var entry = plane[closedGL.GridPosToIdx(x, z, 32)]
@@ -158,7 +146,6 @@ func (this *Chunk) greedyMesh2dPlane(plane [32 * 32]CubeFace, sliceID int, dir s
 		}
 		//mesh
 		if (x == 31 || entry.alreadyMeshed || entry.id != currType) && currType != 0 {
-			println(startX, x, z, currType)
 			//extend rightward
 			//off-by-one hack. Don't know why, don't care
 			if x == 31 {
@@ -189,13 +176,13 @@ func (this *Chunk) greedyMesh2dPlane(plane [32 * 32]CubeFace, sliceID int, dir s
 				pos:           glm.Vec3{float32(startX), float32(sliceID), float32(z)},
 				sizeX:         uint(xSteps),
 				sizeY:         uint(j),
-				side:          0,
+				side:          sideMap[dir],
 				alreadyMeshed: true,
 			}
-			if dir == "front" {
+			if dir == "front" || dir == "back" {
 				face.pos[2] = float32(sliceID)
 				face.pos[1] = float32(z)
-			} else if dir == "left" {
+			} else if dir == "left" || dir == "right" {
 				face.pos[0] = float32(sliceID)
 				face.pos[2] = float32(startX)
 				face.pos[1] = float32(z)

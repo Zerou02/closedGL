@@ -31,8 +31,10 @@ void main() {
                     float(((instData >> 13) & 31) + meshData[0]),
                     float(((instData >> 8) & 31) + meshData[1]),
                     float(((instData >> 3) & 31) + meshData[2]), 1);
-  gl_Position = projection * view * model *
-                vec4(vec3(vertexPos[x], vertexPos[y], vertexPos[z]), 1.0f);
+  gl_Position =
+      projection * view * model *
+      vec4(vec3(vertexPos[x], vertexPos[y], vertexPos[z]) * vec3(1, 1, 1),
+           1.0f);
 
   uint texU = instData >> 23 & 31;
   uint texV = instData >> 18 & 31;
