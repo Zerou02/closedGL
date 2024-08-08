@@ -84,11 +84,9 @@ func StartClosedGL() {
 
 	var val = true
 	var chunks = []ynnebcraft.Chunk{}
-	var mesher = ynnebcraft.NewGreedyMesher()
-
 	for i := 0; i < 1; i++ {
 		for j := 0; j < 1; j++ {
-			chunks = append(chunks, ynnebcraft.NewChunk(glm.Vec3{float32(i) * 32, 0, float32(j) * 32}, glm.Vec3{32, 32, 32}, &openGL, &mesher))
+			chunks = append(chunks, ynnebcraft.NewChunk(glm.Vec3{float32(i) * 32, 0, float32(j) * 32}, glm.Vec3{32, 32, 32}, &openGL))
 		}
 	}
 	openGL.Logger.Enabled = true
