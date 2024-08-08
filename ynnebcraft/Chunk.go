@@ -35,12 +35,10 @@ type Chunk struct {
 func NewChunk(origin, size glm.Vec3, ctx *closedGL.ClosedGLContext) Chunk {
 	var amountCubes = int(size[0] * size[1] * size[2])
 	var cubeArr = make([]uint16, amountCubes)
-	var bufferHolder = BufferHolder{
-		buffer: [6][32][1024]GreedyMeshFace{},
-	}
+
 	var ret = Chunk{origin: origin, size: size, ctx: ctx, cubes: cubeArr,
 		faceBuffer:   []CubeFace{},
-		bufferHolder: &bufferHolder,
+		bufferHolder: nil,
 		iSize:        [3]int{int(size[0]), int(size[1]), int(size[2])},
 	}
 	ret.setTransparency(0, true)
@@ -52,24 +50,26 @@ func NewChunk(origin, size glm.Vec3, ctx *closedGL.ClosedGLContext) Chunk {
 	ret.setTransparency(closedGL.Pos3ToIdx(1, 2, 1, int(size[0]), int(size[1]), int(size[2])), true)
 
 	ret.setTransparency(closedGL.Pos3ToIdx(2, 2, 2, int(size[0]), int(size[1]), int(size[2])), true)
-	ret.greedyMeshPrep()
 
-	ctx.Logger.Start("greedyMesh")
-
-	for b := 0; b < 6; b++ {
-		for i := 0; i < 32; i++ {
-			ret.greedyMesh2dPlane(ret.bufferHolder.buffer[b][i], i, b)
-		}
-	}
-	ctx.Logger.End("greedyMesh")
 	ret.CreateMesh()
-	ret.bufferHolder = nil
-	ret.faceBuffer = make([]CubeFace, 0)
 
 	return ret
 }
 
-func (this *Chunk) greedyMesh2dPlane(plane [32 * 32]GreedyMeshFace, sliceID int, side int) {
+func (this *Chunk) greedyMesh() {
+	var bufferHolder = BufferHolder{
+		buffer: [6][32][1024]GreedyMeshFace{},
+	}
+	this.bufferHolder = &bufferHolder
+	this.greedyMeshPrep()
+	for b := 0; b < 6; b++ {
+		for i := 0; i < 32; i++ {
+			this.greedyMesh2dPlane(&this.bufferHolder.buffer[b][i], i, b)
+		}
+	}
+
+}
+func (this *Chunk) greedyMesh2dPlane(plane *[32 * 32]GreedyMeshFace, sliceID int, side int) {
 	var currType uint = 0
 
 	var x, z = -1, 0
@@ -84,7 +84,7 @@ func (this *Chunk) greedyMesh2dPlane(plane [32 * 32]GreedyMeshFace, sliceID int,
 	sideMap["down"] = 5
 	for !finished {
 		x++
-		var entry = plane[closedGL.GridPosToIdx(x, z, 32)]
+		var entry = &plane[closedGL.GridPosToIdx(x, z, 32)]
 		if currType == 0 && entry.id != 0 && !entry.alreadyMeshed {
 			currType = entry.id
 			startX = x
@@ -156,12 +156,19 @@ func (this *Chunk) greedyMesh2dPlane(plane [32 * 32]GreedyMeshFace, sliceID int,
 
 func (this *Chunk) CreateMesh() {
 	this.ctx.InitCubeMesh(this.origin, 1)
+
+	this.ctx.Logger.Start("greedyMesh")
+	this.greedyMesh()
+	this.ctx.Logger.End("greedyMesh")
 	for i := 0; i < len(this.faceBuffer); i++ {
 		var f = &this.faceBuffer[i]
 		this.ctx.DrawCube(glm.Vec3{float32(f.pos[0]), float32(f.pos[1]), float32(f.pos[2])}, glm.Vec3{float32(f.size[0]), float32(f.size[1]), float32(f.size[2])}, "./assets/sprites/sheet1.png", f.side, 1, 0+int(f.side), 1)
 
 	}
 	this.mesh = this.ctx.CopyCurrCubeMesh(1)
+	this.faceBuffer = make([]CubeFace, 0)
+	this.bufferHolder = nil
+
 }
 
 func (this *Chunk) Draw() {
