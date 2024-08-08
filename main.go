@@ -2,7 +2,6 @@ package main
 
 import (
 	_ "image/png"
-	"os"
 	"strconv"
 
 	"github.com/EngoEngine/glm"
@@ -11,67 +10,8 @@ import (
 	"github.com/go-gl/glfw/v3.2/glfw"
 )
 
-func convertCubeVertices() {
-	var cube = closedGL.CubeVertices
-	var retArr = []byte{}
-	for i := 0; i < len(cube); i += 5 {
-		var newEntry byte = 0
-		for j := 0; j < 5; j++ {
-			var val = cube[i+j]
-			var bit byte = 0
-			if val >= 0.5 {
-				bit = 1
-			}
-			bit <<= (5 - 1 - j)
-			newEntry |= bit
-		}
-		retArr = append(retArr, newEntry)
-	}
-	var f, _ = os.Create("./vert.txt")
-	for _, x := range retArr {
-		println(strconv.FormatInt(int64(x), 10))
-		f.WriteString(strconv.FormatInt(int64(x), 10) + ",")
-	}
-}
-
 func main() {
 	StartClosedGL()
-}
-
-func decodeTest() {
-	for i, x := range closedGL.CompressedCubeVertices {
-		var data float32 = float32(x)
-		var v float32 = float32(int(data) & 1)
-		var u float32 = float32((int(data) & 2) >> 1)
-		var z float32 = float32((int(data) & 4) >> 2)
-		var y float32 = float32((int(data) & 8) >> 3)
-		var x float32 = float32((int(data) & 16) >> 4)
-		if x == 1 {
-			x = 0.5
-		} else {
-			x = -0.5
-		}
-		if y == 1 {
-			y = 0.5
-		} else {
-			y = -0.5
-		}
-		if z == 1 {
-			z = 0.5
-		} else {
-			z = -0.5
-		}
-		var val = closedGL.CubeVertices[i*5] == x &&
-			(closedGL.CubeVertices[i*5+1] == y) &&
-			(closedGL.CubeVertices[i*5+2] == z) &&
-			(closedGL.CubeVertices[i*5+3] == u) &&
-			(closedGL.CubeVertices[i*5+4] == v)
-		if !val {
-			print(i, ",")
-			print(x, y, z, u, v, ",")
-			closedGL.PrintlnFloat(data)
-		}
-	}
 }
 
 func StartClosedGL() {
@@ -84,9 +24,11 @@ func StartClosedGL() {
 
 	var val = true
 	var chunks = []ynnebcraft.Chunk{}
+	var mesher = ynnebcraft.NewGreedyMesher()
+
 	for i := 0; i < 10; i++ {
 		for j := 0; j < 10; j++ {
-			chunks = append(chunks, ynnebcraft.NewChunk(glm.Vec3{float32(i) * 32, 0, float32(j) * 32}, glm.Vec3{32, 32, 32}, &openGL))
+			chunks = append(chunks, ynnebcraft.NewChunk(glm.Vec3{float32(i) * 32, 0, float32(j) * 32}, glm.Vec3{32, 32, 32}, &openGL, &mesher))
 		}
 	}
 	openGL.Logger.Enabled = true
