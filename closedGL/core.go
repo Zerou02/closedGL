@@ -361,11 +361,11 @@ func (this *ClosedGLContext) DrawSprite(pos glm.Vec4, path string, depth int) {
 	(*SpriteManager)(this.getMapEntry(depth, 5)).createVertices(pos, path)
 }
 
-func (this *ClosedGLContext) DrawCube(pos glm.Vec3, path string, side byte, depth int, texIdX, texIdY int) {
+func (this *ClosedGLContext) DrawCube(pos, size glm.Vec3, path string, side byte, depth int, texIdX, texIdY int) {
 	if this.primitiveManMap[depth] == nil {
 		this.initEmptyMapAtDepth(depth)
 	}
-	(*Cube)(this.getMapEntry(depth, 6)).createVertices(pos, path, side, texIdX, texIdY)
+	(*Cube)(this.getMapEntry(depth, 6)).createVertices(pos, size, path, side, texIdX, texIdY)
 }
 
 func (this *ClosedGLContext) DrawCubeMesh(mesh *CubeMesh, depth int) {

@@ -47,7 +47,7 @@ func NewCube(shader *Shader, camera *Camera, projection *glm.Mat4) Cube {
 func (this *Cube) initMesh(anchor glm.Vec3) {
 	var vao = genVAO()
 	var ssbo = genSSBOU32(1)
-	var meshData = generateInterleavedVBOU32(vao, 0, []int{1})
+	var meshData = generateInterleavedVBOU32(vao, 0, []int{2})
 	ssbo.cpuArr = append(ssbo.cpuArr, uint32(anchor[0]))
 	ssbo.cpuArr = append(ssbo.cpuArr, uint32(anchor[1]))
 	ssbo.cpuArr = append(ssbo.cpuArr, uint32(anchor[2]))
@@ -71,8 +71,8 @@ func (this *Cube) beginDraw() {
 }
 
 // side: 0 up, front,left,right,back,down
-func (this *Cube) createVertices(pos glm.Vec3, texPath string, side byte, texIdX, texIdY int) {
-	var stride = 1
+func (this *Cube) createVertices(pos glm.Vec3, size glm.Vec3, texPath string, side byte, texIdX, texIdY int) {
+	var stride = 2
 	this.currMesh.instanceBuffer.resizeCPUData(int(this.currMesh.amountCubes+1) * stride)
 
 	this.textureMane.loadTex(texPath)
@@ -105,7 +105,15 @@ func (this *Cube) createVertices(pos glm.Vec3, texPath string, side byte, texIdX
 	entry |= uint32(pos[2])
 	entry <<= 3
 	entry |= uint32(side)
-	this.currMesh.instanceBuffer.cpuArr[this.currMesh.amountCubes*1+0] = entry
+	this.currMesh.instanceBuffer.cpuArr[this.currMesh.amountCubes*uint32(stride)+0] = entry
+
+	var entry2 uint32 = 0
+	entry2 |= uint32(size[0])
+	entry2 <<= 6
+	entry2 |= uint32(size[1])
+	entry2 <<= 6
+	entry2 |= uint32(size[2])
+	this.currMesh.instanceBuffer.cpuArr[this.currMesh.amountCubes*uint32(stride)+1] = entry2
 
 	this.currMesh.amountCubes++
 }

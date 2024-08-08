@@ -7,6 +7,6 @@ in vec2 texCoord;
 in flat uvec2 fSampler;
 
 void main() {
-  // fragColour = texture(sampler2D(fSampler), texCoord * 32 / 1024);
-  fragColour = vec4(1, 1, 1, 1);
+  fragColour = texture(sampler2D(fSampler), texCoord * 32 / 1024);
+  // fragColour = vec4(1, 1, 1, 1);
 }
