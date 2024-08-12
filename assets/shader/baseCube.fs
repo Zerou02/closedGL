@@ -1,12 +1,15 @@
-#version 460 core
-#extension GL_ARB_bindless_texture : require
-
-out vec4 fragColour;
-
+#version 410 core 
+out vec4 fragColour; 
 in vec2 texCoord;
-in flat uvec2 fSampler;
 
+uniform sampler2D tex;
+uniform vec4 colour;
 void main() {
-  fragColour = texture(sampler2D(fSampler), texCoord * 32 / 1024);
-  // fragColour = vec4(1, 1, 1, 1);
+	//fragColour = mix(texture(tex,texCoord),texture(tex2,texCoord),0.2f) * vec4(color,1.0f);
+	//	fragColour = texture(tex2,texCoord);
+	//fragColour = mix(texture(tex,texCoord),texture(tex2,texCoord),0.2f);
+	//fragColour = vec4(color,1.0f);
+	//fragColour = vec4(0.0f,0.0f,1.0f,1.0f);
+	vec4 tex = texture(tex,texCoord);
+	fragColour = vec4(tex*colour);
 }

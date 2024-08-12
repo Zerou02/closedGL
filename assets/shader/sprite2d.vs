@@ -1,13 +1,13 @@
-#version 460 core
-layout(location = 0) in vec4 pos; //<posX,posY,uvX,uvY>
-layout(location = 1) in vec4 offset;
+#version 410 core
+layout (location = 0) in vec3 aPos;
+layout (location = 1) in vec2 aTexCoord;
 
 uniform mat4 projection;
-
-out vec2 fUV;
-out float fInstanceID;
+uniform mat4 view;
+uniform mat4 model;
+out vec2 texCoord;
 void main() {
-  fUV = pos.zw;
-  fInstanceID = gl_InstanceID;
-  gl_Position = projection * vec4(pos.xy * offset.zw + offset.xy, 0.0, 1.0);
+	gl_Position = projection * view * model * vec4(aPos,1.0f);
+
+	texCoord = aTexCoord;
 }

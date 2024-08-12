@@ -8,6 +8,7 @@ import (
 
 	"github.com/EngoEngine/glm"
 	"github.com/go-gl/gl/v4.1-core/gl"
+
 	"github.com/go-gl/glfw/v3.2/glfw"
 	"neilpa.me/go-stbi"
 )
@@ -66,18 +67,26 @@ func InitClosedGL(pWidth, pHeight float32, name string) ClosedGLContext {
 		Ww:     width,
 		Wh:     height,
 	}
+	println("AAAAAAAAAAA")
 	initOpenGL(width, height)
+	println("AAAAAAAAAAA")
 
 	var c = newCamera(width, height)
 	//glfw.GetCurrentContext().SetScrollCallback(c.MouseCallback)
+	println("bef")
 	var shaderManager = newShaderCameraManager(float32(width), float32(height), &c)
+	println("f")
 	var config = parseConfig("./assets/config.ini")
+	println("g")
 	if config["default_font"] != "" {
 		text = NewText(config["default_font"], shaderManager.Shadermap["text"], &shaderManager.projection2D)
 	} else {
 		text = NewText("default", shaderManager.Shadermap["text"], &shaderManager.projection2D)
 	}
+	println("h")
+
 	var key = newKeyBoardManager(window)
+	println("i")
 
 	var con = ClosedGLContext{
 		Window: &pWindow, shaderCameraManager: &shaderManager,
@@ -88,10 +97,12 @@ func InitClosedGL(pWidth, pHeight float32, name string) ClosedGLContext {
 		audio:  newAudio(),
 		Logger: NewLogger(),
 	}
+	println("j")
+
 	if config["potato-friendliness"] != "" {
 		con.LimitFPS(strToBool(config["potato-friendliness"]))
 	}
-
+	println("ff")
 	return con
 }
 
@@ -107,23 +118,37 @@ func initGlfw(width, height int, name string) *glfw.Window {
 	glfw.Init()
 	glfw.WindowHint(glfw.Resizable, glfw.False)
 	glfw.WindowHint(glfw.ContextVersionMajor, 4)
-	glfw.WindowHint(glfw.ContextVersionMinor, 6)
+	glfw.WindowHint(glfw.ContextVersionMinor, 1)
 	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
 	glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
-	var window, _ = glfw.CreateWindow(width, height, name, nil, nil)
+	var window, err = glfw.CreateWindow(width, height, name, nil, nil)
+	if err != nil{
+		panic(err.Error())
+	}
 	window.MakeContextCurrent()
 	return window
 }
 
 func initOpenGL(width, height float32) {
-	gl.Init()
+	println("b");
+	var err = gl.Init();
+	if err != nil{
+		panic(err.Error())
+	}
+	println("c");
+
 	gl.Viewport(0, 0, int32(width), int32(height))
+	println("e");
+
 	gl.Enable(gl.DEPTH_TEST)
 	gl.Enable(gl.BLEND)
 	gl.Enable(gl.CULL_FACE)
 	gl.Enable(gl.PROGRAM_POINT_SIZE)
+
 	gl.PointSize(1)
 	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+	println("d");
+
 }
 
 func LoadImage(path string, format uint32) *uint32 {

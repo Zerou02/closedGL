@@ -1,5 +1,4 @@
-#version 460 core
-
+#version 410 core
 in vec4 fCentreColour;
 in vec4 fBorderColour;
 in float fBorderThickness;

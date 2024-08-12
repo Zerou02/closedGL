@@ -16,7 +16,10 @@ type ShaderCameraManager struct {
 
 func newShaderCameraManager(width, height float32, camera *Camera) ShaderCameraManager {
 	var mane = ShaderCameraManager{Shadermap: map[string]*Shader{}}
-	var dir, _ = os.ReadDir("./assets/shader")
+	var dir, err = os.ReadDir("./assets/shader")
+	if err != nil{
+		panic(err.Error())
+	}
 	for _, x := range dir {
 		var shaderName = strings.Split(x.Name(), ".")[0]
 		mane.Shadermap[shaderName] = nil

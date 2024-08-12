@@ -2,6 +2,8 @@ package closedGL
 
 import "github.com/go-gl/gl/v4.1-core/gl"
 
+
+
 type TextureMane struct {
 	textures  []uint32
 	handleMap map[string]uint64
