@@ -203,7 +203,7 @@ func aabbCircleCol(circle glm.Vec3, aabb glm.Vec4) (bool, Direction, glm.Vec2) {
 	}
 }
 
-func isPointInRect(p glm.Vec2, rect glm.Vec4) bool {
+func IsPointInRect(p glm.Vec2, rect glm.Vec4) bool {
 	return p[0] >= rect[0] && p[0] <= rect[0]+rect[2] && p[1] >= rect[1] && p[1] <= rect[1]+rect[3]
 }
 
@@ -318,35 +318,7 @@ func MiddlePoint(p1, p2 glm.Vec2) glm.Vec2 {
 	return glm.Vec2{(p1[0] + p2[0]) / 2.0, (p1[1] + p2[1]) / 2}
 }
 
-/*
-	 func CalculateIncenter(tri *Triangle) Vec2 {
-		return IntersectionOfLines(tri.Points[0], MiddlePoint(tri.Points[1], tri.Points[2]), tri.Points[1], MiddlePoint(tri.Points[0], tri.Points[2]))
-	}
-*/
-/* func CircleLineIntersection(pp1, pp2 glm.Vec2, r float32, circlePos glm.Vec2) bool {
-	var p1 = SsToCartesian(pp1)
-	var p2 = SsToCartesian(pp2)
-	var line = SspointsToCartesianLine(pp1, pp2)
-	var ssPos = SsToCartesian(circlePos)
-
-	var newN = line[1] - ssPos[1]
-	var xOffset = circlePos[0]
-
-	var p1x float32 = 1.0
-	var p2x float32 = 2.0
-
-	var p1y = line[0]*(p1x+(xOffset)) + newN
-	var p2y = line[0]*(p2x+(xOffset)) + newN
-
-	p1 = glm.Vec2{p1x, p1y}
-	p2 = glm.Vec2{p2x, p2y}
-
-	var dx = p2[0] - p1[0]
-	var dy = p2[1] - p1[1]
-	var dr = math.Sqrt(float64(dx*dx + dy*dy))
-	var d = p1[0]*p2[1] - p2[0]*p1[1]
-
-	var delta = (r*r)*float32(dr*dr) - (d * d)
-	return delta >= 0
+func IsPointInCircle(p, circleCentre glm.Vec2, r float32) bool {
+	var dist = circleCentre.Sub(&p)
+	return dist.Len() <= r
 }
-*/

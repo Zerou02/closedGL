@@ -53,6 +53,9 @@ type ClosedGLContext struct {
 	primitiveManMap     map[depth]*[]unsafe.Pointer
 	Config              map[string]string
 	indexArr            []int
+
+	mouseThisFramePressed bool
+	mouseLastFramePressed bool
 }
 
 func InitClosedGL(pWidth, pHeight float32, name string) ClosedGLContext {
@@ -67,27 +70,18 @@ func InitClosedGL(pWidth, pHeight float32, name string) ClosedGLContext {
 		Ww:     width,
 		Wh:     height,
 	}
-	println("AAAAAAAAAAA")
 	initOpenGL(width, height)
-	println("AAAAAAAAAAA")
 
 	var c = newCamera(width, height)
 	//glfw.GetCurrentContext().SetScrollCallback(c.MouseCallback)
-	println("bef")
 	var shaderManager = newShaderCameraManager(float32(width), float32(height), &c)
-	println("f")
 	var config = parseConfig("./assets/config.ini")
-	println("g")
 	if config["default_font"] != "" {
 		text = NewText(config["default_font"], shaderManager.Shadermap["text"], &shaderManager.projection2D)
 	} else {
 		text = NewText("default", shaderManager.Shadermap["text"], &shaderManager.projection2D)
 	}
-	println("h")
-
 	var key = newKeyBoardManager(window)
-	println("i")
-
 	var con = ClosedGLContext{
 		Window: &pWindow, shaderCameraManager: &shaderManager,
 		Camera: &c, Text: &text, KeyBoardManager: &key,
@@ -97,12 +91,9 @@ func InitClosedGL(pWidth, pHeight float32, name string) ClosedGLContext {
 		audio:  newAudio(),
 		Logger: NewLogger(),
 	}
-	println("j")
-
 	if config["potato-friendliness"] != "" {
 		con.LimitFPS(strToBool(config["potato-friendliness"]))
 	}
-	println("ff")
 	return con
 }
 
@@ -122,7 +113,7 @@ func initGlfw(width, height int, name string) *glfw.Window {
 	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
 	glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
 	var window, err = glfw.CreateWindow(width, height, name, nil, nil)
-	if err != nil{
+	if err != nil {
 		panic(err.Error())
 	}
 	window.MakeContextCurrent()
@@ -130,24 +121,17 @@ func initGlfw(width, height int, name string) *glfw.Window {
 }
 
 func initOpenGL(width, height float32) {
-	println("b");
-	var err = gl.Init();
-	if err != nil{
+	var err = gl.Init()
+	if err != nil {
 		panic(err.Error())
 	}
-	println("c");
-
 	gl.Viewport(0, 0, int32(width), int32(height))
-	println("e");
-
 	gl.Enable(gl.DEPTH_TEST)
 	gl.Enable(gl.BLEND)
 	gl.Enable(gl.CULL_FACE)
 	gl.Enable(gl.PROGRAM_POINT_SIZE)
-
 	gl.PointSize(1)
 	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
-	println("d");
 
 }
 
@@ -192,6 +176,9 @@ func (this *ClosedGLContext) Process() {
 		this.FPSCounter.CalcAverage()
 		this.FPSCounter.Clear()
 	}
+
+	this.mouseLastFramePressed = this.mouseThisFramePressed
+	this.mouseThisFramePressed = this.IsMouseDown()
 }
 
 func (this *ClosedGLContext) Free() {
@@ -211,11 +198,14 @@ func (this *ClosedGLContext) initEmptyMapAtDepth(depth int) {
 	}
 	var rm = this.createRectMan()
 	var cm = this.createCircleMan()
+
 	var lm = this.createLineMan()
 	var tm = this.createTriMan()
 	var bm = this.createBezier()
-	var sm = this.createSpriteMan()
-	var cube = this.CreateCube()
+
+	//var sm = this.createSpriteMan()
+
+	//	var cube = this.CreateCube()
 
 	this.primitiveManMap[depth] = &newArr
 
@@ -224,9 +214,8 @@ func (this *ClosedGLContext) initEmptyMapAtDepth(depth int) {
 	this.setMapEntry(depth, 2, unsafe.Pointer(&lm))
 	this.setMapEntry(depth, 3, unsafe.Pointer(&tm))
 	this.setMapEntry(depth, 4, unsafe.Pointer(&bm))
-	this.setMapEntry(depth, 5, unsafe.Pointer(&sm))
-	this.setMapEntry(depth, 5, unsafe.Pointer(&sm))
-	this.setMapEntry(depth, 6, unsafe.Pointer(&cube))
+	//this.setMapEntry(depth, 5, unsafe.Pointer(&sm))
+	//	this.setMapEntry(depth, 6, unsafe.Pointer(&cube))
 
 	this.indexArr = append(this.indexArr, depth)
 	sort.Ints(this.indexArr)
@@ -325,6 +314,7 @@ func (this *ClosedGLContext) DrawBezier(p1, p2, cp glm.Vec2, depth int) {
 func (this *ClosedGLContext) EndDrawing() {
 	for _, x := range this.indexArr {
 		var v = this.primitiveManMap[x]
+
 		for i, x := range *v {
 			if i == 0 {
 				(*RectangleManager)(x).draw()
@@ -335,15 +325,16 @@ func (this *ClosedGLContext) EndDrawing() {
 			} else if i == 3 {
 				(*TriangleManager)(x).draw()
 			} else if i == 4 {
-				(*BezierShader)(x).draw()
+				//			(*BezierShader)(x).draw()
 			} else if i == 5 {
-				(*SpriteManager)(x).draw()
+				//		(*SpriteManager)(x).draw()
 			} else if i == 6 {
-				(*Cube)(x).draw()
+				//		(*Cube)(x).draw()
 			}
 		}
 	}
 	this.Text.draw()
+	this.Process()
 
 }
 
@@ -363,9 +354,9 @@ func (this *ClosedGLContext) BeginDrawing() {
 			} else if i == 4 {
 				(*BezierShader)(x).beginDraw()
 			} else if i == 5 {
-				(*SpriteManager)(x).beginDraw()
+				//		(*SpriteManager)(x).beginDraw()
 			} else if i == 6 {
-				(*Cube)(x).beginDraw()
+				//		(*Cube)(x).beginDraw()
 			}
 		}
 	}
@@ -428,4 +419,22 @@ func (this *ClosedGLContext) EndMusic(name string) {
 
 func (this *ClosedGLContext) WindowShouldClose() bool {
 	return this.Window.Window.ShouldClose()
+}
+
+func (this *ClosedGLContext) IsMouseInRect(rect glm.Vec4) bool {
+	return IsPointInRect(this.GetMousePos(), rect)
+}
+
+func (this *ClosedGLContext) IsMouseDown() bool {
+	return this.Window.Window.GetMouseButton(glfw.MouseButtonLeft) == glfw.Press
+}
+
+func (this *ClosedGLContext) GetMousePos() glm.Vec2 {
+	var x, y = this.Window.Window.GetCursorPos()
+	return glm.Vec2{float32(x), float32(y)}
+}
+
+// true if and only if mouse first pressed this frame
+func (this *ClosedGLContext) MouseClicked() bool {
+	return this.mouseThisFramePressed && !this.mouseLastFramePressed
 }
