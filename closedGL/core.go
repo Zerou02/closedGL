@@ -94,6 +94,11 @@ func InitClosedGL(pWidth, pHeight float32, name string) ClosedGLContext {
 	if config["potato-friendliness"] != "" {
 		con.LimitFPS(strToBool(config["potato-friendliness"]))
 	}
+
+	var cb glfw.KeyCallback = func(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
+		println(key, scancode, action, mods)
+	}
+	con.Window.Window.SetKeyCallback(cb)
 	return con
 }
 
@@ -423,6 +428,10 @@ func (this *ClosedGLContext) WindowShouldClose() bool {
 
 func (this *ClosedGLContext) IsMouseInRect(rect glm.Vec4) bool {
 	return IsPointInRect(this.GetMousePos(), rect)
+}
+
+func (this *ClosedGLContext) IsMouseInCircle(centre glm.Vec2, r float32) bool {
+	return IsPointInCircle(this.GetMousePos(), centre, r)
 }
 
 func (this *ClosedGLContext) IsMouseDown() bool {

@@ -1,5 +1,7 @@
 package closedGL
 
+/*
+
 import "github.com/go-gl/glfw/v3.2/glfw"
 
 type keyboardFun func()
@@ -52,3 +54,4 @@ func (this *KeyBoardManager) IsPressed(key glfw.Key) bool {
 	}
 	return this.currKeyDown == key
 }
+*/

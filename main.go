@@ -13,79 +13,22 @@ func main() {
 	StartTuwuing()
 }
 
-func drawMenu(selectedComp *tuwuing_complete.BasicComponent, ctx *closedGL.ClosedGLContext) {
-	if selectedComp == nil {
-		return
-	}
-	var ww = ctx.Window.Ww
-	var wh = ctx.Window.Wh
-	var height float32 = 200
-	var gap float32 = 25
-
-	ctx.DrawRect(glm.Vec4{0, wh - height, ww, height}, glm.Vec4{0, 0, 0.5, 1}, 3)
-	ctx.Text.DrawText(int(ww/2-50), int(wh-height+50), selectedComp.CompType, 2)
-	for i := 0; i < len(selectedComp.InputPins); i++ {
-		var c = glm.Vec4{0.5, 0, 0, 1}
-		if selectedComp.InputPins[i].State {
-			c = glm.Vec4{0, 0.5, 0, 1}
-		}
-		var posX = 100 + float32(i)*(50+gap)
-		var posY = wh - 100
-		var r float32 = 25
-		ctx.DrawCircle(glm.Vec2{posX, posY}, c, c, r, 0, 3)
-		if (ctx.MouseClicked() && closedGL.IsPointInCircle(ctx.GetMousePos(), glm.Vec2{posX, posY}, r)) {
-			selectedComp.InputPins[i].SetState(!selectedComp.InputPins[i].State)
-		}
-	}
-}
-
 func StartTuwuing() {
 	var openGL = closedGL.InitClosedGL(1400, 800, "demo")
-	var compList = []*tuwuing_complete.BasicComponent{}
-	var dragMane = tuwuing_complete.NewDragManager(&openGL, &compList)
+
 	openGL.LimitFPS(true)
+	var complete = tuwuing_complete.NewTuwuingComplete(&openGL)
 
-	var nand = tuwuing_complete.NewNand()
-	nand.Eval()
-	var nand2 = tuwuing_complete.NewNand()
-	nand2.Eval()
-
-	compList = append(compList, nand)
-	compList = append(compList, nand2)
-	tuwuing_complete.SetNandPos(nand, glm.Vec2{4, 2})
-	tuwuing_complete.SetNandPos(nand2, glm.Vec2{8, 6})
-
-	var g = tuwuing_complete.NewGrid(&openGL, 25)
 	for !openGL.WindowShouldClose() {
 		openGL.ClearBG(glm.Vec4{0, 0, 0, 0})
 		openGL.BeginDrawing()
 		for i := 1; i <= 3; i++ {
 			openGL.DrawRect(glm.Vec4{0, 0, 0, 0}, glm.Vec4{1, 1, 1, 1}, i)
 			openGL.DrawCircle(glm.Vec2{100, 100}, glm.Vec4{0.5, 0.5, 1, 1}, glm.Vec4{1, 1, 1, 1}, 0, 0, i)
-
 		}
+		complete.Process()
+		complete.Draw()
 
-		var selectedPin *tuwuing_complete.Pin = nil
-		if openGL.IsMouseDown() {
-			var cell = g.GetCurrCell()
-			for _, x := range compList {
-				var pin = x.PinOnCell(cell)
-				if pin != nil {
-					selectedPin = pin
-					break
-				}
-			}
-		}
-		dragMane.Process()
-		g.DraggedComp = dragMane.DraggedComp
-		g.SelectedPin = selectedPin
-
-		tuwuing_complete.DrawGenericComp(nand, &openGL)
-		tuwuing_complete.DrawGenericComp(nand2, &openGL)
-
-		g.Draw()
-		g.Process()
-		drawMenu(dragMane.GetSelectedComp(), &openGL)
 		openGL.DrawFPS(500, 0, 1)
 
 		openGL.EndDrawing()
