@@ -84,7 +84,7 @@ func InitClosedGL(pWidth, pHeight float32, name string) ClosedGLContext {
 	var key = newKeyBoardManager(window)
 	var con = ClosedGLContext{
 		Window: &pWindow, shaderCameraManager: &shaderManager,
-		Camera: &c, Text: &text, KeyBoardManager: &key,
+		Camera: &c, Text: &text, KeyBoardManager: key,
 		FPSCounter:      &fpsCounter,
 		primitiveManMap: map[depth]*[]unsafe.Pointer{}, amountPrimitiveMans: 7, indexArr: []int{},
 		Config: config,
@@ -95,10 +95,6 @@ func InitClosedGL(pWidth, pHeight float32, name string) ClosedGLContext {
 		con.LimitFPS(strToBool(config["potato-friendliness"]))
 	}
 
-	var cb glfw.KeyCallback = func(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
-		println(key, scancode, action, mods)
-	}
-	con.Window.Window.SetKeyCallback(cb)
 	return con
 }
 
@@ -171,7 +167,7 @@ func (this *ClosedGLContext) Process() {
 	if this.Window.Window.GetKey(glfw.KeyEscape) == glfw.Press {
 		this.Window.Window.SetShouldClose(true)
 	}
-	this.KeyBoardManager.Process()
+	this.KeyBoardManager.Process(this.FPSCounter.FrameCount)
 	this.FPSCounter.Process()
 	this.Camera.Process(this.Window.Window, float32(this.FPSCounter.Delta))
 	this.audio.process()
@@ -438,6 +434,10 @@ func (this *ClosedGLContext) IsMouseDown() bool {
 	return this.Window.Window.GetMouseButton(glfw.MouseButtonLeft) == glfw.Press
 }
 
+func (this *ClosedGLContext) IsMouseRightDown() bool {
+	return this.Window.Window.GetMouseButton(glfw.MouseButtonRight) == glfw.Press
+}
+
 func (this *ClosedGLContext) GetMousePos() glm.Vec2 {
 	var x, y = this.Window.Window.GetCursorPos()
 	return glm.Vec2{float32(x), float32(y)}
@@ -446,4 +446,8 @@ func (this *ClosedGLContext) GetMousePos() glm.Vec2 {
 // true if and only if mouse first pressed this frame
 func (this *ClosedGLContext) MouseClicked() bool {
 	return this.mouseThisFramePressed && !this.mouseLastFramePressed
+}
+
+func (this *ClosedGLContext) GetThisFramePressedKeys() []glfw.Key {
+	return this.KeyBoardManager.GetThisFramePressed()
 }

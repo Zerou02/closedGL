@@ -1,0 +1,4 @@
+type:and3
+comps:in,out
+cables:1
+
