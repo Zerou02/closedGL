@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/EngoEngine/glm"
-	"github.com/go-gl/gl/v4.1-core/gl"
+	"github.com/go-gl/gl/v4.3-core/gl"
 )
 
 type Shader struct {
@@ -124,7 +124,7 @@ func (s *Shader) compileShader(shaderSrc string, vertex bool, compute bool) uint
 	if success == 0 {
 		var ptr uint8
 		gl.GetShaderInfoLog(shader, 512, nil, &ptr)
-		println("Error at shader Compiling", shaderSrc,ptr)
+		println("Error at shader Compiling", shaderSrc, ptr)
 	}
 	return shader
 }

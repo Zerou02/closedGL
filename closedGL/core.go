@@ -7,7 +7,7 @@ import (
 	"unsafe"
 
 	"github.com/EngoEngine/glm"
-	"github.com/go-gl/gl/v4.1-core/gl"
+	"github.com/go-gl/gl/v4.3-core/gl"
 
 	"github.com/go-gl/glfw/v3.2/glfw"
 	"neilpa.me/go-stbi"
@@ -54,8 +54,10 @@ type ClosedGLContext struct {
 	Config              map[string]string
 	indexArr            []int
 
-	mouseThisFramePressed bool
-	mouseLastFramePressed bool
+	mouseThisFramePressed      bool
+	mouseLastFramePressed      bool
+	mouseRightThisFramePressed bool
+	mouseRightLastFramePressed bool
 }
 
 func InitClosedGL(pWidth, pHeight float32, name string) ClosedGLContext {
@@ -180,6 +182,8 @@ func (this *ClosedGLContext) Process() {
 
 	this.mouseLastFramePressed = this.mouseThisFramePressed
 	this.mouseThisFramePressed = this.IsMouseDown()
+	this.mouseRightLastFramePressed = this.mouseRightThisFramePressed
+	this.mouseRightThisFramePressed = this.IsMouseRightDown()
 }
 
 func (this *ClosedGLContext) Free() {
@@ -203,10 +207,8 @@ func (this *ClosedGLContext) initEmptyMapAtDepth(depth int) {
 	var lm = this.createLineMan()
 	var tm = this.createTriMan()
 	var bm = this.createBezier()
-
-	//var sm = this.createSpriteMan()
-
-	//	var cube = this.CreateCube()
+	var sm = this.createSpriteMan()
+	var cube = this.CreateCube()
 
 	this.primitiveManMap[depth] = &newArr
 
@@ -215,8 +217,8 @@ func (this *ClosedGLContext) initEmptyMapAtDepth(depth int) {
 	this.setMapEntry(depth, 2, unsafe.Pointer(&lm))
 	this.setMapEntry(depth, 3, unsafe.Pointer(&tm))
 	this.setMapEntry(depth, 4, unsafe.Pointer(&bm))
-	//this.setMapEntry(depth, 5, unsafe.Pointer(&sm))
-	//	this.setMapEntry(depth, 6, unsafe.Pointer(&cube))
+	this.setMapEntry(depth, 5, unsafe.Pointer(&sm))
+	this.setMapEntry(depth, 6, unsafe.Pointer(&cube))
 
 	this.indexArr = append(this.indexArr, depth)
 	sort.Ints(this.indexArr)
@@ -326,11 +328,11 @@ func (this *ClosedGLContext) EndDrawing() {
 			} else if i == 3 {
 				(*TriangleManager)(x).draw()
 			} else if i == 4 {
-				//			(*BezierShader)(x).draw()
+				(*BezierShader)(x).draw()
 			} else if i == 5 {
-				//		(*SpriteManager)(x).draw()
+				(*SpriteManager)(x).draw()
 			} else if i == 6 {
-				//		(*Cube)(x).draw()
+				(*Cube)(x).draw()
 			}
 		}
 	}
@@ -355,9 +357,9 @@ func (this *ClosedGLContext) BeginDrawing() {
 			} else if i == 4 {
 				(*BezierShader)(x).beginDraw()
 			} else if i == 5 {
-				//		(*SpriteManager)(x).beginDraw()
+				(*SpriteManager)(x).beginDraw()
 			} else if i == 6 {
-				//		(*Cube)(x).beginDraw()
+				(*Cube)(x).beginDraw()
 			}
 		}
 	}
@@ -371,11 +373,11 @@ func (this *ClosedGLContext) DrawTriangle(pos [3]glm.Vec2, colour glm.Vec4, dept
 	(*TriangleManager)(this.getMapEntry(depth, 3)).createVertices(pos, colour)
 }
 
-func (this *ClosedGLContext) DrawSprite(pos glm.Vec4, path string, depth int) {
+func (this *ClosedGLContext) DrawSprite(pos glm.Vec4, path string, uv glm.Vec4, cellSpriteSize glm.Vec2, depth int) {
 	if this.primitiveManMap[depth] == nil {
 		this.initEmptyMapAtDepth(depth)
 	}
-	(*SpriteManager)(this.getMapEntry(depth, 5)).createVertices(pos, path)
+	(*SpriteManager)(this.getMapEntry(depth, 5)).createVertices(pos, path, uv, cellSpriteSize)
 }
 
 func (this *ClosedGLContext) DrawCube(pos, size glm.Vec3, path string, side byte, depth int, texIdX, texIdY int) {
@@ -448,6 +450,21 @@ func (this *ClosedGLContext) MouseClicked() bool {
 	return this.mouseThisFramePressed && !this.mouseLastFramePressed
 }
 
+func (this *ClosedGLContext) MouseRightClicked() bool {
+	return this.mouseRightThisFramePressed && !this.mouseRightLastFramePressed
+}
+
 func (this *ClosedGLContext) GetThisFramePressedKeys() []glfw.Key {
 	return this.KeyBoardManager.GetThisFramePressed()
+}
+
+func (this *ClosedGLContext) GetThisFramePressedKey() *glfw.Key {
+
+	var keys = this.KeyBoardManager.GetThisFramePressed()
+	if len(keys) == 0 {
+		return nil
+	} else {
+		var key = keys[0]
+		return &key
+	}
 }

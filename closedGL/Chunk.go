@@ -6,7 +6,7 @@ import (
 	"math"
 
 	"github.com/EngoEngine/glm"
-	"github.com/go-gl/gl/v4.1-core/gl"
+	"github.com/go-gl/gl/v4.3-core/gl"
 )
 
 //pos:x,y,z

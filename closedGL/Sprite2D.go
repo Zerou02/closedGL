@@ -2,7 +2,7 @@ package closedGL
 
 import (
 	"github.com/EngoEngine/glm"
-	"github.com/go-gl/gl/v4.1-core/gl"
+	"github.com/go-gl/gl/v4.3-core/gl"
 )
 
 type SpriteManager struct {
@@ -25,10 +25,12 @@ func newSpriteMane(shader *Shader, projection *glm.Mat4) SpriteManager {
 	rect.baseVBO = generateInterleavedVBOFloat2(rect.vao, 0, []int{4})
 	gl.BindBuffer(gl.ARRAY_BUFFER, rect.baseVBO.buffer)
 	gl.VertexAttribDivisor(0, 0)
-	rect.instanceBuffer = generateInterleavedVBOFloat2(rect.vao, 1, []int{4})
+	rect.instanceBuffer = generateInterleavedVBOFloat2(rect.vao, 1, []int{4, 4, 2})
 
 	gl.BindBuffer(gl.ARRAY_BUFFER, rect.instanceBuffer.buffer)
 	gl.VertexAttribDivisor(1, 1)
+	gl.VertexAttribDivisor(2, 1)
+	gl.VertexAttribDivisor(3, 1)
 
 	rect.ssbo = genSSBOU64(1)
 
@@ -61,8 +63,8 @@ func (this *SpriteManager) deleteBuffers() {
 
 }
 
-func (this *SpriteManager) createVertices(dim glm.Vec4, texPath string) {
-	var stride uint32 = 4
+func (this *SpriteManager) createVertices(dim glm.Vec4, texPath string, uv glm.Vec4, cellSpriteSize glm.Vec2) {
+	var stride uint32 = 10
 
 	this.instanceBuffer.resizeCPUData(int(this.amountQuads+1) * int(stride))
 	this.ssbo.resizeCPUData(int(this.amountQuads+1) * 1)
@@ -71,6 +73,14 @@ func (this *SpriteManager) createVertices(dim glm.Vec4, texPath string) {
 	this.instanceBuffer.cpuArr[this.amountQuads*stride+1] = dim[1]
 	this.instanceBuffer.cpuArr[this.amountQuads*stride+2] = dim[2]
 	this.instanceBuffer.cpuArr[this.amountQuads*stride+3] = dim[3]
+	//uvData
+	this.instanceBuffer.cpuArr[this.amountQuads*stride+4] = uv[0]
+	this.instanceBuffer.cpuArr[this.amountQuads*stride+5] = uv[1]
+	this.instanceBuffer.cpuArr[this.amountQuads*stride+6] = uv[2]
+	this.instanceBuffer.cpuArr[this.amountQuads*stride+7] = uv[3]
+	//cellSprite
+	this.instanceBuffer.cpuArr[this.amountQuads*stride+8] = cellSpriteSize[0]
+	this.instanceBuffer.cpuArr[this.amountQuads*stride+9] = cellSpriteSize[1]
 
 	this.textureMane.loadTex(texPath)
 	this.ssbo.cpuArr[this.amountQuads] = this.textureMane.getHandle(texPath)
@@ -79,11 +89,15 @@ func (this *SpriteManager) createVertices(dim glm.Vec4, texPath string) {
 }
 
 func (this *SpriteManager) draw() {
+	if len(this.ssbo.cpuArr) == 0 {
+		return
+	}
 	this.shader.use()
 	this.textureMane.makeResident()
 	this.shader.setUniformMatrix4("projection", this.projection)
 	gl.Disable(gl.DEPTH_TEST)
 	gl.BindVertexArray(this.vao)
+
 	this.ssbo.copyToGPU()
 	this.instanceBuffer.copyToGPU()
 	gl.DrawElementsInstanced(gl.TRIANGLES, 6, gl.UNSIGNED_BYTE, gl.Ptr(this.indices), int32(this.amountQuads))
