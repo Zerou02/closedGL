@@ -6,6 +6,7 @@ import (
 
 	"github.com/EngoEngine/glm"
 	"github.com/Zerou02/closedGL/closedGL"
+	turingfontparser "github.com/Zerou02/closedGL/turing_font_parser"
 	"github.com/Zerou02/closedGL/tuwuing_complete"
 	"github.com/Zerou02/closedGL/ynnebcraft"
 	"github.com/go-gl/glfw/v3.2/glfw"
@@ -14,10 +15,11 @@ import (
 func main() {
 	//StartClosedGL()
 	//StartTuwuing()
+	StartTTF()
 }
 
 func StartTTF() {
-	NewTuringFont()
+	turingfontparser.NewTuringFont()
 }
 
 func StartTuwuing() {
