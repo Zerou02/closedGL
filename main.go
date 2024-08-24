@@ -13,7 +13,11 @@ import (
 
 func main() {
 	//StartClosedGL()
-	StartTuwuing()
+	//StartTuwuing()
+}
+
+func StartTTF() {
+	NewTuringFont()
 }
 
 func StartTuwuing() {
