@@ -3,7 +3,7 @@ package closedGL
 import (
 	"github.com/EngoEngine/glm"
 	"github.com/EngoEngine/math"
-	"github.com/go-gl/gl/v4.3-core/gl"
+	"github.com/go-gl/gl/v4.6-core/gl"
 )
 
 type BezierShader struct {

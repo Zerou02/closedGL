@@ -7,7 +7,7 @@ import (
 	"unsafe"
 
 	"github.com/EngoEngine/glm"
-	"github.com/go-gl/gl/v4.3-core/gl"
+	"github.com/go-gl/gl/v4.6-core/gl"
 
 	"github.com/go-gl/glfw/v3.2/glfw"
 	"neilpa.me/go-stbi"
@@ -467,4 +467,20 @@ func (this *ClosedGLContext) GetThisFramePressedKey() *glfw.Key {
 		var key = keys[0]
 		return &key
 	}
+}
+
+func (this *ClosedGLContext) IsKeyDown(key glfw.Key) bool {
+	return this.KeyBoardManager.IsDown(key)
+}
+
+func (this *ClosedGLContext) CreateRectMesh() RectangleMesh {
+	return newRectMesh(this.shaderCameraManager.Shadermap["rect"], this.shaderCameraManager.projection2D)
+}
+
+func (this *ClosedGLContext) CreatePixelMesh() PixelMesh {
+	return newPixelMesh(this.shaderCameraManager.Shadermap["pixel"], this.shaderCameraManager.projection2D)
+}
+
+func (this *ClosedGLContext) NewCam2D() Camera2D {
+	return newCamera2D(this.Window.Ww, this.Window.Wh, this)
 }

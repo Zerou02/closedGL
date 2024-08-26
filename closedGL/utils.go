@@ -131,3 +131,14 @@ func ContainsString(arr []string, x string) bool {
 	}
 	return false
 }
+
+func contains[T comparable](arr *[]T, x T) bool {
+	var retVal = false
+	for _, y := range *arr {
+		if y == x {
+			retVal = true
+			break
+		}
+	}
+	return retVal
+}

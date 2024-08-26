@@ -2,10 +2,7 @@ package ynnebcraft
 
 import "github.com/Zerou02/closedGL/closedGL"
 
-type GreedyMeshFace struct {
-	id            uint
-	alreadyMeshed bool
-}
+type GreedyMeshFace = uint
 
 type BufferHolder struct {
 	//"up", "front", "left", "right", "back", "down"
@@ -78,17 +75,12 @@ func (this *GreedyMesher) faceCullCubes(chunk *Chunk) {
 				otherTransparent = chunk.isTransparent(c)
 			}
 
-			var face GreedyMeshFace
-
 			if isOuter || otherTransparent {
 				allowedFaceMask |= (uint16(1) << (i / 3))
-				face = GreedyMeshFace{
-					id:            1,
-					alreadyMeshed: false,
-				}
+				var face uint = 1
+				this.bufferHolder.buffer[i/3][nb[i/3][0]][closedGL.GridPosToIdx(nb[i/3][1], nb[i/3][2], 32)] = face
 			}
 
-			this.bufferHolder.buffer[i/3][nb[i/3][0]][closedGL.GridPosToIdx(nb[i/3][1], nb[i/3][2], 32)] = face
 		}
 		chunk.cubes[i] <<= 6
 		chunk.cubes[i] |= allowedFaceMask
@@ -112,13 +104,13 @@ func (this *GreedyMesher) greedyMesh2dPlane(plane *[32 * 32]GreedyMeshFace, slic
 
 	for !finished {
 		x++
-		var entry = &plane[closedGL.GridPosToIdx(x, z, 32)]
-		if currType == 0 && entry.id != 0 && !entry.alreadyMeshed {
-			currType = entry.id
+		var entry = plane[closedGL.GridPosToIdx(x, z, 32)]
+		if currType == 0 && entry != 0 {
+			currType = entry
 			startX = x
 		}
 		//mesh
-		if (x == 31 || entry.alreadyMeshed || entry.id != currType) && currType != 0 {
+		if (x == 31 || entry == 0 || entry != currType) && currType != 0 {
 			//extend rightward
 			//off-by-one hack. Don't know why, don't care
 			if x == 31 {
@@ -130,14 +122,15 @@ func (this *GreedyMesher) greedyMesh2dPlane(plane *[32 * 32]GreedyMeshFace, slic
 			for valid && j+z < 32 {
 				var allSameType = true
 				for i := 0; i < xSteps; i++ {
-					if plane[closedGL.GridPosToIdx(startX+i, z+j, 32)].id != currType {
+					if plane[closedGL.GridPosToIdx(startX+i, z+j, 32)] != currType {
 						allSameType = false
+						break
 					}
 				}
 				valid = allSameType
 				if allSameType {
 					for i := 0; i < xSteps; i++ {
-						plane[closedGL.GridPosToIdx(startX+i, z+j, 32)].alreadyMeshed = true
+						plane[closedGL.GridPosToIdx(startX+i, z+j, 32)] = 0
 					}
 				}
 				if valid {
