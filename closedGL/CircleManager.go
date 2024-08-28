@@ -28,11 +28,8 @@ func (this *CircleManager) generateBuffers() {
 	gl.BindVertexArray(0)
 	this.baseVBO = genSingularBufferFloat(this.vao, 0, 2, gl.FLOAT, false, 0)
 	this.instanceBuffer = BufferFloat{
-		buffer: generateInterleavedVBOFloat(this.vao, 1, []int{4, 4, 4}), //centre,colour
+		buffer: generateInterleavedVBOFloat(this.vao, 1, []int{4, 4, 4}, []int{1, 1, 1}), //centre,colour
 	}
-	gl.VertexAttribDivisor(1, 1)
-	gl.VertexAttribDivisor(2, 1)
-	gl.VertexAttribDivisor(3, 1)
 
 	var quadBaseData = []float32{
 		1.0, 0.0, //top r

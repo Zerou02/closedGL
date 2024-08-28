@@ -35,15 +35,11 @@ func (this *BezierShader) genBuffers() {
 	this.baseBuffer.cpuArr = quadBaseData
 	this.baseBuffer.copyToGPU()
 	this.instanceBuffer = BufferFloat{
-		buffer:     generateInterleavedVBOFloat(this.vao, 1, []int{4, 2, 2, 2}),
+		buffer:     generateInterleavedVBOFloat(this.vao, 1, []int{4, 2, 2, 2}, []int{1, 1, 1, 1}),
 		bufferSize: 0,
 		cpuArr:     []float32{},
 	}
 	gl.BindBuffer(gl.ARRAY_BUFFER, this.instanceBuffer.buffer)
-	gl.VertexAttribDivisor(1, 1)
-	gl.VertexAttribDivisor(2, 1)
-	gl.VertexAttribDivisor(3, 1)
-	gl.VertexAttribDivisor(4, 1)
 
 }
 

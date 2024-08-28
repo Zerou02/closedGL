@@ -1,5 +1,7 @@
 package ynnebcraft
 
+/*
+
 import "github.com/Zerou02/closedGL/closedGL"
 
 type GreedyMeshFace = uint
@@ -174,3 +176,4 @@ func (this *GreedyMesher) greedyMesh2dPlane(plane *[32 * 32]GreedyMeshFace, slic
 		}
 	}
 }
+*/

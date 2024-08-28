@@ -23,7 +23,7 @@ func newTriangleManager(shader *Shader, projection *glm.Mat4) TriangleManager {
 func (this *TriangleManager) generateBuffers() {
 	this.vao = genVAO()
 	this.dataBuffer = BufferFloat{
-		buffer:     generateInterleavedVBOFloat(this.vao, 0, []int{2, 4}),
+		buffer:     generateInterleavedVBOFloat(this.vao, 0, []int{2, 4}, []int{0, 0}),
 		bufferSize: 0,
 		cpuArr:     []float32{},
 	}

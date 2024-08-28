@@ -31,7 +31,7 @@ func (this *LineArr) beginDraw() {
 func (this *LineArr) generateBuffers() {
 	this.vao = genVAO()
 	this.masterVBO = BufferFloat{
-		buffer:     generateInterleavedVBOFloat(this.vao, 0, []int{2, 4}),
+		buffer:     generateInterleavedVBOFloat(this.vao, 0, []int{2, 4}, []int{0, 0}),
 		bufferSize: 0,
 		cpuArr:     []float32{},
 	}

@@ -280,7 +280,7 @@ func (this *BufferU8) copy() BufferU8 {
 		cpuArr:     newArr,
 	}
 }
-func generateInterleavedVBOFloat(vao uint32, startIdx int, vertexAttribBytes []int) uint32 {
+func generateInterleavedVBOFloat(vao uint32, startIdx int, vertexAttribBytes []int, divisorValues []int) uint32 {
 	gl.BindVertexArray(vao)
 	var vbo uint32
 	gl.GenBuffers(1, &vbo)
@@ -295,8 +295,10 @@ func generateInterleavedVBOFloat(vao uint32, startIdx int, vertexAttribBytes []i
 	for i := startIdx; i < startIdx+len(vertexAttribBytes); i++ {
 		gl.EnableVertexAttribArray(uint32(i))
 		gl.VertexAttribPointerWithOffset(uint32(i), int32(vertexAttribBytes[i-startIdx]), gl.FLOAT, false, int32(stride*4), uintptr(currOffset)*4)
+		gl.VertexAttribDivisor(uint32(i), uint32(divisorValues[i-startIdx]))
 		currOffset += vertexAttribBytes[i-startIdx]
 	}
+
 	return vbo
 }
 

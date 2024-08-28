@@ -305,7 +305,6 @@ func Dist(p1, p2 glm.Vec2) float32 {
 	return CartesianToSS(glm.Vec2{x, y})
 } */
 
-// screen is upper right quadrant
 func SsToCartesian(p glm.Vec2, vpHeight float32) glm.Vec2 {
 	return glm.Vec2{p[0], vpHeight - p[1]}
 }

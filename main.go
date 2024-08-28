@@ -7,22 +7,43 @@ import (
 	"github.com/EngoEngine/glm"
 	"github.com/Zerou02/closedGL/closedGL"
 	turingfontparser "github.com/Zerou02/closedGL/turing_font_parser"
-	"github.com/Zerou02/closedGL/ynnebcraft"
 	"github.com/go-gl/glfw/v3.2/glfw"
 )
 
 func main() {
-	StartClosedGL()
+	StartTTF()
+	//StartClosedGL()
 	//StartTuwuing()
-	//StartTTF()
 }
-
 func StartTTF() {
-	turingfontparser.NewTuringFont()
+	var opengl = closedGL.InitClosedGL(800, 800, "comic")
+	opengl.LimitFPS(false)
+	var p = turingfontparser.NewTuringFont("./assets/font/comic_sans.ttf", &opengl)
+	var points = p.ParseGlyf('a').GetPoints()
+	var lines = opengl.CreateLineMesh()
+	var startOfLine = points[0].Pos
+	for i := 0; i < len(points); i++ {
+		if !points[i].EndPoint {
+			lines.AddLine(points[i].Pos, points[i+1].Pos, glm.Vec4{1, 1, 1, 1}, glm.Vec4{1, 1, 1, 1})
+		} else {
+			lines.AddLine(points[i].Pos, startOfLine, glm.Vec4{1, 1, 1, 1}, glm.Vec4{1, 1, 1, 1})
+			if i+1 < len(points) {
+				startOfLine = points[i+1].Pos
+			}
+		}
+	}
+	lines.Copy()
+	for !opengl.WindowShouldClose() {
+		opengl.BeginDrawing()
+		opengl.ClearBG(glm.Vec4{0, 0, 0, 0})
+		lines.Draw()
+		opengl.DrawFPS(600, 0, 1)
+		opengl.EndDrawing()
+	}
+	opengl.Free()
 }
 
-/*
-func StartTuwuing() {
+/* func StartTuwuing() {
 	var openGL = closedGL.InitClosedGL(1400, 800, "demo")
 
 	openGL.LimitFPS(true)
@@ -50,27 +71,20 @@ func StartClosedGL() {
 	openGL.Window.SetScrollCallback(openGL.Camera.ScrollCb)
 	openGL.Window.SetCursorPosCallback(openGL.Camera.MouseCallback)
 
-	//var val = true
+	var val = true
 
-	var chunks = []ynnebcraft.Chunk{}
-	var mesher = ynnebcraft.NewGreedyMesher()
+	//	var chunks = []ynnebcraft.Chunk{}
+	//	var mesher = ynnebcraft.NewGreedyMesher()
 
-	for i := 0; i < 20; i++ {
+	/* 	for i := 0; i < 20; i++ {
 		for j := 0; j < 10; j++ {
 			chunks = append(chunks, ynnebcraft.NewChunk(glm.Vec3{float32(i) * 32, 0, float32(j) * 32}, glm.Vec3{32, 32, 32}, &openGL, &mesher))
 		}
-	}
+	} */
 	openGL.Logger.Enabled = true
 
-	/* 	var test = openGL.CreateRectMesh()
-	   	for i := 0; i < 800; i++ {
-	   		for j := 0; j < 600; j++ {
-	   			test.AddRect(glm.Vec4{float32(i), float32(j), 2, 2}, glm.Vec4{float32(j) / 600, float32(i) / 800, 1, 1})
-	   		}
-	   	}
-	   	test.Copy() */
-
 	var pxTest = openGL.CreatePixelMesh()
+	var lines = openGL.CreateLineMesh()
 
 	for i := 0; i < 800; i++ {
 		for j := 0; j < 600; j++ {
@@ -78,14 +92,19 @@ func StartClosedGL() {
 		}
 	}
 	pxTest.Copy()
+	lines.AddPath([]glm.Vec2{{0, 0}, {200, 200}}, []glm.Vec4{{1, 1, 1, 1}, glm.Vec4{1, 1, 1, 1}})
+	lines.AddQuadraticBezier(glm.Vec2{0, 0}, glm.Vec2{200, 200}, glm.Vec2{0, 200}, glm.Vec4{0, 0.54, 0.57, 1})
+	lines.Copy()
+
 	var cam = openGL.NewCam2D()
+	openGL.LimitFPS(false)
 	for !openGL.WindowShouldClose() {
 		cam.Process(float32(openGL.FPSCounter.Delta))
 		pxTest.View = cam.ViewMat
-		/* 		if openGL.KeyBoardManager.IsPressed(glfw.Key(glfw.KeyF)) {
+		if openGL.IsKeyPressed(glfw.Key(glfw.KeyF)) {
 			val = !val
 			closedGL.SetWireFrameMode(val)
-		} */
+		}
 		openGL.BeginDrawing()
 		openGL.ClearBG(glm.Vec4{0, 0, 0, 0})
 		openGL.DrawFPS(500, 0, 1)
@@ -103,7 +122,7 @@ func StartClosedGL() {
 		/* for i := 0; i < len(chunks); i++ {
 			chunks[i].Draw()
 		} */
-		//test.Draw()
+		//	lines.Draw()
 		pxTest.Draw()
 		//openGL.DrawRect(glm.Vec4{0, 0, 100, 100}, glm.Vec4{0, 1, 0, 1}, 1)
 		openGL.EndDrawing()

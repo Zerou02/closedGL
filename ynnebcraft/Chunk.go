@@ -1,5 +1,7 @@
 package ynnebcraft
 
+/*
+
 import (
 	"github.com/EngoEngine/glm"
 	"github.com/Zerou02/closedGL/closedGL"
@@ -64,3 +66,4 @@ func (this *Chunk) setTransparency(idx int, val bool) {
 	}
 	this.cubes[idx] |= a << 6
 }
+*/
