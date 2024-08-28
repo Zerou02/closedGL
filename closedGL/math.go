@@ -150,14 +150,14 @@ func Clamp(a, b, val float32) float32 {
 	}
 }
 
-func lerpVec2(a, b glm.Vec2, t float32) glm.Vec2 {
+func LerpVec2(a, b glm.Vec2, t float32) glm.Vec2 {
 	return glm.Vec2{Lerp(a[0], b[0], t), Lerp(a[1], b[1], t)}
 }
 
 func BezierLerp(a, b, controlPoint glm.Vec2, t float32) glm.Vec2 {
-	var r = lerpVec2(a, controlPoint, t)
-	var s = lerpVec2(controlPoint, b, t)
-	return lerpVec2(r, s, t)
+	var r = LerpVec2(a, controlPoint, t)
+	var s = LerpVec2(controlPoint, b, t)
+	return LerpVec2(r, s, t)
 }
 
 func IdxToGridPos(idx, w, h int) (int, int) {

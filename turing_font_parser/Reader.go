@@ -30,6 +30,7 @@ type Reader struct {
 
 type Glyf interface {
 	GetPoints() []GlyfPoints
+	AddXOffset(x float32) []GlyfPoints
 }
 type SimpleGlyf struct {
 	header GlyfHeader
@@ -101,9 +102,9 @@ func (this *Reader) init() {
 		this.entries[e.tag] = &e
 	}
 	this.parseMaxP()
-	this.parseCmap()
-	this.parseLocA()
 	this.parseHead()
+	this.parseLocA()
+	this.parseCmap()
 
 }
 
@@ -217,30 +218,22 @@ func (this *Reader) parseFormat4() {
 	for i := 0; i < int(segCount); i++ {
 		idRangeOffset[i] = this.readUint16()
 	}
-	//%65536
-
-	/* 	for i := 0; i < int(segCount); i++ {
-		endCodes[i] = this.readUint16()
-		this.readUint16()
-		startCode[i] = this.readUint16()
-		idDelta[i] = this.readUint16()
-		idRangeOffset[i] = this.readUint16()
-	} */
-	for i := 0; i < int(segCount); i++ {
-		if i >= 4 {
-			break
-		}
-		println("i", i)
-		println("end", endCodes[i])
-		println("start", startCode[i])
-		println("idDelta", idDelta[i])
-		println("idRange", idRangeOffset[i])
-
-	}
-
 	var mappings map[int]int = map[int]int{}
-	panic("Now parsing format 4")
-
+	for i := 0; i < int(segCount); i++ {
+		if idRangeOffset[i] == 0 {
+			for j := uint32(startCode[i]); j <= uint32(endCodes[i]); j++ {
+				var test uint32 = 65536
+				mappings[int(j)] = int(uint32((j + uint32(idDelta[i]))) % test)
+			}
+		} else if idRangeOffset[i] != 0 {
+			if idDelta[i] != 0 {
+				panic("PROBLEm")
+			}
+			for j := startCode[i]; j <= endCodes[i]; j++ {
+				mappings[int(j)] = int(this.readUint16())
+			}
+		}
+	}
 	this.mappings = mappings
 }
 
@@ -371,7 +364,7 @@ func (this *Reader) readGlyfHeader() GlyfHeader {
 	}
 }
 
-func (this *Reader) readSimpleGlyph(header GlyfHeader) SimpleGlyf {
+func (this *Reader) readSimpleGlyph(header GlyfHeader, scale float32) SimpleGlyf {
 	var body = SimpleGlyfBody{}
 
 	body.endOfContours = make([]uint16, header.nrContours)
@@ -404,17 +397,26 @@ func (this *Reader) readSimpleGlyph(header GlyfHeader) SimpleGlyf {
 	var yCoordinates = make([]int16, nrPoints)
 	this.parsePoints(&body.flags, &xCoordinates, true)
 	this.parsePoints(&body.flags, &yCoordinates, false)
-	body.Points = make([]GlyfPoints, nrPoints)
+	body.Points = []GlyfPoints{}
 	for i, x := range xCoordinates {
 		var endP = closedGL.Contains(&body.endOfContours, uint16(i))
 		var OnCurve = getBit(body.flags[i], 0) == 1
 		var cartPos = glm.Vec2{float32(x), float32(yCoordinates[i])}
-		cartPos.MulWith(1.03)
-		body.Points[i] = GlyfPoints{
+		cartPos.MulWith(scale)
+		var newP = GlyfPoints{
 			OnCurve:  OnCurve,
 			EndPoint: endP,
 			Pos:      this.ctx.CartesianToSS(cartPos),
 		}
+		if len(body.Points) >= 1 && (!body.Points[len(body.Points)-1].OnCurve && !newP.OnCurve) {
+			var helperP = GlyfPoints{
+				OnCurve:  true,
+				EndPoint: false,
+				Pos:      closedGL.LerpVec2(body.Points[len(body.Points)-1].Pos, newP.Pos, 0.5),
+			}
+			body.Points = append(body.Points, helperP)
+		}
+		body.Points = append(body.Points, newP)
 	}
 
 	return SimpleGlyf{
@@ -466,40 +468,39 @@ func (this *Reader) printGlyfBody(b SimpleGlyfBody) {
 	}
 }
 
-func (this *Reader) readGlyf(unicodeVal uint32) Glyf {
+func (this *Reader) readGlyf(unicodeVal uint32, scale float32) Glyf {
 	var entry = this.entries["glyf"]
 	this.seek(entry.offset + this.loca[this.mappings[int(unicodeVal)]])
 	var ret Glyf
-	var i = 0
 	var header = this.readGlyfHeader()
 	if header.nrContours > 0 {
-		ret = this.readSimpleGlyph(header)
+		ret = this.readSimpleGlyph(header, scale)
 	} else if header.nrContours < 0 {
 		var comp = this.readCompundGlyf(header)
 		println("compGlyfs")
 		var points = []GlyfPoints{}
 		for _, x := range comp.compundDescr {
 			println("x", x.glyfIdx)
-			var g = this.readGlyfIdx(uint32(x.glyfIdx))
+			var g = this.readGlyfIdx(uint32(x.glyfIdx), scale)
 			points = append(points, g.GetPoints()...)
 		}
 		comp.points = points
 		ret = comp
 	} else {
-		//	panic("nr contours 0")
+		println("nr contours 0")
+		//panic("nr contours 0")
 	}
-	i++
 	return ret
 }
 
-func (this *Reader) readGlyfIdx(idx uint32) Glyf {
+func (this *Reader) readGlyfIdx(idx uint32, scale float32) Glyf {
 	var entry = this.entries["glyf"]
 	this.seek(entry.offset + this.loca[int(idx)])
 	var ret SimpleGlyf
 	var i = 0
 	var header = this.readGlyfHeader()
 	if header.nrContours > 0 {
-		ret = this.readSimpleGlyph(header)
+		ret = this.readSimpleGlyph(header, scale)
 	} else if header.nrContours < 0 {
 		var comp = this.readCompundGlyf(header)
 		println("compGlyfs")
@@ -623,10 +624,10 @@ func (this *Reader) parseLocA() {
 		panic("checksum")
 	}
 	this.seek(entry.offset)
-	this.loca = make([]uint32, this.nrGlyphs)
+	this.loca = make([]uint32, this.nrGlyphs+1)
 	for i := 0; i < len(this.loca); i++ {
 		if this.smallLocATable {
-			this.loca[i] = uint32(this.readUint16())
+			this.loca[i] = uint32(this.readUint16() * 2)
 		} else {
 			this.loca[i] = uint32(this.readUint32())
 		}
@@ -634,6 +635,22 @@ func (this *Reader) parseLocA() {
 }
 
 func (this SimpleGlyf) GetPoints() []GlyfPoints {
+	return this.body.Points
+}
+
+func (this CompoundGlyf) AddXOffset(x float32) []GlyfPoints {
+	var vec = glm.Vec2{x, 0}
+	for i, x := range this.points {
+		this.points[i].Pos = x.Pos.Add(&vec)
+	}
+	return this.points
+}
+
+func (this SimpleGlyf) AddXOffset(x float32) []GlyfPoints {
+	var vec = glm.Vec2{x, 0}
+	for i, x := range this.body.Points {
+		this.body.Points[i].Pos = x.Pos.Add(&vec)
+	}
 	return this.body.Points
 }
 

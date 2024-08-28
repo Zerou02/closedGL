@@ -19,7 +19,20 @@ func StartTTF() {
 	var opengl = closedGL.InitClosedGL(800, 800, "comic")
 	opengl.LimitFPS(false)
 	var p = turingfontparser.NewTuringFont("./assets/font/comic_sans.ttf", &opengl)
-	var points = p.ParseGlyf('a').GetPoints()
+	var points = []turingfontparser.GlyfPoints{}
+	var offset float32 = 0
+	for _, x := range "R" {
+		var newPoints = p.ParseGlyf(uint32(x), 0.5).AddXOffset(offset)
+		var biggestX float32 = 0
+		for _, y := range newPoints {
+			if y.Pos[0] > biggestX {
+				biggestX = y.Pos[0]
+			}
+		}
+		offset += (biggestX - offset)
+		points = append(points, newPoints...)
+	}
+	println("points", points)
 	var lines = opengl.CreateLineMesh()
 	var startOfLine = points[0].Pos
 	for i := 0; i < len(points); i++ {
