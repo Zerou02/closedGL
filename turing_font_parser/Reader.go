@@ -409,68 +409,53 @@ func (this *Reader) readSimpleGlyph(header GlyfHeader, scale float32) SimpleGlyf
 			Pos:      this.ctx.CartesianToSS(cartPos),
 		}
 		body.Points = append(body.Points, newP)
-
 	}
 
-	/* 	var newPoints = []GlyfPoints{}
-	   	var start = true
-	   	var startPoint GlyfPoints
-	   	for i := 0; i < len(body.Points); i++ {
-	   		if start {
-	   			startPoint = body.Points[i]
-	   			start = false
-	   		}
-	   		newPoints = append(newPoints, body.Points[i])
-	   		if body.Points[i].EndPoint {
-	   			newPoints = append(newPoints, startPoint)
-	   			start = true
-	   		}
-	   	}
-	   	var newNewPoints = []GlyfPoints{}
-	   	for i := 0; i < len(newPoints)-1; i++ {
-	   		newNewPoints = append(newNewPoints, newPoints[i])
-	   		if newPoints[i].OnCurve == newPoints[i+1].OnCurve {
-	   			var newP = closedGL.LerpVec2(newPoints[i].Pos, newPoints[i+1].Pos, 0.5)
-	   			var helperP = GlyfPoints{
-	   				OnCurve:  !newPoints[i].OnCurve,
-	   				EndPoint: false,
-	   				Pos:      newP,
-	   			}
-	   			newNewPoints = append(newNewPoints, helperP)
-	   		}
-	   	}
-	   	newNewPoints = append(newNewPoints, newPoints[len(newPoints)-1])
-	   	body.Points = newNewPoints */
-
-	/* if newP.EndPoint {
-		//Linie zum letzten Punkt
-		var helperP = GlyfPoints{
-			OnCurve:  true,
-			EndPoint: false,
-			Pos:      closedGL.LerpVec2(body.Points[len(body.Points)-1].Pos, newP.Pos, 0.5),
+	var start = true
+	var startP GlyfPoints
+	var newPoints = []GlyfPoints{}
+	for _, x := range body.Points {
+		if start {
+			startP = x
+			start = false
 		}
-		body.Points = append(body.Points, helperP)
-		body.Points = append(body.Points, newP)
-
-		//Linie zurück
-		body.Points = append(body.Points, newP)
-		body.Points = append(body.Points, startPoint)
-		newLine = true
-		 body.Points = append(body.Points, newP)
-		body.Points = append(body.Points, startPoint)
-
-		newLine = true
-	} else if len(body.Points) >= 1 && (body.Points[len(body.Points)-1].OnCurve == newP.OnCurve) {
-		var helperP = GlyfPoints{
-			OnCurve:  true,
-			EndPoint: false,
-			Pos:      closedGL.LerpVec2(body.Points[len(body.Points)-1].Pos, newP.Pos, 0.5),
+		newPoints = append(newPoints, x)
+		if x.EndPoint {
+			newPoints = append(newPoints, startP)
+			start = true
 		}
-		body.Points = append(body.Points, helperP)
 	}
-	if !newP.EndPoint {
-		body.Points = append(body.Points, newP)
-	} */
+
+	body.Points = newPoints
+	newPoints = []GlyfPoints{}
+	for i := 0; i < len(body.Points); i++ {
+		newPoints = append(newPoints, body.Points[i])
+		if i < len(body.Points)-1 && !body.Points[i].OnCurve && !body.Points[i+1].OnCurve {
+			var newPos = closedGL.LerpVec2(body.Points[i].Pos, body.Points[i+1].Pos, 0.5)
+			var newP = GlyfPoints{
+				OnCurve:  true,
+				EndPoint: body.Points[i].EndPoint || body.Points[i+1].EndPoint,
+				Pos:      newPos,
+			}
+			newPoints = append(newPoints, newP)
+		}
+	}
+	body.Points = newPoints
+	newPoints = []GlyfPoints{}
+	for i := 0; i < len(body.Points); i++ {
+		newPoints = append(newPoints, body.Points[i])
+		if i < len(body.Points)-1 && body.Points[i].OnCurve && body.Points[i+1].OnCurve {
+			var newPos = closedGL.LerpVec2(body.Points[i].Pos, body.Points[i+1].Pos, 0.5)
+			var newP = GlyfPoints{
+				OnCurve:  false,
+				EndPoint: body.Points[i].EndPoint || body.Points[i+1].EndPoint,
+				Pos:      newPos,
+			}
+			newPoints = append(newPoints, newP)
+		}
+	}
+	body.Points = newPoints
+	body.Points = append(body.Points, startP)
 
 	return SimpleGlyf{
 		header: header,

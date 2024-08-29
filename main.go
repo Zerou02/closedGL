@@ -18,15 +18,15 @@ func main() {
 func StartTTF() {
 	var opengl = closedGL.InitClosedGL(800, 800, "comic")
 	opengl.LimitFPS(false)
-	var p = turingfontparser.NewTuringFont("./assets/font/jetbrains_mono_medium.ttf", &opengl)
+	var p = turingfontparser.NewTuringFont("./assets/font/comic_sans.ttf", &opengl)
 	var points = []turingfontparser.GlyfPoints{}
 	var offset float32 = 0
-	for _, x := range "A" {
-		var newPoints = p.ParseGlyf(uint32(x), 1).AddXOffset(offset)
+	for _, x := range "hello_" {
+		var newPoints = p.ParseGlyf(uint32(x), 0.1).AddXOffset(offset)
 		var biggestX float32 = 0
 		for i, y := range newPoints {
 			closedGL.PrintlnVec2(y.Pos)
-			println(y.OnCurve)
+			println(y.OnCurve, ",", y.EndPoint)
 			println("---")
 			var offset = glm.Vec2{0, -50}
 			newPoints[i].Pos = newPoints[i].Pos.Add(&offset)
@@ -49,11 +49,11 @@ func StartTTF() {
 	} */
 
 	println("II")
-	for i := 0; i < len(points)-6; i += 2 {
+	for i := 0; i < len(points)-2; i += 2 {
 		closedGL.PrintlnVec2(points[i].Pos)
 		println("--")
 		lines.AddQuadraticBezier(points[i].Pos, points[i+2].Pos, points[i+1].Pos, glm.Vec4{1, 1, 1, 1})
-		if points[i].EndPoint {
+		if points[i].EndPoint || points[i+1].EndPoint {
 			i += 2
 			//	i--
 			//i += 2
