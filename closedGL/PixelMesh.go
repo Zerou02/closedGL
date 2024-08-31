@@ -13,6 +13,7 @@ type PixelMesh struct {
 	View        glm.Mat4
 	buffer      BufferFloat
 	indices     []byte
+	pointSize   float32
 }
 
 func newPixelMesh(shader *Shader, defaultProj glm.Mat4) PixelMesh {
@@ -23,6 +24,7 @@ func newPixelMesh(shader *Shader, defaultProj glm.Mat4) PixelMesh {
 		View:       glm.Ident4(),
 		projection: defaultProj,
 		indices:    indices,
+		pointSize:  1,
 	}
 	mesh.initBuffer()
 	return mesh
@@ -63,10 +65,13 @@ func (this *PixelMesh) AddPixel(pos glm.Vec2, colour glm.Vec4) {
 	this.amountQuads++
 }
 
+func (this *PixelMesh) SetPixelSize(s float32) {
+	this.pointSize = s
+}
 func (this *PixelMesh) Draw() {
 
 	gl.Enable(gl.PROGRAM_POINT_SIZE)
-	gl.PointSize(1)
+	gl.PointSize(this.pointSize)
 
 	this.shader.use()
 	this.shader.setUniformMatrix4("projection", &this.projection)

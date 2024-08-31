@@ -103,8 +103,9 @@ func (this *Reader) init() {
 	}
 	this.parseMaxP()
 	this.parseHead()
-	this.parseLocA()
 	this.parseCmap()
+	this.parseLocA()
+	this.seek(this.entries["glyf"].offset)
 
 }
 
@@ -157,7 +158,6 @@ func (this *Reader) parseCmap() {
 
 	this.seek(entry.offset + subTables[unicodeIdx][2])
 	var format = this.readUint16()
-	println("format", format)
 	if format == 12 {
 		this.parseFormat12()
 	} else if format == 4 {
@@ -406,15 +406,111 @@ func (this *Reader) readSimpleGlyph(header GlyfHeader, scale float32) SimpleGlyf
 		var newP = GlyfPoints{
 			OnCurve:  OnCurve,
 			EndPoint: endP,
-			Pos:      this.ctx.CartesianToSS(cartPos),
+			Pos:      cartPos,
+			//Pos:      this.ctx.CartesianToSS(cartPos),
 		}
 		body.Points = append(body.Points, newP)
 	}
 
+	body.Points = this.transformPoints2(body.Points, header.nrContours)
+
+	return SimpleGlyf{
+		header: header,
+		body:   body,
+	}
+}
+
+func (this *Reader) transformPoints2(points []GlyfPoints, nrContours int16) []GlyfPoints {
+	var newPoints = []GlyfPoints{}
+	var splitted = make([][]GlyfPoints, nrContours)
+	var currContour = 0
+	for _, x := range points {
+		splitted[currContour] = append(splitted[currContour], x)
+		if x.EndPoint {
+			currContour++
+		}
+	}
+	for i := 0; i < len(splitted); i++ {
+		var new = []GlyfPoints{}
+		for j := 0; j < len(splitted[i]); j++ {
+			new = append(new, splitted[i][j])
+			if j < len(splitted[i])-1 && !splitted[i][j].OnCurve && !splitted[i][j+1].OnCurve {
+				var p = GlyfPoints{
+					OnCurve:  true,
+					EndPoint: false,
+					Pos:      closedGL.LerpVec2(splitted[i][j].Pos, splitted[i][j+1].Pos, 0.5),
+				}
+				new = append(new, p)
+			}
+		}
+		splitted[i] = new
+	}
+
+	for k := 0; k < len(splitted); k++ {
+		for i := 0; i < len(splitted[k])-2; i++ {
+			var first = splitted[k][i]
+			var second GlyfPoints
+			var control GlyfPoints
+			if !splitted[k][i+1].OnCurve {
+				second = splitted[k][i+2]
+				control = splitted[k][i+1]
+				i++
+			} else {
+				second = splitted[k][i+1]
+				control = GlyfPoints{
+					Pos:      closedGL.LerpVec2(first.Pos, second.Pos, 0.5),
+					OnCurve:  false,
+					EndPoint: false,
+				}
+
+			}
+			newPoints = append(newPoints, first)
+			newPoints = append(newPoints, second)
+			newPoints = append(newPoints, control)
+		}
+		var lastIdx = len(splitted[k]) - 1
+		if splitted[k][lastIdx].OnCurve {
+			var currLast = newPoints[len(newPoints)-2]
+			var contourLast = splitted[k][len(splitted[k])-1]
+			var first = splitted[k][0]
+			newPoints = append(newPoints, contourLast)
+			newPoints = append(newPoints, currLast)
+			newPoints = append(newPoints, this.createOnCurveMiddlePoint(currLast, contourLast))
+			newPoints = append(newPoints, contourLast)
+			newPoints = append(newPoints, first)
+			newPoints = append(newPoints, this.createOnCurveMiddlePoint(first, contourLast))
+		} else {
+			var currLast = newPoints[len(newPoints)-2]
+			var contourLast = splitted[k][len(splitted[k])-1]
+			var first = splitted[k][0]
+			newPoints = append(newPoints, currLast)
+			newPoints = append(newPoints, first)
+			newPoints = append(newPoints, contourLast)
+		}
+		splitted[k] = newPoints
+		newPoints = []GlyfPoints{}
+	}
+	for _, x := range splitted {
+		for _, y := range x {
+			newPoints = append(newPoints, y)
+		}
+	}
+	return newPoints
+}
+
+func (this *Reader) createOnCurveMiddlePoint(p1, p2 GlyfPoints) GlyfPoints {
+	return GlyfPoints{
+		Pos:      closedGL.LerpVec2(p1.Pos, p2.Pos, 0.5),
+		OnCurve:  false,
+		EndPoint: false,
+	}
+}
+
+func (this *Reader) transformPoints(points []GlyfPoints) []GlyfPoints {
 	var start = true
 	var startP GlyfPoints
 	var newPoints = []GlyfPoints{}
-	for _, x := range body.Points {
+	for _, x := range points {
 		if start {
 			startP = x
 			start = false
@@ -426,41 +522,37 @@ func (this *Reader) readSimpleGlyph(header GlyfHeader, scale float32) SimpleGlyf
 		}
 	}
 
-	body.Points = newPoints
+	points = newPoints
 	newPoints = []GlyfPoints{}
-	for i := 0; i < len(body.Points); i++ {
-		newPoints = append(newPoints, body.Points[i])
-		if i < len(body.Points)-1 && !body.Points[i].OnCurve && !body.Points[i+1].OnCurve {
-			var newPos = closedGL.LerpVec2(body.Points[i].Pos, body.Points[i+1].Pos, 0.5)
+	for i := 0; i < len(points); i++ {
+		newPoints = append(newPoints, points[i])
+		if i < len(points)-1 && !points[i].OnCurve && !points[i+1].OnCurve {
+			var newPos = closedGL.LerpVec2(points[i].Pos, points[i+1].Pos, 0.5)
 			var newP = GlyfPoints{
 				OnCurve:  true,
-				EndPoint: body.Points[i].EndPoint || body.Points[i+1].EndPoint,
+				EndPoint: points[i].EndPoint || points[i+1].EndPoint,
 				Pos:      newPos,
 			}
 			newPoints = append(newPoints, newP)
 		}
 	}
-	body.Points = newPoints
+	points = newPoints
 	newPoints = []GlyfPoints{}
-	for i := 0; i < len(body.Points); i++ {
-		newPoints = append(newPoints, body.Points[i])
-		if i < len(body.Points)-1 && body.Points[i].OnCurve && body.Points[i+1].OnCurve {
-			var newPos = closedGL.LerpVec2(body.Points[i].Pos, body.Points[i+1].Pos, 0.5)
+	for i := 0; i < len(points); i++ {
+		newPoints = append(newPoints, points[i])
+		if i < len(points)-1 && points[i].OnCurve && points[i+1].OnCurve {
+			var newPos = closedGL.LerpVec2(points[i].Pos, points[i+1].Pos, 0.5)
 			var newP = GlyfPoints{
 				OnCurve:  false,
-				EndPoint: body.Points[i].EndPoint || body.Points[i+1].EndPoint,
+				EndPoint: points[i].EndPoint || points[i+1].EndPoint,
 				Pos:      newPos,
 			}
 			newPoints = append(newPoints, newP)
 		}
 	}
-	body.Points = newPoints
-	body.Points = append(body.Points, startP)
+	newPoints = append(newPoints, newPoints[len(newPoints)-1])
 
-	return SimpleGlyf{
-		header: header,
-		body:   body,
-	}
+	return newPoints
 }
 
 func (this *Reader) parsePoints(flags *[]uint8, destArr *[]int16, isX bool) {
@@ -515,7 +607,6 @@ func (this *Reader) readGlyf(unicodeVal uint32, scale float32) Glyf {
 		ret = this.readSimpleGlyph(header, scale)
 	} else if header.nrContours < 0 {
 		var comp = this.readCompundGlyf(header)
-		println("compGlyfs")
 		var points = []GlyfPoints{}
 		for _, x := range comp.compundDescr {
 			println("x", x.glyfIdx)
@@ -526,7 +617,6 @@ func (this *Reader) readGlyf(unicodeVal uint32, scale float32) Glyf {
 		ret = comp
 	} else {
 		println("nr contours 0")
-		//panic("nr contours 0")
 	}
 	return ret
 }
@@ -694,4 +784,46 @@ func (this SimpleGlyf) AddXOffset(x float32) []GlyfPoints {
 
 func (this CompoundGlyf) GetPoints() []GlyfPoints {
 	return this.points
+}
+
+type EmptyGlyf struct {
+	points []GlyfPoints
+}
+
+func newEmptyGlyf(scale float32) EmptyGlyf {
+	return EmptyGlyf{
+		[]GlyfPoints{
+			GlyfPoints{
+				OnCurve:  false,
+				EndPoint: true,
+				Pos:      glm.Vec2{70 * scale, 0},
+			},
+			GlyfPoints{
+				OnCurve:  false,
+				EndPoint: true,
+				Pos:      glm.Vec2{70 * scale, 0},
+			},
+			GlyfPoints{
+				OnCurve:  false,
+				EndPoint: true,
+				Pos:      glm.Vec2{70 * scale, 0},
+			},
+		},
+	}
+}
+
+func (this EmptyGlyf) GetPoints() []GlyfPoints {
+	return this.points
+}
+
+func (this EmptyGlyf) AddXOffset(y float32) []GlyfPoints {
+	var points = []GlyfPoints{}
+	for _, x := range this.GetPoints() {
+		points = append(points, GlyfPoints{
+			Pos:      glm.Vec2{x.Pos[0] + y, 0},
+			OnCurve:  false,
+			EndPoint: true,
+		})
+	}
+	return points
 }

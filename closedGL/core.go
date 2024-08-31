@@ -281,6 +281,10 @@ func (this *ClosedGLContext) CreateLineMesh() LineMesh {
 	return newLineMesh(this.shaderCameraManager.Shadermap["pixel"], this.shaderCameraManager.projection2D)
 }
 
+func (this *ClosedGLContext) CreateTriMesh() TriangleMesh {
+	return newTriMesh(this.shaderCameraManager.Shadermap["tri"], this.shaderCameraManager.projection2D)
+}
+
 func (this *ClosedGLContext) NewCam2D() Camera2D {
 	return newCamera2D(this.Window.Ww, this.Window.Wh, this)
 }

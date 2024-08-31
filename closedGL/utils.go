@@ -142,3 +142,32 @@ func Contains[T comparable](arr *[]T, x T) bool {
 	}
 	return retVal
 }
+
+func Remove[T comparable](arr []T, x T) []T {
+	var retVal = []T{}
+	for _, y := range arr {
+		if y != x {
+			retVal = append(retVal, y)
+		}
+	}
+	return retVal
+}
+
+func FindIdx[T comparable](arr []T, x T) int {
+	var retVal = -1
+	for i, y := range arr {
+		if x == y {
+			retVal = i
+			break
+		}
+	}
+	return retVal
+}
+
+func Reverse[T any](arr []T) []T {
+	var retVal = []T{}
+	for i := len(arr) - 1; i >= 0; i-- {
+		retVal = append(retVal, arr[i])
+	}
+	return retVal
+}

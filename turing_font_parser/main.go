@@ -17,5 +17,9 @@ func NewTuringFont(fontPath string, ctx *closedGL.ClosedGLContext) TuringFontPar
 }
 
 func (this *TuringFontParser) ParseGlyf(unicodeVal uint32, scale float32) Glyf {
-	return this.reader.readGlyf(unicodeVal, scale)
+	if unicodeVal == uint32(' ') {
+		return newEmptyGlyf(scale)
+	} else {
+		return this.reader.readGlyf(unicodeVal, scale)
+	}
 }
