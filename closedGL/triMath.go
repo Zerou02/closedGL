@@ -16,7 +16,7 @@ func CartesianToSSPoint(vec glm.Vec2, wh float32) glm.Vec2 {
 	return glm.Vec2{vec[0], wh - vec[1]}
 }
 
-// Result in rad
+// Result in rad, immer der Kleinere
 func AngleTo(vec, to glm.Vec2) float32 {
 	var dot = vec.Dot(&to)
 	var lenVec = vec.Len()

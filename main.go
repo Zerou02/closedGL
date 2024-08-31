@@ -70,10 +70,7 @@ func glyfToPolygon(points []turingfontparser.GlyfPoints, mesh *closedGL.PixelMes
 		var dy float32 = 13
 		if highY > rightMost[1] && lowY < rightMost[1] {
 			if p1[0] > rightMost[0] || p2[0] > rightMost[0] {
-				println("AAA")
 				closedGL.FindIdx(outer, p1)
-				println("i", i)
-				closedGL.PrintlnVec2(cp)
 				var firstNew = glm.Vec2{cp[0], cp[1] - dy}
 				var secondNew = glm.Vec2{cp[0], cp[1] + dy}
 				outer = closedGL.InsertAt(outer, firstNew, i+1)
@@ -128,7 +125,7 @@ func printlnPoints(points []glm.Vec2) {
 	}
 }
 
-func findInteriorAngle(p glm.Vec2, poly []glm.Vec2, mesh *closedGL.PixelMesh) float32 {
+func findInteriorAngle(p glm.Vec2, poly []glm.Vec2, mesh *closedGL.PixelMesh) (float32, bool) {
 	var idx = closedGL.FindIdx(poly, p)
 	if idx == -1 {
 		panic("dmae")
@@ -144,59 +141,32 @@ func findInteriorAngle(p glm.Vec2, poly []glm.Vec2, mesh *closedGL.PixelMesh) fl
 	} else {
 		next = poly[idx+1]
 	}
-	/* 	p = closedGL.SsToCartesian(p, 800)
-	   	previous = closedGL.SsToCartesian(previous, 800)
-	   	next = closedGL.SsToCartesian(next, 800) */
-
 	//so dass die Schwänze übereinander liegen
+	p = closedGL.SsToCartesian(p, 800)
+	previous = closedGL.SsToCartesian(previous, 800)
+	next = closedGL.SsToCartesian(next, 800)
+
 	var firstVec = previous.Sub(&p)
 	var secondVec = next.Sub(&p)
 	firstVec.Normalize()
 	secondVec.Normalize()
-	println("first")
-	closedGL.PrintlnVec2(firstVec)
-	println("secundo")
-	closedGL.PrintlnVec2(secondVec)
 
+	var isInner bool
 	var angle = closedGL.AngleTo(firstVec, secondVec)
-	var testEq = closedGL.CalcLinearEquation(p, next)
+
+	var eq = closedGL.CalcLinearEquation(p, next)
 	var dx = next[0] - p[0]
 	dx *= 0.1
-	var newPoint = closedGL.EvalLinEq(testEq, p[0]+dx)
+	var test = closedGL.EvalLinEq(eq, p[0]+dx)
+	test = closedGL.RotateAroundPoint(angle, test, p)
+	isInner = !pointInPolygon(test, poly)
 
-	var otherDirAngle = 2*math.Pi - angle
-	closedGL.PrintlnVec2(newPoint)
-	var halfAngle = angle * 0.5
-	var halfOtherAngle = 2*math.Pi - halfAngle
-	_ = halfOtherAngle
-
-	var rest = 2*math.Pi - otherDirAngle
-	var first = closedGL.RotateAroundPoint(otherDirAngle*0.5, newPoint, p)
-	var second = closedGL.RotateAroundPoint(otherDirAngle+0.5*rest, newPoint, p)
-	var retAngle float32
-	if pointInPolygon(first, poly) {
-		println("cw in poly")
-		retAngle = otherDirAngle
-	}
-	if pointInPolygon(second, poly) {
-		println("ccw in poly")
-		retAngle = angle
-	}
-	mesh.AddPixel(newPoint, glm.Vec4{1, 0.5, 0.5, 1})
-	mesh.AddPixel(first, glm.Vec4{1, 0.5, 0.5, 1})
-	mesh.AddPixel(second, glm.Vec4{1, 0.75, 0.5, 1})
-	mesh.AddPixel(next, glm.Vec4{1, 0.75, 0.5, 1})
-
-	println("angle", closedGL.RadToDeg(angle))
-	println("otherangle", closedGL.RadToDeg(otherDirAngle))
-
-	println("retangle", closedGL.RadToDeg(retAngle))
-	closedGL.PrintlnVec2(newPoint)
-	return retAngle
+	return angle, isInner
 }
 
-func triangulatePolygon(points []glm.Vec2, mesh *closedGL.PixelMesh) [][3]glm.Vec2 {
+func triangulatePolygon(points []glm.Vec2, mesh *closedGL.PixelMesh, breakAt int, print bool) [][3]glm.Vec2 {
 	var base = points
+	_ = base
 	var i = 1
 	var ret = [][3]glm.Vec2{}
 
@@ -214,11 +184,27 @@ func triangulatePolygon(points []glm.Vec2, mesh *closedGL.PixelMesh) [][3]glm.Ve
 		var eq = closedGL.CalcLinearEquation(p0, p1)
 		var inPoly = false
 
-		for i := 1; i < steps-2; i++ {
-			var newX = p0[0] + float32(i)*stepX
+		for j := 1; j < steps-2; j++ {
+			var newX = p0[0] + float32(j)*stepX
 			var newP = closedGL.EvalLinEq(eq, newX)
-			if pointInPolygon(newP, points) || p0[0] == p1[0] {
+			if pointInPolygon(newP, points) || p0[0] == p1[0] || newP[0] == p0[0] {
+				if len(ret)+1 == breakAt {
+
+					if print {
+						println("step I", i, j, "newP")
+						closedGL.PrintlnVec2(newP)
+						println("tip")
+						closedGL.PrintlnVec2(tip)
+						println("p0")
+						closedGL.PrintlnVec2(p0)
+						println("p1")
+						closedGL.PrintlnVec2(p1)
+					}
+					mesh.AddPixel(newP, glm.Vec4{0, 1, 0, 1})
+				}
+
 				inPoly = true
+
 				break
 			}
 		}
@@ -237,25 +223,14 @@ func triangulatePolygon(points []glm.Vec2, mesh *closedGL.PixelMesh) [][3]glm.Ve
 			ret = append(ret, [3]glm.Vec2{p0, tip, p1})
 			points = closedGL.Remove(points, tip)
 			if len(ret) == 1 {
-				println("inPoly", inPoly)
 
-				println("p0")
-				closedGL.PrintlnVec2(p0)
-				println("tip")
-				closedGL.PrintlnVec2(tip)
-				println("p1")
-				closedGL.PrintlnVec2(p1)
+				mesh.AddPixel(tip, glm.Vec4{0.5, 0.5, 1, 1})
 
-				findInteriorAngle(tip, base, mesh)
-				/* 		for _, x := range base {
-					var angle = findInteriorAngle(x, base, mesh)
-					var c = glm.Vec4{1, 0, 0, 1}
-					if angle < math.Pi {
-						c = glm.Vec4{0, 1, 0, 1}
-					}
-					mesh.AddPixel(x, c)
-				} */
-
+				for _, x := range points {
+					mesh.AddPixel(x, glm.Vec4{1, 0, 0, 1})
+				}
+				mesh.AddPixel(p0, glm.Vec4{0, 1, 1, 1})
+				mesh.AddPixel(p1, glm.Vec4{0, 1, 1, 1})
 				break
 			}
 			i = 0
@@ -263,7 +238,7 @@ func triangulatePolygon(points []glm.Vec2, mesh *closedGL.PixelMesh) [][3]glm.Ve
 		i++
 	}
 
-	//	ret = append(ret, [3]glm.Vec2{points[0], points[1], points[2]})
+	ret = append(ret, [3]glm.Vec2{points[0], points[1], points[2]})
 
 	return ret
 }
@@ -304,7 +279,7 @@ func StartTTF() {
 	var p = turingfontparser.NewTuringFont("./assets/font/jetbrains_mono_medium.ttf", &opengl)
 	var points = []turingfontparser.GlyfPoints{}
 	var offset float32 = 0
-	for _, x := range "a" {
+	for _, x := range "R" {
 		_ = x
 		var newPoints = p.ParseGlyf(uint32(x), 1).AddXOffset(offset)
 		var biggestX float32 = offset
@@ -329,13 +304,6 @@ func StartTTF() {
 	var polyMesh = opengl.CreatePixelMesh()
 	glyfToPoints(points, poly, &lines, &tri)
 
-	var test = triangulatePolygon(poly, &leaveMesh)
-	leaveMesh.Copy()
-	for _, x := range test {
-		_ = x
-		tri.AddTri(x, [3]glm.Vec2{{1, 1}, {1, 1}, {1, 1}}, -1)
-	}
-
 	lines.Copy()
 	tri.Copy()
 	polyMesh.SetPixelSize(10)
@@ -347,10 +315,34 @@ func StartTTF() {
 	debugMesh.SetPixelSize(10)
 	leaveMesh.SetPixelSize(10)
 
+	var breakAt = 1
+	var print = false
 	for !opengl.WindowShouldClose() {
 		if opengl.IsKeyPressed(glfw.KeyL) {
 			closedGL.PrintlnVec2(opengl.GetMousePos())
 		}
+		if opengl.IsKeyPressed(glfw.KeyO) {
+			breakAt++
+		}
+		if opengl.IsKeyPressed(glfw.KeyP) {
+			breakAt--
+		}
+		if opengl.IsKeyPressed(glfw.KeyU) {
+			print = !print
+		}
+
+		leaveMesh.Clear()
+		var test = triangulatePolygon(poly, &leaveMesh, breakAt, print)
+		leaveMesh.Copy()
+		tri.Clear()
+		for _, x := range test {
+			_ = x
+			tri.AddTri(x, [3]glm.Vec2{{1, 1}, {1, 1}, {1, 1}}, -1)
+		}
+		//glyfToPoints(points, poly, &lines, &tri)
+
+		tri.Copy()
+		leaveMesh.Copy()
 		closedGL.SetWireFrameMode(!opengl.IsKeyDown(glfw.KeyF))
 		debugMesh.Clear()
 		var mouse = opengl.GetMousePos()
