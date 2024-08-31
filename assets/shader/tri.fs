@@ -9,9 +9,9 @@ void main() {
   float val = fUV.x * fUV.x - fUV.y; //<0 = innerhalb
   val = fSignMultiplier * val;
   if (val <= 0) {
-    FragColor = vec4(1, 1, 1, 0.0);
+    FragColor = vec4(1, 1, 1, 0.25);
   } else {
     FragColor = vec4(1, 0, 0, 0.25);
   }
-  FragColor = vec4(1, 1, 1, 1);
+  // FragColor = vec4(1, 1, 1, 1);
 }

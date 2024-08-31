@@ -38,6 +38,13 @@ func Rotate(rad float32, vec glm.Vec2) glm.Vec2 {
 	return rotMat.Mul2x1(&vec)
 }
 
+// cw in SS
+func RotateAroundPoint(rad float32, vec, pivot glm.Vec2) glm.Vec2 {
+	vec = vec.Sub(&pivot)
+	vec = Rotate(rad, vec)
+	return vec.Add(&pivot)
+}
+
 func CalcMiddlePoint(p1, p2 glm.Vec2) glm.Vec2 {
 	return glm.Vec2{(p1[0] + p2[0]) / 2, (p1[1] + p2[1]) / 2}
 }

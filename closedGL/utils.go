@@ -164,6 +164,30 @@ func FindIdx[T comparable](arr []T, x T) int {
 	return retVal
 }
 
+func InsertAt[T comparable](arr []T, x T, idx int) []T {
+	var new = []T{}
+	for i, y := range arr {
+		if i == idx {
+			new = append(new, x)
+		}
+		new = append(new, y)
+	}
+	return new
+}
+
+func InsertArrAt[T comparable](arr []T, x []T, idx int) []T {
+	var new = []T{}
+	for i, y := range arr {
+		if i == idx {
+			for _, z := range x {
+				new = append(new, z)
+			}
+		}
+		new = append(new, y)
+	}
+	return new
+}
+
 func Reverse[T any](arr []T) []T {
 	var retVal = []T{}
 	for i := len(arr) - 1; i >= 0; i-- {
