@@ -68,7 +68,8 @@ func glyfToPolygon(points []turingfontparser.GlyfPoints, mesh *closedGL.PixelMes
 		var highY = math.Max(p1[1], p2[1])
 		var lowY = math.Min(p1[1], p2[1])
 		var dy float32 = 13
-		if highY > rightMost[1] && lowY < rightMost[1] {
+		if highY >= rightMost[1] && lowY <= rightMost[1] {
+			println("AA")
 			if p1[0] > rightMost[0] || p2[0] > rightMost[0] {
 				closedGL.FindIdx(outer, p1)
 				var firstNew = glm.Vec2{cp[0], cp[1] - dy}
@@ -317,6 +318,8 @@ func StartTTF() {
 
 	var breakAt = 1
 	var print = false
+
+	testLines()
 	for !opengl.WindowShouldClose() {
 		if opengl.IsKeyPressed(glfw.KeyL) {
 			closedGL.PrintlnVec2(opengl.GetMousePos())
@@ -331,37 +334,12 @@ func StartTTF() {
 			print = !print
 		}
 
-		leaveMesh.Clear()
-		var test = triangulatePolygon(poly, &leaveMesh, breakAt, print)
-		leaveMesh.Copy()
-		tri.Clear()
-		for _, x := range test {
-			_ = x
-			tri.AddTri(x, [3]glm.Vec2{{1, 1}, {1, 1}, {1, 1}}, -1)
-		}
-		//glyfToPoints(points, poly, &lines, &tri)
-
-		tri.Copy()
-		leaveMesh.Copy()
 		closedGL.SetWireFrameMode(!opengl.IsKeyDown(glfw.KeyF))
-		debugMesh.Clear()
-		var mouse = opengl.GetMousePos()
-		//mouse = closedGL.SsToCartesian(mouse, 800)
-		debugMesh.AddPixel(mouse, glm.Vec4{0, 0.5, 0.5, 1})
-		var inter = getInterSectionPointsInPolygon(mouse, poly)
-		for _, x := range inter {
-			debugMesh.AddPixel(x, glm.Vec4{1, 1, 0, 1})
-		}
-		debugMesh.AddPixel(glm.Vec2{448, 495}, glm.Vec4{1, 0, 1, 1})
-		debugMesh.Copy()
-
 		opengl.BeginDrawing()
 		opengl.ClearBG(glm.Vec4{0, 0, 0, 0})
-		lines.Draw()
 		tri.Draw()
 		polyMesh.Draw()
-		debugMesh.Draw()
-		leaveMesh.Draw()
+		lines.Draw()
 		opengl.DrawFPS(600, 0, 1)
 		opengl.EndDrawing()
 	}
@@ -453,4 +431,74 @@ func StartClosedGL() {
 		openGL.EndDrawing()
 	}
 	openGL.Free()
+}
+
+func assert(val bool) {
+	if !val {
+		panic("assert failed")
+	}
+}
+
+func testLines() {
+	var p1 = glm.Vec2{0, 0}
+	var p2 = glm.Vec2{100, 100}
+	var p3 = glm.Vec2{100, 0}
+	var p4 = glm.Vec2{0, 100}
+	//normal-normal
+	var l1 = closedGL.CalculateLine(p1, p2)
+	var l2 = closedGL.CalculateLine(p3, p4)
+	var poin, _ = l1.GetIntersection(l2)
+	var point2, _ = l2.GetIntersection(l1)
+	assert(point2.Equal(&poin))
+	println("expect 50,50")
+	closedGL.PrintlnVec2(poin)
+
+	//vert-horiz
+	var l3 = closedGL.CalculateLine(p2, p3)
+	var l4 = closedGL.CalculateLine(p1, p3)
+	var cp2, _ = l3.GetIntersection(l4)
+	var cp22, _ = l4.GetIntersection(l3)
+	assert(cp2.Equal(&cp22))
+	println("expect 0,100")
+	closedGL.PrintlnVec2(cp2)
+
+	//vert-normal
+	var l5 = closedGL.CalculateLine(p1, p4)
+	var l6 = closedGL.CalculateLine(p4, p3)
+	var cp3, _ = l5.GetIntersection(l6)
+	var cp32, _ = l6.GetIntersection(l5)
+
+	assert(cp3.Equal(&cp32))
+	println("expect 0,100")
+	closedGL.PrintlnVec2(cp3)
+
+	//vert-vert
+	var l7 = closedGL.CalculateLine(p2, p3)
+	var l8 = closedGL.CalculateLine(p1, p4)
+	var cp4, succ = l7.GetIntersection(l8)
+	var cp42, _ = l8.GetIntersection(l7)
+	assert(cp4.Equal(&cp42))
+	println("expect 0,0,false")
+	print(succ, ",")
+	closedGL.PrintlnVec2(cp4)
+
+	//horiz,horiz
+	var l9 = closedGL.CalculateLine(p2, p4)
+	var l10 = closedGL.CalculateLine(p1, p3)
+	var cp5, succ2 = l9.GetIntersection(l10)
+	var cp52, _ = l10.GetIntersection(l9)
+	assert(cp5.Equal(&cp52))
+	println("expect 0,0,false")
+	print(succ2, ",")
+	closedGL.PrintlnVec2(cp5)
+
+	//horiz,normal
+	var l11 = closedGL.CalculateLine(p1, p2)
+	var l12 = closedGL.CalculateLine(p1, p3)
+	var cp6, succ3 = l11.GetIntersection(l12)
+	var cp62, _ = l12.GetIntersection(l11)
+	assert(cp62.Equal(&cp6))
+	println("expect 0,0,true")
+	print(succ3, ",")
+	closedGL.PrintlnVec2(cp6)
 }

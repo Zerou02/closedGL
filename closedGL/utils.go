@@ -41,7 +41,8 @@ func PrintlnFloat(f float32) {
 }
 
 func PrintlnVec2(vec glm.Vec2) {
-	PrintlnFloat(vec[0])
+	PrintFloat(vec[0])
+	print(",")
 	PrintlnFloat(vec[1])
 }
 
