@@ -165,6 +165,16 @@ func FindIdx[T comparable](arr []T, x T) int {
 	return retVal
 }
 
+func RemoveAt[T comparable](arr []T, idx int) []T {
+	var retVal = []T{}
+	for i, y := range arr {
+		if i != idx {
+			retVal = append(retVal, y)
+		}
+	}
+	return retVal
+}
+
 func InsertAt[T comparable](arr []T, x T, idx int) []T {
 	var new = []T{}
 	for i, y := range arr {

@@ -20,7 +20,7 @@ func (this *Line) GetIntersection(line Line) (glm.Vec2, bool) {
 	}
 	if this.LineType == "horizontal" {
 		if line.LineType == "vertical" {
-			return glm.Vec2{this.p1[0], line.p1[1]}, true
+			return glm.Vec2{line.p1[0], this.p1[1]}, true
 		} else if line.LineType == "normal" {
 			return line.EvalY(this.p1[1])
 		} else {
@@ -28,7 +28,7 @@ func (this *Line) GetIntersection(line Line) (glm.Vec2, bool) {
 		}
 	} else if this.LineType == "vertical" {
 		if line.LineType == "horizontal" {
-			return glm.Vec2{line.p1[0], this.p1[1]}, true
+			return glm.Vec2{this.p1[0], line.p1[1]}, true
 		} else if line.LineType == "normal" {
 			return line.EvalX(this.p1[0])
 		} else {
@@ -45,6 +45,29 @@ func (this *Line) GetIntersection(line Line) (glm.Vec2, bool) {
 		}
 	}
 	return glm.Vec2{}, false
+}
+
+// funktioniert wahrscheinlich nur für SS
+func (this *Line) IsOnLine(p glm.Vec2) bool {
+	if this.LineType == "vertical" {
+		var minY = math.Min(this.p1[1], this.p2[1])
+		var maxY = math.Max(this.p1[1], this.p2[1])
+		return this.p1[0] == p[0] && minY <= p[1] && p[1] <= maxY
+	} else if this.LineType == "horizontal" {
+		var minX = math.Min(this.p1[0], this.p2[0])
+		var maxX = math.Max(this.p1[0], this.p2[0])
+		println("deb", minX, maxX)
+		PrintlnVec2(p)
+		return this.p1[1] == p[1] && minX <= p[0] && p[0] <= maxX
+	} else {
+		var xPoint, _ = this.EvalX(p[0])
+		var dist = xPoint.Sub(&p)
+		var minX = math.Min(this.p1[0], this.p2[0])
+		var maxX = math.Max(this.p1[0], this.p2[0])
+		var minY = math.Min(this.p1[1], this.p2[1])
+		var maxY = math.Max(this.p1[1], this.p2[1])
+		return dist.Len() < 1 && IsPointInRect(p, glm.Vec4{minX, minY, maxX - minX, maxY - minY})
+	}
 }
 
 func (this *Line) EvalX(newX float32) (glm.Vec2, bool) {

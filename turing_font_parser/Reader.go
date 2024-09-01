@@ -491,8 +491,11 @@ func (this *Reader) transformPoints2(points []GlyfPoints, nrContours int16) []Gl
 		newPoints = []GlyfPoints{}
 	}
 	for _, x := range splitted {
-		for _, y := range x {
-			newPoints = append(newPoints, y)
+		for i, y := range x {
+			//nur letzter ist Endpunkt
+			var c = y
+			c.EndPoint = i == len(x)-1
+			newPoints = append(newPoints, c)
 		}
 	}
 	return newPoints

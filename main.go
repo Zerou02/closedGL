@@ -36,11 +36,44 @@ func extractPolyFromContour(contour []turingfontparser.GlyfPoints) []glm.Vec2 {
 			newPoints = append(newPoints, x.Pos)
 		}
 	}
-	return newPoints
+	//duplicate Points to Kantenzug
+	var duplicateTrain = []glm.Vec2{}
+	for i := 0; i < len(newPoints)-1; i++ {
+		duplicateTrain = append(duplicateTrain, newPoints[i], newPoints[i+1])
+	}
+	duplicateTrain = append(duplicateTrain, duplicateTrain[len(duplicateTrain)-1])
+	duplicateTrain = append(duplicateTrain, duplicateTrain[0])
+	return duplicateTrain
+}
+
+func isInsideOfOtherPolyogn(base, polyToTest []glm.Vec2) bool {
+	var minX, maxX = base[0][0], base[0][0]
+	var minY, maxY = base[0][1], base[0][1]
+	for _, x := range base {
+		minX = math.Min(x[0], minX)
+		maxX = math.Max(x[0], maxX)
+		minY = math.Min(x[1], minY)
+		maxY = math.Max(x[1], maxY)
+	}
+	var isInside = false
+	for _, x := range polyToTest {
+		if pointInPolygon(x, base) {
+			isInside = true
+			break
+		}
+	}
+	return isInside
 }
 
 func glyfToPolygon(points []turingfontparser.GlyfPoints, mesh *closedGL.PixelMesh) []glm.Vec2 {
 
+	/* 	for i, x := range points {
+		if i%3 == 0 {
+			println("--------")
+		}
+		closedGL.PrintlnVec2(x.Pos)
+		println(x.EndPoint, ",", x.OnCurve)
+	} */
 	var contours = [][]turingfontparser.GlyfPoints{}
 	var single = []turingfontparser.GlyfPoints{}
 	for _, x := range points {
@@ -55,39 +88,80 @@ func glyfToPolygon(points []turingfontparser.GlyfPoints, mesh *closedGL.PixelMes
 
 	}
 	var outer = extractPolyFromContour(contours[0])
-	var inner = extractPolyFromContour(contours[1])
+	var outerContours = [][]glm.Vec2{}
+	var innerContours = [][]glm.Vec2{}
+	for i, x := range contours {
+		var poly = extractPolyFromContour(x)
+		if i == 0 {
+			outerContours = append(outerContours, poly)
+		} else {
+			var isInner = isInsideOfOtherPolyogn(outerContours[0], poly)
+			if !isInner {
+				panic("multiple outer!")
+			}
+			innerContours = append(innerContours, poly)
+		}
+	}
 
-	var rightMost = findRightmostPoint(inner)
-	closedGL.PrintlnVec2(rightMost)
-	var baseLine = closedGL.CalcLinearEquation(glm.Vec2{0, rightMost[1]}, rightMost)
-	for i := 0; i < len(outer)-1; i++ {
-		var p1 = outer[i]
-		var p2 = outer[i+1]
-		var line = closedGL.CalcLinearEquation(p1, p2)
-		var cp = closedGL.CalcCrossingPoint(baseLine, line)
-		var highY = math.Max(p1[1], p2[1])
-		var lowY = math.Min(p1[1], p2[1])
-		var dy float32 = 13
-		if highY >= rightMost[1] && lowY <= rightMost[1] {
-			println("AA")
-			if p1[0] > rightMost[0] || p2[0] > rightMost[0] {
-				closedGL.FindIdx(outer, p1)
-				var firstNew = glm.Vec2{cp[0], cp[1] - dy}
-				var secondNew = glm.Vec2{cp[0], cp[1] + dy}
-				outer = closedGL.InsertAt(outer, firstNew, i+1)
-				var innerIdx = closedGL.FindIdx(inner, rightMost)
-				var newInner = []glm.Vec2{}
-				for j := innerIdx; j < len(inner); j++ {
-					newInner = append(newInner, inner[j])
+	println("len inner", len(innerContours))
+	for _, x := range innerContours {
+
+		var rightMost = findRightmostPoint(x)
+		var baseLine = closedGL.CalculateLine(glm.Vec2{0, rightMost[1]}, rightMost)
+
+		closedGL.PrintlnVec2(rightMost)
+		for i := 0; i < len(outer)-1; i += 2 {
+			var p1 = outer[i]
+			var p2 = outer[i+1]
+			if p1[0] < rightMost[0] && p2[0] < rightMost[0] {
+				continue
+			}
+			var line = closedGL.CalculateLine(p1, p2)
+			var cp, succ = baseLine.GetIntersection(line)
+			if succ {
+				if line.IsOnLine(cp) {
+
+					println("SUCCESSs")
+					closedGL.PrintlnVec2(cp)
+					println("a")
+					println("linePoints")
+					closedGL.PrintlnVec2(p1)
+					closedGL.PrintlnVec2(p2)
+					println("cp")
+					closedGL.PrintlnVec2(cp)
+
+					var metVertex = p1[1] == rightMost[1] || p2[1] == rightMost[1]
+					println("met vertex", metVertex)
+					if !metVertex {
+						var idx = closedGL.FindIdx(outer, p1)
+						//remove old kantenzug
+						outer = closedGL.RemoveAt(outer, idx+1)
+						outer = closedGL.RemoveAt(outer, idx+1)
+
+						idx = closedGL.FindIdx(outer, p1)
+						if idx == -1 {
+							panic("error")
+						}
+
+						var new = glm.Vec2{cp[0], cp[1]}
+						//new doppelt als Endpunkt für geschnittenen
+						var firstKantenzug = []glm.Vec2{p1, new, new, rightMost}
+						outer = closedGL.InsertArrAt(outer, firstKantenzug, idx+1)
+						var innerIdx = closedGL.FindIdx(x, rightMost)
+						var newInner = []glm.Vec2{}
+						for j := innerIdx; j < len(x); j++ {
+							newInner = append(newInner, x[j])
+						}
+						for j := 0; j < innerIdx; j++ {
+							newInner = append(newInner, x[j])
+						}
+						newInner = append(newInner, rightMost, new, new, p2)
+						outer = closedGL.InsertArrAt(outer, newInner, idx+5)
+					} else {
+						panic("met vertex. Please investigate. might be harmless")
+					}
+					break
 				}
-				for j := 0; j < innerIdx; j++ {
-					newInner = append(newInner, inner[j])
-				}
-				var newInnerP = glm.Vec2{rightMost[0], rightMost[1] + dy}
-				newInner = append(newInner, newInnerP)
-				newInner = append(newInner, secondNew)
-				outer = closedGL.InsertArrAt(outer, newInner, i+2)
-				break
 			}
 		}
 	}
@@ -95,10 +169,10 @@ func glyfToPolygon(points []turingfontparser.GlyfPoints, mesh *closedGL.PixelMes
 
 }
 
-// ausgelegt für SS-Polys,einzelner Kantenzug, nichts Dopplung
+// ausgelegt für SS-Polys,mit Kantenzügen
 func getInterSectionPointsInPolygon(p glm.Vec2, points []glm.Vec2) []glm.Vec2 {
 	var ret = []glm.Vec2{}
-	for i := 0; i < len(points)-1; i++ {
+	for i := 0; i < len(points); i += 2 {
 		var p1 = points[i]
 		var p2 = points[i+1]
 		var highY = math.Max(p1[1], p2[1])
@@ -172,6 +246,7 @@ func triangulatePolygon(points []glm.Vec2, mesh *closedGL.PixelMesh, breakAt int
 	var ret = [][3]glm.Vec2{}
 
 	for len(points) > 3 {
+		println("aa")
 		var length = len(points)
 		var p0 = points[(i-1)%length]
 		var tip = points[i%length]
@@ -280,7 +355,7 @@ func StartTTF() {
 	var p = turingfontparser.NewTuringFont("./assets/font/jetbrains_mono_medium.ttf", &opengl)
 	var points = []turingfontparser.GlyfPoints{}
 	var offset float32 = 0
-	for _, x := range "R" {
+	for _, x := range "f" {
 		_ = x
 		var newPoints = p.ParseGlyf(uint32(x), 1).AddXOffset(offset)
 		var biggestX float32 = offset
@@ -308,18 +383,19 @@ func StartTTF() {
 	lines.Copy()
 	tri.Copy()
 	polyMesh.SetPixelSize(10)
-	for _, x := range poly {
-		polyMesh.AddPixel(x, glm.Vec4{1, 1, 1, 1})
-	}
-	polyMesh.Copy()
 
 	debugMesh.SetPixelSize(10)
 	leaveMesh.SetPixelSize(10)
 
 	var breakAt = 1
 	var print = false
+	var amountPixel = 1
 
-	testLines()
+	/* testLines()
+	isOnLineTest() */
+	var test = triangulatePolygon(poly, &debugMesh, 1, false)
+	_ = test
+	debugMesh.Copy()
 	for !opengl.WindowShouldClose() {
 		if opengl.IsKeyPressed(glfw.KeyL) {
 			closedGL.PrintlnVec2(opengl.GetMousePos())
@@ -330,9 +406,35 @@ func StartTTF() {
 		if opengl.IsKeyPressed(glfw.KeyP) {
 			breakAt--
 		}
+		if opengl.IsKeyPressed(glfw.KeyT) {
+			amountPixel -= 2
+		}
+		if opengl.IsKeyPressed(glfw.KeyY) {
+			amountPixel += 2
+		}
+		print = false
 		if opengl.IsKeyPressed(glfw.KeyU) {
 			print = !print
 		}
+		if opengl.IsKeyPressed(glfw.KeyI) {
+			closedGL.PrintlnVec2(opengl.GetMousePos())
+		}
+
+		polyMesh.Clear()
+		if print {
+			println(".....")
+		}
+		for i, x := range poly {
+			if i < amountPixel {
+				if print {
+					closedGL.PrintlnVec2(x)
+					println("---")
+
+				}
+				polyMesh.AddPixel(x, glm.Vec4{1, 1, 1, 1})
+			}
+		}
+		polyMesh.Copy()
 
 		closedGL.SetWireFrameMode(!opengl.IsKeyDown(glfw.KeyF))
 		opengl.BeginDrawing()
@@ -501,4 +603,22 @@ func testLines() {
 	println("expect 0,0,true")
 	print(succ3, ",")
 	closedGL.PrintlnVec2(cp6)
+}
+
+func isOnLineTest() {
+	var p1 = glm.Vec2{0, 0}     //ul
+	var p2 = glm.Vec2{100, 100} //or
+	var p3 = glm.Vec2{100, 0}   //ur
+	var p4 = glm.Vec2{0, 100}   //ol
+
+	var vertical = closedGL.CalculateLine(p1, p4)
+	var horizontal = closedGL.CalculateLine(p2, p4)
+	var normal = closedGL.CalculateLine(p3, p4)
+	assert(vertical.IsOnLine(glm.Vec2{0, 50}))
+	assert(!vertical.IsOnLine(glm.Vec2{0, 150}))
+	assert(horizontal.IsOnLine(glm.Vec2{50, 100}))
+	assert(!horizontal.IsOnLine(glm.Vec2{120, 100}))
+	assert(normal.IsOnLine(glm.Vec2{50, 50}))
+	assert(!normal.IsOnLine(glm.Vec2{60, 60}))
+
 }
