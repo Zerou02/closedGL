@@ -90,6 +90,30 @@ func (this *Line) EvalY(newY float32) (glm.Vec2, bool) {
 	}
 }
 
+// start,end exklusiv
+func (this *Line) SamplePointsOnLine(amount float32) []glm.Vec2 {
+	var ret = []glm.Vec2{}
+	if this.LineType == "vertical" {
+		var dy = this.p2[1] - this.p1[1]
+		dy /= (amount + 1)
+		for i := 1; i < int(amount); i++ {
+			ret = append(ret, glm.Vec2{this.p1[0], this.p1[1] + dy*float32(i)})
+		}
+	} else if this.LineType == "normal" {
+		var dx = this.p2[0] - this.p1[0]
+		for i := 1; i < int(amount); i++ {
+			var newP, _ = this.EvalX(this.p1[0] + dx*(float32(i)/amount))
+			ret = append(ret, newP)
+		}
+	} else if this.LineType == "horizontal" {
+		var dx = this.p2[0] - this.p1[0]
+		for i := 1; i < int(amount); i++ {
+			ret = append(ret, glm.Vec2{this.p1[0] + dx*(float32(i)/amount), this.p1[1]})
+		}
+	}
+	return ret
+}
+
 // m,n
 func CalculateLine(p1, p2 glm.Vec2) Line {
 	if p1[1] == p2[1] {

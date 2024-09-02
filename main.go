@@ -67,18 +67,13 @@ func isInsideOfOtherPolyogn(base, polyToTest []glm.Vec2) bool {
 
 func glyfToPolygon(points []turingfontparser.GlyfPoints, mesh *closedGL.PixelMesh) []glm.Vec2 {
 
-	/* 	for i, x := range points {
-		if i%3 == 0 {
-			println("--------")
-		}
-		closedGL.PrintlnVec2(x.Pos)
-		println(x.EndPoint, ",", x.OnCurve)
-	} */
 	var contours = [][]turingfontparser.GlyfPoints{}
 	var single = []turingfontparser.GlyfPoints{}
 	for _, x := range points {
 		var a = x
 		a.Pos = closedGL.CartesianToSS(a.Pos, 800)
+		a.Pos[0] = math.Floor(a.Pos[0])
+		a.Pos[1] = math.Floor(a.Pos[1])
 		single = append(single, a)
 
 		if x.EndPoint {
@@ -87,6 +82,7 @@ func glyfToPolygon(points []turingfontparser.GlyfPoints, mesh *closedGL.PixelMes
 		}
 
 	}
+
 	var outer = extractPolyFromContour(contours[0])
 	var outerContours = [][]glm.Vec2{}
 	var innerContours = [][]glm.Vec2{}
@@ -105,7 +101,6 @@ func glyfToPolygon(points []turingfontparser.GlyfPoints, mesh *closedGL.PixelMes
 
 	println("len inner", len(innerContours))
 	for _, x := range innerContours {
-
 		var rightMost = findRightmostPoint(x)
 		var baseLine = closedGL.CalculateLine(glm.Vec2{0, rightMost[1]}, rightMost)
 
@@ -120,16 +115,6 @@ func glyfToPolygon(points []turingfontparser.GlyfPoints, mesh *closedGL.PixelMes
 			var cp, succ = baseLine.GetIntersection(line)
 			if succ {
 				if line.IsOnLine(cp) {
-
-					println("SUCCESSs")
-					closedGL.PrintlnVec2(cp)
-					println("a")
-					println("linePoints")
-					closedGL.PrintlnVec2(p1)
-					closedGL.PrintlnVec2(p2)
-					println("cp")
-					closedGL.PrintlnVec2(cp)
-
 					var metVertex = p1[1] == rightMost[1] || p2[1] == rightMost[1]
 					println("met vertex", metVertex)
 					if !metVertex {
@@ -147,14 +132,16 @@ func glyfToPolygon(points []turingfontparser.GlyfPoints, mesh *closedGL.PixelMes
 						//new doppelt als Endpunkt für geschnittenen
 						var firstKantenzug = []glm.Vec2{p1, new, new, rightMost}
 						outer = closedGL.InsertArrAt(outer, firstKantenzug, idx+1)
+
 						var innerIdx = closedGL.FindIdx(x, rightMost)
 						var newInner = []glm.Vec2{}
-						for j := innerIdx; j < len(x); j++ {
+						for j := innerIdx + 1; j < len(x); j++ {
 							newInner = append(newInner, x[j])
 						}
 						for j := 0; j < innerIdx; j++ {
 							newInner = append(newInner, x[j])
 						}
+						newInner = append(newInner, newInner[0])
 						newInner = append(newInner, rightMost, new, new, p2)
 						outer = closedGL.InsertArrAt(outer, newInner, idx+5)
 					} else {
@@ -165,8 +152,41 @@ func glyfToPolygon(points []turingfontparser.GlyfPoints, mesh *closedGL.PixelMes
 			}
 		}
 	}
+	for _, x := range outer {
+		mesh.AddPixel(x, glm.Vec4{1, 0, 0, 1})
+	}
 	return outer
 
+}
+
+// ausgelegt für SS-Polys,mit Kantenzügen
+func getInterSectionPointsInPolygon2(p glm.Vec2, points []glm.Vec2) ([]glm.Vec2, bool) {
+	var ray = closedGL.CalculateLine(glm.Vec2{0, p[1]}, p)
+	_ = ray
+	var retMap = map[glm.Vec2]glm.Vec2{}
+	for i := 0; i < len(points); i += 2 {
+		var p1 = points[i]
+		var p2 = points[i+1]
+
+		var line = closedGL.CalculateLine(p1, p2)
+		var cp, _ = line.GetIntersection(ray)
+		if line.IsOnLine(cp) {
+			retMap[cp] = cp
+		}
+	}
+	var ret = []glm.Vec2{}
+	for _, x := range retMap {
+		ret = append(ret, x)
+	}
+	return ret, false
+}
+
+func isPointInPolygon(p glm.Vec2, points []glm.Vec2) bool {
+	var intersections, isOnOutline = getInterSectionPointsInPolygon2(p, points)
+	if p[1] == 240 {
+		println("ss", isOnOutline)
+	}
+	return len(intersections)%2 == 1 || isOnOutline
 }
 
 // ausgelegt für SS-Polys,mit Kantenzügen
@@ -239,83 +259,82 @@ func findInteriorAngle(p glm.Vec2, poly []glm.Vec2, mesh *closedGL.PixelMesh) (f
 	return angle, isInner
 }
 
-func triangulatePolygon(points []glm.Vec2, mesh *closedGL.PixelMesh, breakAt int, print bool) [][3]glm.Vec2 {
-	var base = points
-	_ = base
-	var i = 1
+func convertPolyToDirectedPath(poly []glm.Vec2) [][2]glm.Vec2 {
+	var ret = [][2]glm.Vec2{}
+	for i := 0; i < len(poly); i += 2 {
+		ret = append(ret, [2]glm.Vec2{poly[i], poly[i+1]})
+	}
+	return ret
+}
+func triangulatePolygon(poly []glm.Vec2) [][3]glm.Vec2 {
 	var ret = [][3]glm.Vec2{}
 
-	for len(points) > 3 {
-		println("aa")
-		var length = len(points)
-		var p0 = points[(i-1)%length]
-		var tip = points[i%length]
-		var p1 = points[(i+1)%length]
+	var path = convertPolyToDirectedPath(poly)
+	var i = -1
+	var amountFound = 0
+	//nur noch 4 Vertexe
+	for len(path) >= 4 {
+		i++
+		var length = len(path)
+		var firstPath = path[i%length]
+		var secondPath = path[(i+1)%length]
+		var p0 = firstPath[0]
+		var tip = firstPath[1]
+		var p1 = secondPath[1]
+		println("p0-tip-p1")
+		closedGL.PrintlnVec2(p0)
+		closedGL.PrintlnVec2(tip)
+		closedGL.PrintlnVec2(p1)
 
-		var inTri = false
+		/* 		println("p0-tip-p1")
+		   		closedGL.PrintlnVec2(p0)
+		   		closedGL.PrintlnVec2(tip)
+		   		closedGL.PrintlnVec2(p1) */
+		//var line = closedGL.CalculateLine(p0, p1)
 
-		var dx = p1[0] - p0[0]
-		var steps = 10
-		var stepX = math.Floor(dx / float32(steps))
-		var eq = closedGL.CalcLinearEquation(p0, p1)
-		var inPoly = false
-
-		for j := 1; j < steps-2; j++ {
-			var newX = p0[0] + float32(j)*stepX
-			var newP = closedGL.EvalLinEq(eq, newX)
-			if pointInPolygon(newP, points) || p0[0] == p1[0] || newP[0] == p0[0] {
-				if len(ret)+1 == breakAt {
-
-					if print {
-						println("step I", i, j, "newP")
-						closedGL.PrintlnVec2(newP)
-						println("tip")
-						closedGL.PrintlnVec2(tip)
-						println("p0")
-						closedGL.PrintlnVec2(p0)
-						println("p1")
-						closedGL.PrintlnVec2(p1)
-					}
-					mesh.AddPixel(newP, glm.Vec4{0, 1, 0, 1})
+		//check if other Vertex is in tri
+		var isInTri = false
+		for _, x := range path {
+			for _, v := range x {
+				if v.Equal(&p0) || v.Equal(&tip) || v.Equal(&p1) {
+					continue
 				}
-
-				inPoly = true
-
-				break
+				if closedGL.PointInTriangle(v, p0, tip, p1) {
+					isInTri = true
+					break
+				}
 			}
 		}
-		if !inPoly {
-			i++
+		if isInTri {
 			continue
 		}
-		for j, x := range points {
-			if j != i && j != (i-1)%length && j != (i+1)%length {
-				if closedGL.PointInTriangle(x, p0, tip, p1) {
-					inTri = true
-				}
-			}
-		}
-		if !inTri {
-			ret = append(ret, [3]glm.Vec2{p0, tip, p1})
-			points = closedGL.Remove(points, tip)
-			if len(ret) == 1 {
 
-				mesh.AddPixel(tip, glm.Vec4{0.5, 0.5, 1, 1})
-
-				for _, x := range points {
-					mesh.AddPixel(x, glm.Vec4{1, 0, 0, 1})
-				}
-				mesh.AddPixel(p0, glm.Vec4{0, 1, 1, 1})
-				mesh.AddPixel(p1, glm.Vec4{0, 1, 1, 1})
+		//check if line is in polygon
+		var isInPoly = false
+		var line = closedGL.CalculateLine(p0, p1)
+		//	println("sample points")
+		var samplePoints = line.SamplePointsOnLine(10)
+		for _, x := range samplePoints {
+			if isPointInPolygon(x, poly) {
+				closedGL.PrintlnVec2(x)
+				isInPoly = true
 				break
 			}
-			i = 0
 		}
-		i++
+		if !isInPoly {
+			continue
+		}
+
+		amountFound++
+		ret = append(ret, [3]glm.Vec2{p0, tip, p1})
+		path = closedGL.Remove(path, firstPath)
+		poly = closedGL.Remove(poly, tip)
+		length--
+		path[i%length] = [2]glm.Vec2{p0, p1}
+
+		i = 0
 	}
-
-	ret = append(ret, [3]glm.Vec2{points[0], points[1], points[2]})
-
+	ret = append(ret, [3]glm.Vec2{path[0][0], path[0][1], path[1][1]})
 	return ret
 }
 
@@ -349,13 +368,24 @@ func glyfToPoints(pointsGlyf []turingfontparser.GlyfPoints, poly []glm.Vec2, lin
 	}
 }
 
+func pixelFillPoly(poly []glm.Vec2, mesh *closedGL.PixelMesh) {
+	for i := 0; i < 800; i++ {
+		for j := 0; j < 800; j++ {
+			var p = glm.Vec2{float32(j), float32(i)}
+			if isPointInPolygon(p, poly) {
+				mesh.AddPixel(p, glm.Vec4{1, 1, 1, 1})
+			}
+		}
+	}
+}
+
 func StartTTF() {
 	var opengl = closedGL.InitClosedGL(800, 800, "comic")
-	opengl.LimitFPS(false)
+	opengl.LimitFPS(true)
 	var p = turingfontparser.NewTuringFont("./assets/font/jetbrains_mono_medium.ttf", &opengl)
 	var points = []turingfontparser.GlyfPoints{}
 	var offset float32 = 0
-	for _, x := range "f" {
+	for _, x := range "a" {
 		_ = x
 		var newPoints = p.ParseGlyf(uint32(x), 1).AddXOffset(offset)
 		var biggestX float32 = offset
@@ -393,9 +423,30 @@ func StartTTF() {
 
 	/* testLines()
 	isOnLineTest() */
-	var test = triangulatePolygon(poly, &debugMesh, 1, false)
-	_ = test
+	/* 	var test = triangulatePolygon(poly)
+	   	for _, x := range test {
+	   		/* closedGL.PrintlnVec2(x[0])
+	   		closedGL.PrintlnVec2(x[1])
+	   		closedGL.PrintlnVec2(x[2])
+	   		println("--")
+	   		tri.AddTri(x, [3]glm.Vec2{{1, 1}, {1, 1}, {1, 1}}, 1)
+	   	} */
+	tri.Copy()
 	debugMesh.Copy()
+	var pixelFillMesh = opengl.CreatePixelMesh()
+	pixelFillPoly(poly, &pixelFillMesh)
+	pixelFillMesh.SetPixelSize(1)
+	pixelFillMesh.Copy()
+
+	printlnPoints(poly)
+
+	var poi = glm.Vec2{423, 325}
+	println("isInPoly", isPointInPolygon(poi, poly))
+	var ps, _ = getInterSectionPointsInPolygon2(poi, poly)
+	println("len", len(ps))
+	for _, x := range ps {
+		closedGL.PrintlnVec2(x)
+	}
 	for !opengl.WindowShouldClose() {
 		if opengl.IsKeyPressed(glfw.KeyL) {
 			closedGL.PrintlnVec2(opengl.GetMousePos())
@@ -420,20 +471,21 @@ func StartTTF() {
 			closedGL.PrintlnVec2(opengl.GetMousePos())
 		}
 
-		polyMesh.Clear()
+		debugMesh.Clear()
+		for _, x := range poly {
+			debugMesh.AddPixel(x, glm.Vec4{1, 0, 0, 1})
+		}
+		var p, onOut = getInterSectionPointsInPolygon2(opengl.GetMousePos(), poly)
 		if print {
-			println(".....")
+			closedGL.PrintlnVec2(opengl.GetMousePos())
+			println(onOut)
+			printlnPoints(p)
 		}
-		for i, x := range poly {
-			if i < amountPixel {
-				if print {
-					closedGL.PrintlnVec2(x)
-					println("---")
-
-				}
-				polyMesh.AddPixel(x, glm.Vec4{1, 1, 1, 1})
-			}
+		for _, x := range p {
+			debugMesh.AddPixel(x, glm.Vec4{1, 1, 0, 1})
 		}
+		debugMesh.Copy()
+		polyMesh.Clear()
 		polyMesh.Copy()
 
 		closedGL.SetWireFrameMode(!opengl.IsKeyDown(glfw.KeyF))
@@ -442,6 +494,9 @@ func StartTTF() {
 		tri.Draw()
 		polyMesh.Draw()
 		lines.Draw()
+		pixelFillMesh.Draw()
+		debugMesh.Draw()
+
 		opengl.DrawFPS(600, 0, 1)
 		opengl.EndDrawing()
 	}
