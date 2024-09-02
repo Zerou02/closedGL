@@ -2,7 +2,6 @@ package main
 
 import (
 	_ "image/png"
-	"strconv"
 
 	"github.com/EngoEngine/glm"
 	"github.com/EngoEngine/math"
@@ -159,8 +158,30 @@ func glyfToPolygon(points []turingfontparser.GlyfPoints, mesh *closedGL.PixelMes
 
 }
 
+func isVertexOfPolygon(p glm.Vec2, points []glm.Vec2) bool {
+	for _, x := range points {
+		if x.Equal(&p) {
+			return true
+		}
+	}
+	return false
+}
+
+func isOnVertexLineOfPolygon(p glm.Vec2, points []glm.Vec2) bool {
+	for _, x := range points {
+		if x[1] == p[1] {
+			return true
+		}
+	}
+	return false
+}
+
 // ausgelegt für SS-Polys,mit Kantenzügen
 func getInterSectionPointsInPolygon2(p glm.Vec2, points []glm.Vec2) ([]glm.Vec2, bool) {
+	if isOnVertexLineOfPolygon(p, points) {
+		return getInterSectionPointsInPolygon2(glm.Vec2{p[0], p[1] - 1}, points)
+	}
+
 	var ray = closedGL.CalculateLine(glm.Vec2{0, p[1]}, p)
 	_ = ray
 	var retMap = map[glm.Vec2]glm.Vec2{}
@@ -170,7 +191,7 @@ func getInterSectionPointsInPolygon2(p glm.Vec2, points []glm.Vec2) ([]glm.Vec2,
 
 		var line = closedGL.CalculateLine(p1, p2)
 		var cp, _ = line.GetIntersection(ray)
-		if line.IsOnLine(cp) {
+		if line.IsOnLine(cp) && cp[0] < p[0] {
 			retMap[cp] = cp
 		}
 	}
@@ -183,9 +204,6 @@ func getInterSectionPointsInPolygon2(p glm.Vec2, points []glm.Vec2) ([]glm.Vec2,
 
 func isPointInPolygon(p glm.Vec2, points []glm.Vec2) bool {
 	var intersections, isOnOutline = getInterSectionPointsInPolygon2(p, points)
-	if p[1] == 240 {
-		println("ss", isOnOutline)
-	}
 	return len(intersections)%2 == 1 || isOnOutline
 }
 
@@ -381,10 +399,12 @@ func pixelFillPoly(poly []glm.Vec2, mesh *closedGL.PixelMesh) {
 
 func StartTTF() {
 	var opengl = closedGL.InitClosedGL(800, 800, "comic")
+
 	opengl.LimitFPS(true)
 	var p = turingfontparser.NewTuringFont("./assets/font/jetbrains_mono_medium.ttf", &opengl)
 	var points = []turingfontparser.GlyfPoints{}
 	var offset float32 = 0
+	//input
 	for _, x := range "a" {
 		_ = x
 		var newPoints = p.ParseGlyf(uint32(x), 1).AddXOffset(offset)
@@ -399,12 +419,14 @@ func StartTTF() {
 		offset += (biggestX - offset)
 		points = append(points, newPoints...)
 	}
+
 	var lines = opengl.CreateLineMesh()
 
 	var leaveMesh = opengl.CreatePixelMesh()
 	var debugMesh = opengl.CreatePixelMesh()
 
 	var poly = glyfToPolygon(points, &debugMesh)
+	_ = poly
 
 	var tri = opengl.CreateTriMesh()
 	var polyMesh = opengl.CreatePixelMesh()
@@ -412,25 +434,15 @@ func StartTTF() {
 
 	lines.Copy()
 	tri.Copy()
-	polyMesh.SetPixelSize(10)
+	polyMesh.SetPixelSize(3)
 
-	debugMesh.SetPixelSize(10)
-	leaveMesh.SetPixelSize(10)
+	debugMesh.SetPixelSize(3)
+	leaveMesh.SetPixelSize(1)
 
 	var breakAt = 1
 	var print = false
 	var amountPixel = 1
 
-	/* testLines()
-	isOnLineTest() */
-	/* 	var test = triangulatePolygon(poly)
-	   	for _, x := range test {
-	   		/* closedGL.PrintlnVec2(x[0])
-	   		closedGL.PrintlnVec2(x[1])
-	   		closedGL.PrintlnVec2(x[2])
-	   		println("--")
-	   		tri.AddTri(x, [3]glm.Vec2{{1, 1}, {1, 1}, {1, 1}}, 1)
-	   	} */
 	tri.Copy()
 	debugMesh.Copy()
 	var pixelFillMesh = opengl.CreatePixelMesh()
@@ -438,16 +450,9 @@ func StartTTF() {
 	pixelFillMesh.SetPixelSize(1)
 	pixelFillMesh.Copy()
 
-	printlnPoints(poly)
-
-	var poi = glm.Vec2{423, 325}
-	println("isInPoly", isPointInPolygon(poi, poly))
-	var ps, _ = getInterSectionPointsInPolygon2(poi, poly)
-	println("len", len(ps))
-	for _, x := range ps {
-		closedGL.PrintlnVec2(x)
-	}
 	for !opengl.WindowShouldClose() {
+		opengl.BeginDrawing()
+
 		if opengl.IsKeyPressed(glfw.KeyL) {
 			closedGL.PrintlnVec2(opengl.GetMousePos())
 		}
@@ -475,21 +480,11 @@ func StartTTF() {
 		for _, x := range poly {
 			debugMesh.AddPixel(x, glm.Vec4{1, 0, 0, 1})
 		}
-		var p, onOut = getInterSectionPointsInPolygon2(opengl.GetMousePos(), poly)
-		if print {
-			closedGL.PrintlnVec2(opengl.GetMousePos())
-			println(onOut)
-			printlnPoints(p)
-		}
-		for _, x := range p {
-			debugMesh.AddPixel(x, glm.Vec4{1, 1, 0, 1})
-		}
 		debugMesh.Copy()
 		polyMesh.Clear()
 		polyMesh.Copy()
 
 		closedGL.SetWireFrameMode(!opengl.IsKeyDown(glfw.KeyF))
-		opengl.BeginDrawing()
 		opengl.ClearBG(glm.Vec4{0, 0, 0, 0})
 		tri.Draw()
 		polyMesh.Draw()
@@ -522,7 +517,7 @@ func StartTTF() {
 	}
 	openGL.Free()
 } */
-
+/*
 func StartClosedGL() {
 	var openGL = closedGL.InitClosedGL(800, 600, "demo")
 	openGL.LimitFPS(false)
@@ -540,7 +535,7 @@ func StartClosedGL() {
 		for j := 0; j < 10; j++ {
 			chunks = append(chunks, ynnebcraft.NewChunk(glm.Vec3{float32(i) * 32, 0, float32(j) * 32}, glm.Vec3{32, 32, 32}, &openGL, &mesher))
 		}
-	} */
+	}
 	openGL.Logger.Enabled = true
 
 	var pxTest = openGL.CreatePixelMesh()
@@ -581,7 +576,7 @@ func StartClosedGL() {
 
 		/* for i := 0; i < len(chunks); i++ {
 			chunks[i].Draw()
-		} */
+		}
 		//	lines.Draw()
 		pxTest.Draw()
 		//openGL.DrawRect(glm.Vec4{0, 0, 100, 100}, glm.Vec4{0, 1, 0, 1}, 1)
@@ -589,6 +584,7 @@ func StartClosedGL() {
 	}
 	openGL.Free()
 }
+*/
 
 func assert(val bool) {
 	if !val {

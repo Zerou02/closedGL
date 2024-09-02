@@ -56,8 +56,6 @@ func (this *Line) IsOnLine(p glm.Vec2) bool {
 	} else if this.LineType == "horizontal" {
 		var minX = math.Min(this.p1[0], this.p2[0])
 		var maxX = math.Max(this.p1[0], this.p2[0])
-		println("deb", minX, maxX)
-		PrintlnVec2(p)
 		return this.p1[1] == p[1] && minX <= p[0] && p[0] <= maxX
 	} else {
 		var xPoint, _ = this.EvalX(p[0])
