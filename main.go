@@ -92,6 +92,15 @@ func glyfToPolygon(points []turingfontparser.GlyfPoints, mesh *closedGL.PixelMes
 			if !y.OnCurve && isPointInPolygon(y.Pos, ret) && !closedGL.Contains(&foundOffPoints, y.Pos) {
 				var lastOnPoint = x[i-2].Pos
 				var nextOnPoint = x[i-1].Pos
+
+				//no straight lines
+				if lastOnPoint[0] == nextOnPoint[0] && nextOnPoint[0] == y.Pos[0] {
+					continue
+				}
+				if lastOnPoint[1] == nextOnPoint[1] && nextOnPoint[1] == y.Pos[1] {
+					continue
+				}
+				//Sonderfall beim kleinen b
 				if lastOnPoint.Equal(&y.Pos) {
 					continue
 				}
@@ -120,7 +129,6 @@ func glyfToPolygon(points []turingfontparser.GlyfPoints, mesh *closedGL.PixelMes
 		}
 	}
 	return ret
-
 }
 
 func isVertexOfPolygon(p glm.Vec2, points []glm.Vec2) bool {
@@ -231,7 +239,28 @@ func printlnPoly(poly []glm.Vec2) {
 	}
 }
 
-func findInteriorAnglesOfPoly(poly []glm.Vec2, dbMesh *closedGL.PixelMesh) {
+type VertexData struct {
+	p0, p1, tip   glm.Vec2
+	isConvex      bool
+	isEar         bool
+	interiorAngle float32
+}
+
+func findNeighboursInPoly(x glm.Vec2, poly []glm.Vec2) [2]glm.Vec2 {
+	var idx = closedGL.FindIdx(poly, x)
+	var prev glm.Vec2
+	if idx == 0 {
+		prev = poly[len(poly)-2]
+	} else {
+		println("DIX", idx)
+		prev = poly[idx-1]
+	}
+	var next = poly[idx+2]
+	return [2]glm.Vec2{prev, next}
+}
+
+func getAngleData(poly []glm.Vec2) map[glm.Vec2]VertexData {
+	var retMap = map[glm.Vec2]VertexData{}
 	for i := 1; i < len(poly); i += 2 {
 		var tip = poly[i]
 		var p0 = poly[i-1]
@@ -243,23 +272,21 @@ func findInteriorAnglesOfPoly(poly []glm.Vec2, dbMesh *closedGL.PixelMesh) {
 		tip = closedGL.SsToCartesian(tip, 800)
 		p0 = closedGL.SsToCartesian(p0, 800)
 		p1 = closedGL.SsToCartesian(p1, 800)
-		var line = closedGL.CalculateLine(tip, p0)
-		var line2 = closedGL.CalculateLine(tip, p1)
-
 		var vec1 = p0.Sub(&tip)
 		var vec2 = p1.Sub(&tip)
-
 		var positiveY = glm.Vec2{0, 1}
 		var nVec1 = vec1.Normalized()
 		var nVec2 = vec2.Normalized()
-
 		var rotAngle = closedGL.AngleTo(positiveY, nVec1)
 		var rot1 = closedGL.Rotate(rotAngle, nVec1)
 		var rot2 = closedGL.Rotate(rotAngle, nVec2)
-
 		if math.Abs(rot1[0]) > 0.1 {
+			closedGL.PrintlnVec2(p0)
+			closedGL.PrintlnVec2(tip)
+			closedGL.PrintlnVec2(p1)
+			println("--")
 			closedGL.PrintlnVec2(rot1)
-			panic("hm")
+			//		panic("hm")
 		}
 		if rot1[1] > 0 {
 			rot1[1] *= -1
@@ -269,28 +296,114 @@ func findInteriorAnglesOfPoly(poly []glm.Vec2, dbMesh *closedGL.PixelMesh) {
 		var rightTurn = rot2[0] > glm.Epsilon
 
 		var angle = closedGL.AngleTo(vec1, vec2)
-		var p = line.LerpPointOnLine(0.1)
-		var p2 = line2.LerpPointOnLine(0.1)
-		var rotated = closedGL.RotateAroundPoint(angle*0.5, p2, tip)
-		_, _ = p, p2
-		var angleIsInsideAngle = false
-		_ = angleIsInsideAngle
-		rotated = closedGL.CartesianToSS(rotated, 800)
-		var isInside = isPointInPolygon(rotated, poly)
-		//	var p2 = line2.LerpPointOnLine(0.1)
-		//		dbMesh.AddPixel(p2, glm.Vec4{0, 1, 0.5, 1})
-		//		dbMesh.AddPixel(rotated, glm.Vec4{0.5, 0.71, 1, 1})
+		var convex = rightTurn
+		if !rightTurn {
+			angle = 2*math.Pi - angle
+		}
 
-		dbMesh.AddPixel(closedGL.CartesianToSS(tip, 800), glm.Vec4{1, 0, 0, 1})
-		dbMesh.AddPixel(rotated, glm.Vec4{0, 0, 1, 1})
-		_, _ = angle, isInside
+		tip = closedGL.CartesianToSS(tip, 800)
+		p0 = closedGL.CartesianToSS(p0, 800)
+		p1 = closedGL.CartesianToSS(p1, 800)
 
-		if rightTurn {
-			dbMesh.AddPixel(closedGL.CartesianToSS(tip, 800), glm.Vec4{0, 1, 0, 1})
-
+		retMap[tip] = VertexData{
+			p0:            p0,
+			p1:            p1,
+			tip:           tip,
+			isConvex:      convex,
+			isEar:         true,
+			interiorAngle: angle,
 		}
 	}
+	for k, x := range retMap {
+		var data = x
+		for _, p := range poly {
+			if p.Equal(&data.p0) || p.Equal(&data.p1) || p.Equal(&data.tip) {
+				continue
+			}
+			if closedGL.PointInTriangle(p, data.p0, data.tip, data.p1) {
+				data.isEar = false
+				println("Aa")
+				break
+				if !retMap[p].isConvex {
+				}
+			}
+		}
+		retMap[k] = data
+	}
 
+	return retMap
+}
+
+func removeVertexFromPoly(x glm.Vec2, poly []glm.Vec2) []glm.Vec2 {
+	var idx = closedGL.FindIdx(poly, x)
+	if idx == 0 {
+		println("???")
+		//???
+		poly = closedGL.RemoveAt(poly, 0)
+		poly = closedGL.RemoveAt(poly, 0)
+		poly[len(poly)-1] = poly[0]
+	} else {
+		poly = closedGL.Remove(poly, x)
+		poly = closedGL.Remove(poly, x)
+	}
+	return poly
+}
+
+func hasDoubleVertex(poly []glm.Vec2) bool {
+	var countMap = map[glm.Vec2]int{}
+	for _, x := range poly {
+		countMap[x] += 1
+	}
+	for _, x := range countMap {
+		if x >= 3 {
+			return true
+		}
+	}
+	return false
+}
+
+func triangulatePoly(poly []glm.Vec2, mesh *closedGL.TriangleMesh, pMesh *closedGL.PixelMesh) {
+	println("double?", hasDoubleVertex(poly))
+	var found = 0
+	for len(poly) >= 7 {
+
+		var data = getAngleData(poly)
+		var smallestTip glm.Vec2
+		var smallestAngle float32 = 2 * math.Pi
+		var foundEarTips = []glm.Vec2{}
+
+		for k, x := range data {
+			println(x.isEar)
+			if x.interiorAngle < smallestAngle {
+				if x.isEar {
+					smallestAngle = x.interiorAngle
+					smallestTip = k
+				}
+			}
+		}
+		var zeroVec = glm.Vec2{0, 0}
+		if smallestTip == zeroVec {
+			printlnPoly(poly)
+			println("HMM")
+			break
+		}
+		found++
+		if found == 3 {
+			println("tip")
+			closedGL.PrintlnVec2(smallestTip)
+			for _, x := range poly {
+				pMesh.AddPixel(x, glm.Vec4{0, 1, 0, 1})
+			}
+			break
+		}
+		var neighbours = findNeighboursInPoly(smallestTip, poly)
+		mesh.AddTri([3]glm.Vec2{neighbours[0], neighbours[1], smallestTip}, [3]glm.Vec2{{1, 1}, {1, 1}, {1, 1}}, 1)
+		foundEarTips = append(foundEarTips, smallestTip)
+		poly = removeVertexFromPoly(smallestTip, poly)
+		println("clipped")
+		printlnPoly(poly)
+	}
+	mesh.AddTri([3]glm.Vec2{poly[0], poly[1], poly[3]}, [3]glm.Vec2{{1, 1}, {1, 1}, {1, 1}}, 1)
 }
 
 func StartTTF() {
@@ -329,7 +442,6 @@ func StartTTF() {
 	glyfToPoints(points, poly, &lines, &tri)
 
 	lines.Copy()
-	tri.Copy()
 	polyMesh.SetPixelSize(1)
 
 	debugMesh.SetPixelSize(5)
@@ -337,7 +449,8 @@ func StartTTF() {
 	for _, x := range poly {
 		debugMesh.AddPixel(x, glm.Vec4{1, 0, 0, 1})
 	}
-	findInteriorAnglesOfPoly(poly, &debugMesh)
+	triangulatePoly(poly, &tri, &debugMesh)
+	tri.Copy()
 
 	var breakAt = 1
 	var print = false
@@ -376,15 +489,11 @@ func StartTTF() {
 			closedGL.PrintlnVec2(opengl.GetMousePos())
 		}
 
-		polyMesh.Clear()
-		polyMesh.Copy()
-
 		closedGL.SetWireFrameMode(!opengl.IsKeyDown(glfw.KeyF))
 		opengl.ClearBG(glm.Vec4{0, 0, 0, 0})
 		tri.Draw()
-		polyMesh.Draw()
 		lines.Draw()
-		pixelFillMesh.Draw()
+		//pixelFillMesh.Draw()
 		debugMesh.Draw()
 
 		opengl.DrawFPS(600, 0, 1)
