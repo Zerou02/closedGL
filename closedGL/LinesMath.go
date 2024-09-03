@@ -58,13 +58,11 @@ func (this *Line) IsOnLine(p glm.Vec2) bool {
 		var maxX = math.Max(this.p1[0], this.p2[0])
 		return this.p1[1] == p[1] && minX <= p[0] && p[0] <= maxX
 	} else {
-		var xPoint, _ = this.EvalX(p[0])
-		var dist = xPoint.Sub(&p)
 		var minX = math.Min(this.p1[0], this.p2[0])
 		var maxX = math.Max(this.p1[0], this.p2[0])
 		var minY = math.Min(this.p1[1], this.p2[1])
 		var maxY = math.Max(this.p1[1], this.p2[1])
-		return dist.Len() < 1 && IsPointInRect(p, glm.Vec4{minX, minY, maxX - minX, maxY - minY})
+		return IsPointInRect(p, glm.Vec4{minX, minY, maxX - minX, maxY - minY})
 	}
 }
 
