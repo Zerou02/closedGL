@@ -110,6 +110,10 @@ func (this *Line) SamplePointsOnLine(amount float32) []glm.Vec2 {
 	return ret
 }
 
+func (this *Line) LerpPointOnLine(t float32) glm.Vec2 {
+	return LerpVec2(this.p1, this.p2, t)
+}
+
 // m,n
 func CalculateLine(p1, p2 glm.Vec2) Line {
 	if p1[1] == p2[1] {

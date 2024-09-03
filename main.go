@@ -222,6 +222,77 @@ func pixelFillPoly(poly []glm.Vec2, mesh *closedGL.PixelMesh) {
 	}
 }
 
+func printlnPoly(poly []glm.Vec2) {
+	for i := 0; i < len(poly); i++ {
+		closedGL.PrintlnVec2(poly[i])
+		if i%2 == 1 {
+			println("----", i)
+		}
+	}
+}
+
+func findInteriorAnglesOfPoly(poly []glm.Vec2, dbMesh *closedGL.PixelMesh) {
+	for i := 1; i < len(poly); i += 2 {
+		var tip = poly[i]
+		var p0 = poly[i-1]
+		var p1 = poly[1]
+		//nur am Ende anders
+		if i != len(poly)-1 {
+			p1 = poly[i+2]
+		}
+		tip = closedGL.SsToCartesian(tip, 800)
+		p0 = closedGL.SsToCartesian(p0, 800)
+		p1 = closedGL.SsToCartesian(p1, 800)
+		var line = closedGL.CalculateLine(tip, p0)
+		var line2 = closedGL.CalculateLine(tip, p1)
+
+		var vec1 = p0.Sub(&tip)
+		var vec2 = p1.Sub(&tip)
+
+		var positiveY = glm.Vec2{0, 1}
+		var nVec1 = vec1.Normalized()
+		var nVec2 = vec2.Normalized()
+
+		var rotAngle = closedGL.AngleTo(positiveY, nVec1)
+		var rot1 = closedGL.Rotate(rotAngle, nVec1)
+		var rot2 = closedGL.Rotate(rotAngle, nVec2)
+
+		if math.Abs(rot1[0]) > 0.1 {
+			closedGL.PrintlnVec2(rot1)
+			panic("hm")
+		}
+		if rot1[1] > 0 {
+			rot1[1] *= -1
+			rot2[0] *= -1
+			rot2[1] *= -1
+		}
+		var rightTurn = rot2[0] > glm.Epsilon
+
+		var angle = closedGL.AngleTo(vec1, vec2)
+		var p = line.LerpPointOnLine(0.1)
+		var p2 = line2.LerpPointOnLine(0.1)
+		var rotated = closedGL.RotateAroundPoint(angle*0.5, p2, tip)
+		_, _ = p, p2
+		var angleIsInsideAngle = false
+		_ = angleIsInsideAngle
+		rotated = closedGL.CartesianToSS(rotated, 800)
+		var isInside = isPointInPolygon(rotated, poly)
+		//	var p2 = line2.LerpPointOnLine(0.1)
+		//		dbMesh.AddPixel(p2, glm.Vec4{0, 1, 0.5, 1})
+		//		dbMesh.AddPixel(rotated, glm.Vec4{0.5, 0.71, 1, 1})
+
+		dbMesh.AddPixel(closedGL.CartesianToSS(tip, 800), glm.Vec4{1, 0, 0, 1})
+		dbMesh.AddPixel(rotated, glm.Vec4{0, 0, 1, 1})
+		_, _ = angle, isInside
+
+		if rightTurn {
+			dbMesh.AddPixel(closedGL.CartesianToSS(tip, 800), glm.Vec4{0, 1, 0, 1})
+
+		}
+	}
+
+}
+
 func StartTTF() {
 	var opengl = closedGL.InitClosedGL(800, 800, "comic")
 
@@ -230,7 +301,7 @@ func StartTTF() {
 	var points = []turingfontparser.GlyfPoints{}
 	var offset float32 = 0
 	//input
-	for _, x := range "a" {
+	for _, x := range "I" {
 		_ = x
 		var newPoints = p.ParseGlyf(uint32(x), 1).AddXOffset(offset)
 		var biggestX float32 = offset
@@ -261,8 +332,12 @@ func StartTTF() {
 	tri.Copy()
 	polyMesh.SetPixelSize(1)
 
-	debugMesh.SetPixelSize(3)
+	debugMesh.SetPixelSize(5)
 	leaveMesh.SetPixelSize(1)
+	for _, x := range poly {
+		debugMesh.AddPixel(x, glm.Vec4{1, 0, 0, 1})
+	}
+	findInteriorAnglesOfPoly(poly, &debugMesh)
 
 	var breakAt = 1
 	var print = false
@@ -301,11 +376,6 @@ func StartTTF() {
 			closedGL.PrintlnVec2(opengl.GetMousePos())
 		}
 
-		debugMesh.Clear()
-		for _, x := range poly {
-			debugMesh.AddPixel(x, glm.Vec4{1, 0, 0, 1})
-		}
-		debugMesh.Copy()
 		polyMesh.Clear()
 		polyMesh.Copy()
 
