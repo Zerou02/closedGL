@@ -58,6 +58,8 @@ func (this *Line) IsOnLine(p glm.Vec2) bool {
 		var maxX = math.Max(this.p1[0], this.p2[0])
 		return this.p1[1] == p[1] && minX <= p[0] && p[0] <= maxX
 	} else {
+		var y, _ = this.EvalX(p[0])
+		_ = y
 		var minX = math.Min(this.p1[0], this.p2[0])
 		var maxX = math.Max(this.p1[0], this.p2[0])
 		var minY = math.Min(this.p1[1], this.p2[1])

@@ -54,6 +54,7 @@ type ClosedGLContext struct {
 	mouseLastFramePressed      bool
 	mouseRightThisFramePressed bool
 	mouseRightLastFramePressed bool
+	drawWireframe              bool
 }
 
 func InitClosedGL(pWidth, pHeight float32, name string) ClosedGLContext {
@@ -152,12 +153,17 @@ func (this *ClosedGLContext) ClearBG(clearColour glm.Vec4) {
 	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 }
 
-func SetWireFrameMode(val bool) {
+func (this *ClosedGLContext) SetWireFrameMode(val bool) {
+	this.drawWireframe = val
 	if val {
-		gl.PolygonMode(gl.FRONT_AND_BACK, gl.FILL)
-	} else {
 		gl.PolygonMode(gl.FRONT_AND_BACK, gl.LINE)
+	} else {
+		gl.PolygonMode(gl.FRONT_AND_BACK, gl.FILL)
 	}
+}
+
+func (this *ClosedGLContext) GetWireFrameMode() bool {
+	return this.drawWireframe
 }
 
 func (this *ClosedGLContext) Process() {
