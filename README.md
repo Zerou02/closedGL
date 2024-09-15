@@ -6,7 +6,7 @@ Eine Open-GL basierte Schnittstelle für Go mit Fokus auf single-threaded-Perfor
 Wer braucht schon Vulkan für Performance? <br>
 Stark inspiriert von Raylib, jedoch mit einfacher Unterstützung für Windoof-Systeme. <br>
 3D-Möglichkeiten vorhanden. <br>
-Benutzt eigenes Bitmap-Format. Software zur Erstellung im Repo enthalten <br>
+Vektorgrafiken evtl. funktionsfähig <br>
 Beispielprojekte in Entwicklung <br>
 
 Momentan viel Umstrukturierung, deswegen nur Dreiecke,Kreise,Rechtecke. <br>
