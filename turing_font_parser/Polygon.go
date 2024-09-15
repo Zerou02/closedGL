@@ -360,8 +360,6 @@ func NewPolyFromContour(contour []GlyfPoints) Polygon {
 	var p = Polygon{
 		edges: duplicateTrain,
 	}
-	println("______________")
-	p.println()
 	return p
 
 }
