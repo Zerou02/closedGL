@@ -28,8 +28,8 @@ func initShader(vertPath, fragPath string) Shader {
 
 	gl.AttachShader(shader.prog, vertS)
 	gl.AttachShader(shader.prog, fragS)
-	//	gl.DeleteShader(vertS)
-	//	gl.DeleteShader(fragS)
+	gl.DeleteShader(vertS)
+	gl.DeleteShader(fragS)
 	gl.LinkProgram(shader.prog)
 	var succ int32 = 0
 	gl.GetProgramiv(shader.prog, gl.LINK_STATUS, &succ)

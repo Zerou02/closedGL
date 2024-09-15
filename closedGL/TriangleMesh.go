@@ -72,7 +72,7 @@ func (this *TriangleMesh) AddTri(dim, uv [3]glm.Vec2, sign float32) {
 func (this *TriangleMesh) Draw() {
 	this.shader.use()
 	this.shader.setUniformMatrix4("projection", &this.projection)
-	//	this.shader.setUniformMatrix4("view", &this.view)
+	this.shader.setUniformMatrix4("view", &this.view)
 	gl.Disable(gl.DEPTH_TEST)
 	gl.Disable(gl.CULL_FACE)
 	gl.BindVertexArray(this.vao)

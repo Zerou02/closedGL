@@ -11,67 +11,34 @@ import (
 
 type fword int16
 
-type GlyfPoints struct {
-	Pos      glm.Vec2
-	OnCurve  bool
-	EndPoint bool
-}
 type Reader struct {
-	path           string
-	file           *os.File
-	entries        map[string]*DirEntry
-	offset         uint32
-	mappings       map[int]int
-	smallLocATable bool
-	nrGlyphs       uint16
-	loca           []uint32
-	ctx            *closedGL.ClosedGLContext
+	path              string
+	file              *os.File
+	entries           map[string]*DirEntry
+	offset            uint32
+	mappings          map[int]int
+	smallLocATable    bool
+	nrGlyphs          uint16
+	loca              []uint32
+	ctx               *closedGL.ClosedGLContext
+	nrHMetrics        uint16
+	horizMetrics      []LongHorizMetric
+	remainingBearings []int16
 }
 
-type Glyf interface {
-	GetPoints() []GlyfPoints
-	AddXOffset(x float32) []GlyfPoints
-}
-type SimpleGlyf struct {
-	header GlyfHeader
-	body   SimpleGlyfBody
-}
-type GlyfHeader struct {
-	nrContours int16
-	xMin       fword
-	yMin       fword
-	xMax       fword
-	yMax       fword
-}
-
-type CompoundBody struct {
-	flags      uint16
-	glyfIdx    uint16
-	arg1, arg2 int32
-	//todo: change to f16
-	a, b, c, d uint16
-}
-type CompoundGlyf struct {
-	header       GlyfHeader
-	compundDescr []CompoundBody
-	points       []GlyfPoints
-}
-
-type SimpleGlyfBody struct {
-	endOfContours     []uint16
-	instructionLength uint16
-	instructions      []uint8
-	flags             []uint8
-	Points            []GlyfPoints
+type LongHorizMetric struct {
+	advanceWidth uint16
+	lsb          int16 //left-side-bearing
 }
 
 func NewReader(path string, ctx *closedGL.ClosedGLContext) Reader {
 	return Reader{
-		path:    path,
-		entries: map[string]*DirEntry{},
-		offset:  0,
-		loca:    []uint32{},
-		ctx:     ctx,
+		path:         path,
+		entries:      map[string]*DirEntry{},
+		offset:       0,
+		loca:         []uint32{},
+		ctx:          ctx,
+		horizMetrics: []LongHorizMetric{},
 	}
 }
 
@@ -103,6 +70,8 @@ func (this *Reader) init() {
 	}
 	this.parseMaxP()
 	this.parseHead()
+	this.parseHhea()
+	this.parseHmtx()
 	this.parseCmap()
 	this.parseLocA()
 	this.seek(this.entries["glyf"].offset)
@@ -160,6 +129,7 @@ func (this *Reader) parseCmap() {
 	var format = this.readUint16()
 	if format == 12 {
 		this.parseFormat12()
+
 	} else if format == 4 {
 		this.parseFormat4()
 	} else {
@@ -184,8 +154,7 @@ func (this *Reader) parseFormat12() {
 		var count = -1
 		for j := startCode; j <= endCode; j++ {
 			count++
-			var glyphVal = startGlyphCode + uint32(count)
-			mappings[int(j)] = int(glyphVal)
+			mappings[int(j)] = int(startGlyphCode) + count
 		}
 
 	}
@@ -348,18 +317,18 @@ func (this *Reader) readGlyfHeader() GlyfHeader {
 	if nrContours != 0 {
 		return GlyfHeader{
 			nrContours: nrContours,
-			xMin:       fword(this.readInt16()),
-			yMin:       fword(this.readInt16()),
-			xMax:       fword(this.readInt16()),
-			yMax:       fword(this.readInt16()),
+			xMin:       float32(this.readInt16()),
+			yMin:       float32(this.readInt16()),
+			xMax:       float32(this.readInt16()),
+			yMax:       float32(this.readInt16()),
 		}
 	} else {
 		return GlyfHeader{
 			nrContours: nrContours,
-			xMin:       fword(this.readInt16()),
-			yMin:       fword(this.readInt16()),
-			xMax:       fword(this.readInt16()),
-			yMax:       fword(this.readInt16()),
+			xMin:       float32(this.readInt16()),
+			yMin:       float32(this.readInt16()),
+			xMax:       float32(this.readInt16()),
+			yMax:       float32(this.readInt16()),
 		}
 	}
 }
@@ -415,8 +384,7 @@ func (this *Reader) readSimpleGlyph(header GlyfHeader, scale float32) SimpleGlyf
 	body.Points = this.transformPoints2(body.Points, header.nrContours)
 
 	return SimpleGlyf{
-		header: header,
-		body:   body,
+		body: body,
 	}
 }
 
@@ -603,45 +571,51 @@ func (this *Reader) printGlyfBody(b SimpleGlyfBody) {
 
 func (this *Reader) readGlyf(unicodeVal uint32, scale float32) Glyf {
 	var entry = this.entries["glyf"]
-	this.seek(entry.offset + this.loca[this.mappings[int(unicodeVal)]])
-	var ret Glyf
-	var header = this.readGlyfHeader()
-	if header.nrContours > 0 {
-		ret = this.readSimpleGlyph(header, scale)
-	} else if header.nrContours < 0 {
-		var comp = this.readCompundGlyf(header)
-		var points = []GlyfPoints{}
+	var glyphId = this.mappings[int(unicodeVal)]
+	this.seek(entry.offset + this.loca[glyphId])
+	var ret = newGlyf()
+	ret.AdvanceWidth = float32(this.horizMetrics[glyphId].advanceWidth) * scale
+	ret.header = this.readGlyfHeader()
+	var isZeroLenGlyf = this.loca[glyphId-1] == this.loca[glyphId]
+	if isZeroLenGlyf {
+		return ret
+	}
+	ret.header.xMax *= (scale)
+	ret.header.yMax *= (scale)
+	ret.header.xMin *= (scale)
+	ret.header.yMin *= (scale)
+	if ret.header.nrContours > 0 {
+		ret.SimpleGlyfs = append(ret.SimpleGlyfs, this.readSimpleGlyph(ret.header, scale))
+	} else if ret.header.nrContours < 0 {
+		var comp = this.readCompundGlyf(ret.header)
 		for _, x := range comp.compundDescr {
-			println("x", x.glyfIdx)
 			var g = this.readGlyfIdx(uint32(x.glyfIdx), scale)
-			points = append(points, g.GetPoints()...)
+			if x.flags&0x02 == 0x02 {
+				g.AddOffset(glm.Vec2{float32(x.arg1) * scale, float32(x.arg2) * scale})
+			} else {
+				panic("Kind of flag not yet supported")
+			}
+			ret.SimpleGlyfs = append(ret.SimpleGlyfs, g)
 		}
-		comp.points = points
-		ret = comp
 	} else {
 		println("nr contours 0")
 	}
 	return ret
 }
 
-func (this *Reader) readGlyfIdx(idx uint32, scale float32) Glyf {
+func (this *Reader) readGlyfIdx(idx uint32, scale float32) SimpleGlyf {
 	var entry = this.entries["glyf"]
 	this.seek(entry.offset + this.loca[int(idx)])
 	var ret SimpleGlyf
-	var i = 0
 	var header = this.readGlyfHeader()
 	if header.nrContours > 0 {
 		ret = this.readSimpleGlyph(header, scale)
 	} else if header.nrContours < 0 {
-		var comp = this.readCompundGlyf(header)
-		println("compGlyfs")
-		for _, x := range comp.compundDescr {
-			println(x.glyfIdx)
-		}
+		//var comp = this.readCompundGlyf(header)
+		panic("nested comp glyf not yet supported")
 	} else {
-		//	panic("nr contours 0")
+		panic("nr contours 0")
 	}
-	i++
 	return ret
 }
 
@@ -765,68 +739,55 @@ func (this *Reader) parseLocA() {
 	}
 }
 
-func (this SimpleGlyf) GetPoints() []GlyfPoints {
-	return this.body.Points
-}
-
-func (this CompoundGlyf) AddXOffset(x float32) []GlyfPoints {
-	var vec = glm.Vec2{x, 0}
-	for i, x := range this.points {
-		this.points[i].Pos = x.Pos.Add(&vec)
+func (this *Reader) parseHhea() {
+	var entry = this.entries["hhea"]
+	if this.calcChecksum(entry) != entry.checksum {
+		panic("wrong checksum in hhea")
 	}
-	return this.points
+	this.seek(entry.offset)
+	this.readUint16()
+	this.readUint16()
+
+	this.readInt16()
+	this.readInt16()
+	this.readInt16()
+
+	this.readUint16()
+
+	this.readInt16()
+	this.readInt16()
+	this.readInt16()
+
+	this.readInt16()
+	this.readInt16()
+	this.readInt16()
+
+	this.readInt16()
+	this.readInt16()
+	this.readInt16()
+	this.readInt16()
+
+	this.readInt16()
+	this.nrHMetrics = this.readUint16()
 }
 
-func (this SimpleGlyf) AddXOffset(x float32) []GlyfPoints {
-	var vec = glm.Vec2{x, 0}
-	for i, x := range this.body.Points {
-		this.body.Points[i].Pos = x.Pos.Add(&vec)
+func (this *Reader) parseHmtx() {
+	var entry = this.entries["hmtx"]
+	if this.calcChecksum(entry) != entry.checksum {
+		panic("wrong checksum")
 	}
-	return this.body.Points
-}
+	this.seek(entry.offset)
+	this.horizMetrics = make([]LongHorizMetric, this.nrHMetrics)
+	this.remainingBearings = make([]int16, this.nrGlyphs-this.nrHMetrics)
 
-func (this CompoundGlyf) GetPoints() []GlyfPoints {
-	return this.points
-}
-
-type EmptyGlyf struct {
-	points []GlyfPoints
-}
-
-func newEmptyGlyf(scale float32) EmptyGlyf {
-	return EmptyGlyf{
-		[]GlyfPoints{
-			GlyfPoints{
-				OnCurve:  false,
-				EndPoint: true,
-				Pos:      glm.Vec2{70 * scale, 0},
-			},
-			GlyfPoints{
-				OnCurve:  false,
-				EndPoint: true,
-				Pos:      glm.Vec2{70 * scale, 0},
-			},
-			GlyfPoints{
-				OnCurve:  false,
-				EndPoint: true,
-				Pos:      glm.Vec2{70 * scale, 0},
-			},
-		},
+	for i := 0; i < int(this.nrHMetrics); i++ {
+		this.horizMetrics[i] = LongHorizMetric{
+			advanceWidth: this.readUint16(),
+			lsb:          this.readInt16(),
+		}
 	}
-}
-
-func (this EmptyGlyf) GetPoints() []GlyfPoints {
-	return this.points
-}
-
-func (this EmptyGlyf) AddXOffset(y float32) []GlyfPoints {
-	var points = []GlyfPoints{}
-	for _, x := range this.GetPoints() {
-		points = append(points, GlyfPoints{
-			Pos:      glm.Vec2{x.Pos[0] + y, 0},
-			OnCurve:  false,
-			EndPoint: true,
-		})
+	for i := 0; i < len(this.remainingBearings); i++ {
+		this.remainingBearings[i] = this.readInt16()
 	}
-	return points
+
 }

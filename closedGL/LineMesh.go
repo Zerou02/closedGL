@@ -39,13 +39,15 @@ func (this *LineMesh) Draw() {
 	if this.amountPoints < 1 {
 		return
 	}
-
+	gl.Disable(gl.DEPTH_TEST)
 	this.lineShader.use()
 	this.lineShader.setUniformMatrix4("projection", &this.projection)
 	this.lineShader.setUniformMatrix4("view", &this.view)
 
 	gl.BindVertexArray(this.vao)
 	gl.DrawElements(gl.LINES, int32(len(this.indices)), gl.UNSIGNED_SHORT, gl.Ptr(this.indices))
+	gl.Enable(gl.DEPTH_TEST)
+
 }
 
 func (this *LineMesh) AddPoint(pos glm.Vec2, colour glm.Vec4) {
