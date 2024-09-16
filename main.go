@@ -24,7 +24,7 @@ func StartTTF() {
 	/* var test = p.ParseGlyf(uint32('a'), 1)
 	var factor = test.CalcScaleFactor(12) */
 	/* 	factor = 1 */
-	for _, x := range "a" {
+	for _, x := range "X" {
 		var glyf = p.ParseGlyf(uint32(x), 1)
 		/* 		glyf.Scale(factor) */
 		glyfs = append(glyfs, glyf)
@@ -43,7 +43,7 @@ func StartTTF() {
 	var polys = []turingfontparser.Polygon2{}
 	var tri = opengl.CreateTriMesh()
 	for _, x := range glyfs {
-		polys = append(polys, turingfontparser.NewPolygon2(x.SimpleGlyfs[0], &opengl, &tri, &lines))
+		polys = append(polys, turingfontparser.NewPolygon2(x.SimpleGlyfs[0], &opengl, &tri, &lines, &pixelMesh))
 	}
 
 	pixelMesh.SetPixelSize(10)

@@ -414,17 +414,17 @@ func (this *Reader) transformPoints2(points [][]GlyfPoints, nrContours int16) []
 			var first = currContour[j]
 			var second = currContour[j+1]
 			currPoints = append(currPoints, first.Pos)
-			if first.OnCurve && second.OnCurve {
+			if first.OnCurve == second.OnCurve {
 				var control = this.createOnCurveMiddlePoint(first, second).Pos
 				currPoints = append(currPoints, control)
 			}
 		}
 		var last = currContour[len(currContour)-1]
-		var first = currContour[0]
 		if last.OnCurve {
-			currPoints = append(currPoints, last.Pos, this.createOnCurveMiddlePoint(first, last).Pos, first.Pos)
+			currPoints = append(currPoints, last.Pos)
 		} else {
-			currPoints = append(currPoints, currPoints[len(currPoints)-1], last.Pos, first.Pos)
+			currPoints = append(currPoints, last.Pos)
+			currPoints = append(currPoints, this.createOnCurveMiddlePoint(last, currContour[0]).Pos)
 		}
 		newPoints = append(newPoints, currPoints)
 	}
@@ -432,13 +432,15 @@ func (this *Reader) transformPoints2(points [][]GlyfPoints, nrContours int16) []
 	var bezierSpline = [][]glm.Vec2{}
 	for _, x := range newPoints {
 		var newSpline = []glm.Vec2{}
-		for i := 1; i < len(x)-3; i += 2 {
+		for i := 1; i < len(x)-1; i += 2 {
 			var first = x[i-1]
 			var control = x[i]
 			var second = x[i+1]
 			newSpline = append(newSpline, first, control, second)
 		}
-		newSpline = append(newSpline, x[len(x)-3], x[len(x)-2], x[len(x)-1])
+		newSpline = append(newSpline, x[len(x)-1], x[len(x)-2], x[0])
+		/* println("splite")
+		printBezierPoints(newSpline) */
 		bezierSpline = append(bezierSpline, newSpline)
 	}
 	return bezierSpline

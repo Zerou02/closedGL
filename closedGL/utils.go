@@ -233,3 +233,11 @@ func Reverse[T any](arr []T) []T {
 	}
 	return retVal
 }
+
+func Ternary[T any](cond bool, pos, neg T) T {
+	if cond {
+		return pos
+	} else {
+		return neg
+	}
+}
