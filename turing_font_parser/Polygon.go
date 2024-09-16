@@ -90,7 +90,7 @@ func (this *Polygon) Triangulate(mesh *closedGL.TriangleMesh) {
 							var first = vertices[j]
 							var second = vertices[k]
 							var line = closedGL.CalculateLine(first, second)
-							var points = line.SamplePointsOnLine(4)
+							var points = line.SamplePointsOnLine(10)
 							var isInPoly = true
 							for _, x := range points {
 								if !this.isPointInPolygon(x) {
@@ -154,106 +154,109 @@ func (this *Polygon) println() {
 }
 
 func NewPolyFromGlyf(glyf SimpleGlyf) Polygon {
-	var contours = [][]GlyfPoints{}
-	var single = []GlyfPoints{}
-	for _, x := range glyf.GetPoints() {
-		var a = x
-		a.Pos = closedGL.CartesianToSS(a.Pos, 800)
-		/* 		a.Pos[0] = math.Ceil(a.Pos[0])
-		   		a.Pos[1] = math.Ceil(a.Pos[1]) */
-		single = append(single, a)
-		if x.EndPoint {
-			contours = append(contours, single)
-			single = []GlyfPoints{}
-		}
+	return Polygon{
+		glyf: glyf,
 	}
+	/* 	var contours = [][]GlyfPoints{}
+	   	var single = []GlyfPoints{}
+	   	for _, x := range glyf.GetPoints() {
+	   		var a = x
+	   		a.Pos = closedGL.CartesianToSS(a.Pos, 800)
+	   		 		a.Pos[0] = math.Ceil(a.Pos[0])
+	   		   		a.Pos[1] = math.Ceil(a.Pos[1])
+	   		single = append(single, a)
+	   		if x.EndPoint {
+	   			contours = append(contours, single)
+	   			single = []GlyfPoints{}
+	   		}
+	   	}
 
-	var outer = NewPolyFromContour(contours[0])
-	var outerPolys = []Polygon{}
-	var innerPolys = []Polygon{}
-	for i, x := range contours {
-		var poly = NewPolyFromContour(x)
-		if i == 0 {
-			outerPolys = append(outerPolys, poly)
-		} else {
-			var isInner = outer.isOtherInThis(poly.edges)
-			if !isInner {
-				panic("multiple outer!")
-			}
+	   	var outer = NewPolyFromContour(contours[0])
+	   	var outerPolys = []Polygon{}
+	   	var innerPolys = []Polygon{}
+	   	for i, x := range contours {
+	   		var poly = NewPolyFromContour(x)
+	   		if i == 0 {
+	   			outerPolys = append(outerPolys, poly)
+	   		} else {
+	   			var isInner = outer.isOtherInThis(poly.edges)
+	   			if !isInner {
+	   				panic("multiple outer!")
+	   			}
 
-			innerPolys = append(innerPolys, poly)
-		}
-	}
+	   			innerPolys = append(innerPolys, poly)
+	   		}
+	   	}
 
-	//Löcher stopfen
-	var dy float32 = 0.1
-	for _, x := range innerPolys {
-		var rightMost = x.FindRightmostPoint()
-		var baseLine = closedGL.CalculateLine(glm.Vec2{0, rightMost[1]}, rightMost)
-		var found = false
+	   	//Löcher stopfen
+	   	var dy float32 = 0.1
+	   	for _, x := range innerPolys {
+	   		var rightMost = x.FindRightmostPoint()
+	   		var baseLine = closedGL.CalculateLine(glm.Vec2{0, rightMost[1]}, rightMost)
+	   		var found = false
 
-		for i := 0; i < len(outer.edges)-1; i += 2 {
-			if found {
-				break
-			}
-			var p1 = outer.edges[i]
-			var p2 = outer.edges[i+1]
-			if p1[0] < rightMost[0] && p2[0] < rightMost[0] {
-				continue
-			}
-			var line = closedGL.CalculateLine(p1, p2)
-			var cp, succ = baseLine.GetIntersection(line)
-			if succ {
-				if line.IsOnLine(cp) {
-					var metVertex = p1[1] == rightMost[1] || p2[1] == rightMost[1]
-					if !metVertex {
-						var idx = closedGL.FindIdx(outer.edges, p1)
-						//remove old kantenzug
-						outer.edges = closedGL.RemoveAt(outer.edges, idx+1)
-						outer.edges = closedGL.RemoveAt(outer.edges, idx+1)
+	   		for i := 0; i < len(outer.edges)-1; i += 2 {
+	   			if found {
+	   				break
+	   			}
+	   			var p1 = outer.edges[i]
+	   			var p2 = outer.edges[i+1]
+	   			if p1[0] < rightMost[0] && p2[0] < rightMost[0] {
+	   				continue
+	   			}
+	   			var line = closedGL.CalculateLine(p1, p2)
+	   			var cp, succ = baseLine.GetIntersection(line)
+	   			if succ {
+	   				if line.IsOnLine(cp) {
+	   					var metVertex = p1[1] == rightMost[1] || p2[1] == rightMost[1]
+	   					if !metVertex {
+	   						var idx = closedGL.FindIdx(outer.edges, p1)
+	   						//remove old kantenzug
+	   						outer.edges = closedGL.RemoveAt(outer.edges, idx+1)
+	   						outer.edges = closedGL.RemoveAt(outer.edges, idx+1)
 
-						idx = closedGL.FindIdx(outer.edges, p1)
-						if idx == -1 {
-							panic("error")
-						}
+	   						idx = closedGL.FindIdx(outer.edges, p1)
+	   						if idx == -1 {
+	   							panic("error")
+	   						}
 
-						var new = glm.Vec2{cp[0], cp[1]}
-						//new doppelt als Endpunkt für geschnittenen
-						var firstKantenzug = []glm.Vec2{p1, new, new, rightMost}
-						outer.edges = closedGL.InsertArrAt(outer.edges, firstKantenzug, idx+1)
+	   						var new = glm.Vec2{cp[0], cp[1]}
+	   						//new doppelt als Endpunkt für geschnittenen
+	   						var firstKantenzug = []glm.Vec2{p1, new, new, rightMost}
+	   						outer.edges = closedGL.InsertArrAt(outer.edges, firstKantenzug, idx+1)
 
-						var innerIdx = closedGL.FindIdx(x.edges, rightMost)
-						var newInner = []glm.Vec2{}
-						for j := innerIdx + 1; j < len(x.edges); j++ {
-							newInner = append(newInner, x.edges[j])
-						}
-						for j := 0; j < innerIdx; j++ {
-							newInner = append(newInner, x.edges[j])
-						}
-						newInner = append(newInner, newInner[0])
-						newInner = append(newInner, rightMost, new, new, p2)
-						outer.edges = closedGL.InsertArrAt(outer.edges, newInner, idx+5)
-						found = true
-					} else {
-						var met = p1
-						if p2[1] == rightMost[1] {
-							met = p2
-						}
+	   						var innerIdx = closedGL.FindIdx(x.edges, rightMost)
+	   						var newInner = []glm.Vec2{}
+	   						for j := innerIdx + 1; j < len(x.edges); j++ {
+	   							newInner = append(newInner, x.edges[j])
+	   						}
+	   						for j := 0; j < innerIdx; j++ {
+	   							newInner = append(newInner, x.edges[j])
+	   						}
+	   						newInner = append(newInner, newInner[0])
+	   						newInner = append(newInner, rightMost, new, new, p2)
+	   						outer.edges = closedGL.InsertArrAt(outer.edges, newInner, idx+5)
+	   						found = true
+	   					} else {
+	   						var met = p1
+	   						if p2[1] == rightMost[1] {
+	   							met = p2
+	   						}
 
-						var idx = closedGL.FindIdx(outer.edges, met)
-						for idx != -1 {
-							outer.edges[idx] = glm.Vec2{outer.edges[idx][0], outer.edges[idx][1] - dy}
-							idx = closedGL.FindIdx(outer.edges, met)
-						}
-						i = 0
-					}
-				}
-			}
-		}
-	}
+	   						var idx = closedGL.FindIdx(outer.edges, met)
+	   						for idx != -1 {
+	   							outer.edges[idx] = glm.Vec2{outer.edges[idx][0], outer.edges[idx][1] - dy}
+	   							idx = closedGL.FindIdx(outer.edges, met)
+	   						}
+	   						i = 0
+	   					}
+	   				}
+	   			}
+	   		}
+	   	} */
 
 	//genauere Approximation
-	var ret = outer
+	/* 	var ret = outer */
 	/*
 		if ret.hasSameKantenzug() {
 			panic("has same kantenzug")
@@ -325,8 +328,9 @@ func NewPolyFromGlyf(glyf SimpleGlyf) Polygon {
 			}
 		}
 	*/
-	ret.glyf = glyf
-	return ret
+	/* 	ret.glyf = glyf
+	   	return ret */
+	return Polygon{}
 }
 
 func (this *Polygon) FindRightmostPoint() glm.Vec2 {
@@ -474,20 +478,39 @@ func extractPoints(glyfPoints []GlyfPoints) []glm.Vec2 {
 }
 
 func (this *Polygon) FillMeshes(triMesh *closedGL.TriangleMesh, lineMesh *closedGL.LineMesh, pixelMesh *closedGL.PixelMesh, wh float32) {
-	var points = extractPoints(this.glyf.GetPoints())
-	points = pointsToSS(points, wh)
-	for i := 0; i < len(points); i += 3 {
-		var sign float32 = 1
-		var off = points[i+2]
-		/* off[0] = math.Floor(off[0])
-		off[1] = math.Floor(off[1]) */
-		if closedGL.Contains(&this.edges, off) {
-			sign = -1
-		}
-		triMesh.AddTri([3]glm.Vec2{points[i], points[i+2], points[i+1]}, [3]glm.Vec2{{0, 0}, {1.0 / 2.0, 0}, {1, 1}}, sign)
-	}
-	for i := 0; i < len(this.edges); i += 2 {
-		lineMesh.AddLine(this.edges[i], this.edges[i+1], glm.Vec4{1, 1, 1, 1}, glm.Vec4{1, 1, 1, 1})
-	}
+
+	/* 	var points = this.glyf.GetPoints()
+	   	for _, x := range points {
+	   		x = pointsToSS(x, wh)
+	   		for i := 0; i < len(x); i += 3 {
+	   			var first = x[i]
+	   			var control = x[i+1]
+	   			var second = x[i+2]
+	   			triMesh.AddTri([3]glm.Vec2{first, control, second}, [3]glm.Vec2{{0, 0}, {1.0 / 2.0, 0}, {1, 1}}, 1)
+	   			lineMesh.AddPath([]glm.Vec2{first, control, second}, []glm.Vec4{{0, 1, 0, 1}, {0, 1, 0, 1}, {0, 1, 0, 1}})
+	   		}
+
+	   	} */
+
+	/* 	var points = extractPoints(this.glyf.GetPoints())
+	   	points = pointsToSS(points, wh)
+	   	for _, x := range points {
+	   		closedGL.PrintlnVec2(x)
+	   		pixelMesh.AddPixel(x, glm.Vec4{1, 0, 0, 1})
+	   	}
+	   	println(len(points))
+	   	for i := 0; i < len(points); i += 3 {
+	   		var sign float32 = 1
+	   		var off = points[i+2]
+	   		 off[0] = math.Floor(off[0])
+	   		off[1] = math.Floor(off[1])
+	   		if closedGL.Contains(&this.edges, off) {
+	   			sign = -1
+	   		}
+	   		triMesh.AddTri([3]glm.Vec2{points[i], points[i+2], points[i+1]}, [3]glm.Vec2{{0, 0}, {1.0 / 2.0, 0}, {1, 1}}, sign)
+	   	}
+	   	for i := 0; i < len(this.edges); i += 2 {
+	   		lineMesh.AddLine(this.edges[i], this.edges[i+1], glm.Vec4{1, 1, 1, 1}, glm.Vec4{1, 1, 1, 1})
+	   	} */
 
 }

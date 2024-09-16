@@ -2,7 +2,6 @@ package turingfontparser
 
 import (
 	"github.com/EngoEngine/glm"
-	"github.com/EngoEngine/math"
 )
 
 type Glyf struct {
@@ -51,7 +50,7 @@ type SimpleGlyfBody struct {
 	instructionLength uint16
 	instructions      []uint8
 	flags             []uint8
-	Points            []GlyfPoints
+	Points            [][]glm.Vec2
 }
 type GlyfPoints struct {
 	Pos      glm.Vec2
@@ -59,7 +58,7 @@ type GlyfPoints struct {
 	EndPoint bool
 }
 
-func (this SimpleGlyf) GetPoints() []GlyfPoints {
+func (this SimpleGlyf) GetPoints() [][]glm.Vec2 {
 	return this.body.Points
 }
 
@@ -69,17 +68,17 @@ func (this CompoundGlyf) AddOffset(y glm.Vec2) {
 	}
 }
 
-func (this SimpleGlyf) AddOffset(y glm.Vec2) {
+/* func (this SimpleGlyf) AddOffset(y glm.Vec2) {
 	for i, x := range this.body.Points {
 		this.body.Points[i].Pos = x.Pos.Add(&y)
 	}
-}
+} */
 
 func (this CompoundGlyf) GetPoints() []GlyfPoints {
 	return this.points
 }
 
-func (this *Glyf) Normalize() {
+/* func (this *Glyf) Normalize() {
 	var xMin = math.Abs(this.header.xMin)
 	var yMin = math.Abs(this.header.yMin)
 	this.header.xMin += xMin
@@ -92,17 +91,17 @@ func (this *Glyf) Normalize() {
 			this.SimpleGlyfs[i].body.Points[j].Pos[1] += yMin
 		}
 	}
-}
+} */
 
 func (this *Glyf) CalcScaleFactor(newHeight float32) float32 {
 	return newHeight / this.header.yMax
 }
 
-func (this *Glyf) ScaleToHeight(newHeight float32) {
+/* func (this *Glyf) ScaleToHeight(newHeight float32) {
 	this.Scale(this.CalcScaleFactor(newHeight))
-}
+} */
 
-func (this *Glyf) Scale(scale float32) {
+/* func (this *Glyf) Scale(scale float32) {
 	this.header.yMax *= scale
 	this.header.xMax *= scale
 	this.AdvanceWidth *= scale
@@ -112,4 +111,4 @@ func (this *Glyf) Scale(scale float32) {
 			this.SimpleGlyfs[i].body.Points[j].Pos[1] *= scale
 		}
 	}
-}
+} */

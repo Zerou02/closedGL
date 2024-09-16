@@ -21,38 +21,32 @@ func StartTTF() {
 	opengl.LimitFPS(false)
 	var p = turingfontparser.NewTuringFont("./assets/font/jetbrains_mono_medium.ttf", &opengl)
 	var glyfs = []turingfontparser.Glyf{}
-	var test = p.ParseGlyf(uint32('a'), 1)
-	var factor = test.CalcScaleFactor(12)
-	for _, x := range "Ich hasse mein Dasein. Schriftgroeße 12 oder so" {
+	/* var test = p.ParseGlyf(uint32('a'), 1)
+	var factor = test.CalcScaleFactor(12) */
+	/* 	factor = 1 */
+	for _, x := range "a" {
 		var glyf = p.ParseGlyf(uint32(x), 1)
-		glyf.Scale(factor)
+		/* 		glyf.Scale(factor) */
 		glyfs = append(glyfs, glyf)
 	}
 
 	var offset float32 = 0
 	for i := 0; i < len(glyfs); i++ {
-		for j := 0; j < len(glyfs[i].SimpleGlyfs); j++ {
+		/* 	for j := 0; j < len(glyfs[i].SimpleGlyfs); j++ {
 			glyfs[i].SimpleGlyfs[j].AddOffset(glm.Vec2{offset, 100})
-		}
+		} */
 		offset += glyfs[i].AdvanceWidth
-
 	}
 
 	var lines = opengl.CreateLineMesh()
 	var pixelMesh = opengl.CreatePixelMesh()
-	var polys = []turingfontparser.Polygon{}
-	for _, x := range glyfs {
-		for _, y := range x.SimpleGlyfs {
-
-			polys = append(polys, turingfontparser.NewPolyFromGlyf(y))
-
-		}
-	}
+	var polys = []turingfontparser.Polygon2{}
 	var tri = opengl.CreateTriMesh()
-	for _, x := range polys {
-		x.FillMeshes(&tri, &lines, &pixelMesh, opengl.Window.Wh)
-		x.Triangulate(&tri)
+	for _, x := range glyfs {
+		polys = append(polys, turingfontparser.NewPolygon2(x.SimpleGlyfs[0], &opengl, &tri, &lines))
 	}
+
+	pixelMesh.SetPixelSize(10)
 	pixelMesh.Copy()
 
 	lines.Copy()
@@ -76,7 +70,7 @@ func StartTTF() {
 		/* 	opengl.SetWireFrameMode(true)
 		tri.Draw() */
 		opengl.SetWireFrameMode(opengl.IsKeyDown(glfw.KeyF))
-
+		pixelMesh.Draw()
 		lines.Draw()
 
 		opengl.DrawFPS(600, 0, 1)

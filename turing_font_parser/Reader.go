@@ -366,7 +366,10 @@ func (this *Reader) readSimpleGlyph(header GlyfHeader, scale float32) SimpleGlyf
 	var yCoordinates = make([]int16, nrPoints)
 	this.parsePoints(&body.flags, &xCoordinates, true)
 	this.parsePoints(&body.flags, &yCoordinates, false)
-	body.Points = []GlyfPoints{}
+	body.Points = [][]glm.Vec2{}
+	var glyfPoints = [][]GlyfPoints{}
+
+	var currContour = []GlyfPoints{}
 	for i, x := range xCoordinates {
 		var endP = closedGL.Contains(&body.endOfContours, uint16(i))
 		var OnCurve = getBit(body.flags[i], 0) == 1
@@ -376,97 +379,69 @@ func (this *Reader) readSimpleGlyph(header GlyfHeader, scale float32) SimpleGlyf
 			OnCurve:  OnCurve,
 			EndPoint: endP,
 			Pos:      cartPos,
-			//Pos:      this.ctx.CartesianToSS(cartPos),
 		}
-		body.Points = append(body.Points, newP)
+		currContour = append(currContour, newP)
+		if endP {
+			glyfPoints = append(glyfPoints, currContour)
+			currContour = []GlyfPoints{}
+		}
 	}
 
-	body.Points = this.transformPoints2(body.Points, header.nrContours)
+	body.Points = this.transformPoints2(glyfPoints, header.nrContours)
 
 	return SimpleGlyf{
 		body: body,
 	}
 }
 
-func (this *Reader) transformPoints2(points []GlyfPoints, nrContours int16) []GlyfPoints {
-	var newPoints = []GlyfPoints{}
-	var splitted = make([][]GlyfPoints, nrContours)
-	var currContour = 0
-	for _, x := range points {
-		splitted[currContour] = append(splitted[currContour], x)
-		if x.EndPoint {
-			currContour++
+func printBezierPoints(points []glm.Vec2) {
+	for i, x := range points {
+		if (i)%3 == 0 {
+			println("--------------")
 		}
+		closedGL.PrintlnVec2(x)
 	}
-	for i := 0; i < len(splitted); i++ {
-		var new = []GlyfPoints{}
-		for j := 0; j < len(splitted[i]); j++ {
-			new = append(new, splitted[i][j])
-			if j < len(splitted[i])-1 && !splitted[i][j].OnCurve && !splitted[i][j+1].OnCurve {
-				var p = GlyfPoints{
-					OnCurve:  true,
-					EndPoint: false,
-					Pos:      closedGL.LerpVec2(splitted[i][j].Pos, splitted[i][j+1].Pos, 0.5),
-				}
-				new = append(new, p)
+}
+
+func (this *Reader) transformPoints2(points [][]GlyfPoints, nrContours int16) [][]glm.Vec2 {
+
+	//add implicit points
+	var newPoints = [][]glm.Vec2{}
+	for i := 0; i < len(points); i++ {
+		var currPoints = []glm.Vec2{}
+		var currContour = points[i]
+		for j := 0; j < len(currContour)-1; j++ {
+			var first = currContour[j]
+			var second = currContour[j+1]
+			currPoints = append(currPoints, first.Pos)
+			if first.OnCurve && second.OnCurve {
+				var control = this.createOnCurveMiddlePoint(first, second).Pos
+				currPoints = append(currPoints, control)
 			}
 		}
-		splitted[i] = new
-	}
-
-	for k := 0; k < len(splitted); k++ {
-		for i := 0; i < len(splitted[k])-2; i++ {
-			var first = splitted[k][i]
-			var second GlyfPoints
-			var control GlyfPoints
-			if !splitted[k][i+1].OnCurve {
-				second = splitted[k][i+2]
-				control = splitted[k][i+1]
-				i++
-			} else {
-				second = splitted[k][i+1]
-				control = GlyfPoints{
-					Pos:      closedGL.LerpVec2(first.Pos, second.Pos, 0.5),
-					OnCurve:  false,
-					EndPoint: false,
-				}
-
-			}
-			newPoints = append(newPoints, first)
-			newPoints = append(newPoints, second)
-			newPoints = append(newPoints, control)
-		}
-		var lastIdx = len(splitted[k]) - 1
-		if splitted[k][lastIdx].OnCurve {
-			var currLast = newPoints[len(newPoints)-2]
-			var contourLast = splitted[k][len(splitted[k])-1]
-			var first = splitted[k][0]
-			newPoints = append(newPoints, contourLast)
-			newPoints = append(newPoints, currLast)
-			newPoints = append(newPoints, this.createOnCurveMiddlePoint(currLast, contourLast))
-			newPoints = append(newPoints, contourLast)
-			newPoints = append(newPoints, first)
-			newPoints = append(newPoints, this.createOnCurveMiddlePoint(first, contourLast))
+		var last = currContour[len(currContour)-1]
+		var first = currContour[0]
+		if last.OnCurve {
+			currPoints = append(currPoints, last.Pos, this.createOnCurveMiddlePoint(first, last).Pos, first.Pos)
 		} else {
-			var currLast = newPoints[len(newPoints)-2]
-			var contourLast = splitted[k][len(splitted[k])-1]
-			var first = splitted[k][0]
-			newPoints = append(newPoints, currLast)
-			newPoints = append(newPoints, first)
-			newPoints = append(newPoints, contourLast)
+			currPoints = append(currPoints, currPoints[len(currPoints)-1], last.Pos, first.Pos)
 		}
-		splitted[k] = newPoints
-		newPoints = []GlyfPoints{}
+		newPoints = append(newPoints, currPoints)
 	}
-	for _, x := range splitted {
-		for i, y := range x {
-			//nur letzter ist Endpunkt
-			var c = y
-			c.EndPoint = i == len(x)-1
-			newPoints = append(newPoints, c)
+	//make splines
+	var bezierSpline = [][]glm.Vec2{}
+	for _, x := range newPoints {
+		var newSpline = []glm.Vec2{}
+		for i := 1; i < len(x)-3; i += 2 {
+			var first = x[i-1]
+			var control = x[i]
+			var second = x[i+1]
+			newSpline = append(newSpline, first, control, second)
 		}
+		newSpline = append(newSpline, x[len(x)-3], x[len(x)-2], x[len(x)-1])
+		bezierSpline = append(bezierSpline, newSpline)
 	}
-	return newPoints
+	return bezierSpline
 }
 
 func (this *Reader) createOnCurveMiddlePoint(p1, p2 GlyfPoints) GlyfPoints {
@@ -559,7 +534,8 @@ func (this *Reader) printGlfyHeader(h GlyfHeader) {
 func getBit[T uint32 | uint16 | uint8](val T, bit T) T {
 	return (val >> bit) & 1
 }
-func (this *Reader) printGlyfBody(b SimpleGlyfBody) {
+
+/* func (this *Reader) printGlyfBody(b SimpleGlyfBody) {
 	println("body")
 	println("instLen", b.instructionLength)
 	println(len(b.instructions))
@@ -567,7 +543,7 @@ func (this *Reader) printGlyfBody(b SimpleGlyfBody) {
 	for _, x := range b.Points {
 		closedGL.PrintlnVec2(x.Pos)
 	}
-}
+} */
 
 func (this *Reader) readGlyf(unicodeVal uint32, scale float32) Glyf {
 	var entry = this.entries["glyf"]
@@ -591,7 +567,7 @@ func (this *Reader) readGlyf(unicodeVal uint32, scale float32) Glyf {
 		for _, x := range comp.compundDescr {
 			var g = this.readGlyfIdx(uint32(x.glyfIdx), scale)
 			if x.flags&0x02 == 0x02 {
-				g.AddOffset(glm.Vec2{float32(x.arg1) * scale, float32(x.arg2) * scale})
+				//	g.AddOffset(glm.Vec2{float32(x.arg1) * scale, float32(x.arg2) * scale})
 			} else {
 				panic("Kind of flag not yet supported")
 			}
