@@ -16,6 +16,7 @@ func main() {
 }
 
 func StartTTF() {
+	isOnLineTest()
 	var opengl = closedGL.InitClosedGL(800, 800, "comic")
 
 	opengl.LimitFPS(false)
@@ -24,7 +25,7 @@ func StartTTF() {
 	/* var test = p.ParseGlyf(uint32('a'), 1)
 	var factor = test.CalcScaleFactor(12) */
 	/* 	factor = 1 */
-	for _, x := range "X" {
+	for _, x := range "S" {
 		var glyf = p.ParseGlyf(uint32(x), 1)
 		/* 		glyf.Scale(factor) */
 		glyfs = append(glyfs, glyf)
