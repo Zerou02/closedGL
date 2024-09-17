@@ -333,7 +333,7 @@ func (this *Reader) readGlyfHeader() GlyfHeader {
 	}
 }
 
-func (this *Reader) readSimpleGlyph(header GlyfHeader, scale float32) SimpleGlyf {
+func (this *Reader) readSimpleGlyph(header GlyfHeader) SimpleGlyf {
 	var body = SimpleGlyfBody{}
 
 	body.endOfContours = make([]uint16, header.nrContours)
@@ -374,7 +374,6 @@ func (this *Reader) readSimpleGlyph(header GlyfHeader, scale float32) SimpleGlyf
 		var endP = closedGL.Contains(&body.endOfContours, uint16(i))
 		var OnCurve = getBit(body.flags[i], 0) == 1
 		var cartPos = glm.Vec2{float32(x), float32(yCoordinates[i])}
-		cartPos.MulWith(scale)
 		var newP = GlyfPoints{
 			OnCurve:  OnCurve,
 			EndPoint: endP,
@@ -547,33 +546,30 @@ func getBit[T uint32 | uint16 | uint8](val T, bit T) T {
 	}
 } */
 
-func (this *Reader) readGlyf(unicodeVal uint32, scale float32) Glyf {
+func (this *Reader) readGlyf(unicodeVal uint32) Glyf {
 	var entry = this.entries["glyf"]
 	var glyphId = this.mappings[int(unicodeVal)]
 	this.seek(entry.offset + this.loca[glyphId])
 	var ret = newGlyf()
-	ret.AdvanceWidth = float32(this.horizMetrics[glyphId].advanceWidth) * scale
+	ret.AdvanceWidth = float32(this.horizMetrics[glyphId].advanceWidth)
 	ret.header = this.readGlyfHeader()
 	var isZeroLenGlyf = this.loca[glyphId-1] == this.loca[glyphId]
 	if isZeroLenGlyf {
 		return ret
 	}
-	ret.header.xMax *= (scale)
-	ret.header.yMax *= (scale)
-	ret.header.xMin *= (scale)
-	ret.header.yMin *= (scale)
 	if ret.header.nrContours > 0 {
-		ret.SimpleGlyfs = append(ret.SimpleGlyfs, this.readSimpleGlyph(ret.header, scale))
+		var g = this.readSimpleGlyph(ret.header)
+		ret.SimpleGlyfs = append(ret.SimpleGlyfs, &g)
 	} else if ret.header.nrContours < 0 {
 		var comp = this.readCompundGlyf(ret.header)
 		for _, x := range comp.compundDescr {
-			var g = this.readGlyfIdx(uint32(x.glyfIdx), scale)
+			var g = this.readGlyfIdx(uint32(x.glyfIdx))
 			if x.flags&0x02 == 0x02 {
-				//	g.AddOffset(glm.Vec2{float32(x.arg1) * scale, float32(x.arg2) * scale})
+				g.AddOffset(glm.Vec2{float32(x.arg1), float32(x.arg2)})
 			} else {
 				panic("Kind of flag not yet supported")
 			}
-			ret.SimpleGlyfs = append(ret.SimpleGlyfs, g)
+			ret.SimpleGlyfs = append(ret.SimpleGlyfs, &g)
 		}
 	} else {
 		println("nr contours 0")
@@ -581,13 +577,13 @@ func (this *Reader) readGlyf(unicodeVal uint32, scale float32) Glyf {
 	return ret
 }
 
-func (this *Reader) readGlyfIdx(idx uint32, scale float32) SimpleGlyf {
+func (this *Reader) readGlyfIdx(idx uint32) SimpleGlyf {
 	var entry = this.entries["glyf"]
 	this.seek(entry.offset + this.loca[int(idx)])
 	var ret SimpleGlyf
 	var header = this.readGlyfHeader()
 	if header.nrContours > 0 {
-		ret = this.readSimpleGlyph(header, scale)
+		ret = this.readSimpleGlyph(header)
 	} else if header.nrContours < 0 {
 		//var comp = this.readCompundGlyf(header)
 		panic("nested comp glyf not yet supported")

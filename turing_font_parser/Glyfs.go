@@ -6,7 +6,7 @@ import (
 
 type Glyf struct {
 	header       GlyfHeader
-	SimpleGlyfs  []SimpleGlyf
+	SimpleGlyfs  []*SimpleGlyf
 	AdvanceWidth float32
 }
 
@@ -14,7 +14,7 @@ func (this *Glyf) GetHeader() *GlyfHeader {
 	return &this.header
 }
 func newGlyf() Glyf {
-	return Glyf{SimpleGlyfs: []SimpleGlyf{}}
+	return Glyf{SimpleGlyfs: []*SimpleGlyf{}}
 }
 
 func (this *GlyfHeader) GetMaxX() float32 {
@@ -68,11 +68,13 @@ func (this CompoundGlyf) AddOffset(y glm.Vec2) {
 	}
 }
 
-/* func (this SimpleGlyf) AddOffset(y glm.Vec2) {
-	for i, x := range this.body.Points {
-		this.body.Points[i].Pos = x.Pos.Add(&y)
+func (this SimpleGlyf) AddOffset(y glm.Vec2) {
+	for i, _ := range this.body.Points {
+		for j, _ := range this.body.Points[i] {
+			this.body.Points[i][j] = this.body.Points[i][j].Add(&y)
+		}
 	}
-} */
+}
 
 func (this CompoundGlyf) GetPoints() []GlyfPoints {
 	return this.points
@@ -97,18 +99,20 @@ func (this *Glyf) CalcScaleFactor(newHeight float32) float32 {
 	return newHeight / this.header.yMax
 }
 
-/* func (this *Glyf) ScaleToHeight(newHeight float32) {
+func (this *Glyf) ScaleToHeight(newHeight float32) {
 	this.Scale(this.CalcScaleFactor(newHeight))
-} */
+}
 
-/* func (this *Glyf) Scale(scale float32) {
+func (this *Glyf) Scale(scale float32) {
 	this.header.yMax *= scale
 	this.header.xMax *= scale
 	this.AdvanceWidth *= scale
 	for i := 0; i < len(this.SimpleGlyfs); i++ {
 		for j := 0; j < len(this.SimpleGlyfs[i].body.Points); j++ {
-			this.SimpleGlyfs[i].body.Points[j].Pos[0] *= scale
-			this.SimpleGlyfs[i].body.Points[j].Pos[1] *= scale
+			for k := 0; k < len(this.SimpleGlyfs[i].body.Points[j]); k++ {
+				this.SimpleGlyfs[i].body.Points[j][k][0] *= scale
+				this.SimpleGlyfs[i].body.Points[j][k][1] *= scale
+			}
 		}
 	}
-} */
+}

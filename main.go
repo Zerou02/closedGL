@@ -20,22 +20,22 @@ func StartTTF() {
 	var opengl = closedGL.InitClosedGL(800, 800, "comic")
 
 	opengl.LimitFPS(false)
-	var p = turingfontparser.NewTuringFont("./assets/font/jetbrains_mono_medium.ttf", &opengl)
-	var glyfs = []turingfontparser.Glyf{}
-	/* var test = p.ParseGlyf(uint32('a'), 1)
-	var factor = test.CalcScaleFactor(12) */
-	/* 	factor = 1 */
-	for _, x := range "S" {
-		var glyf = p.ParseGlyf(uint32(x), 1)
-		/* 		glyf.Scale(factor) */
-		glyfs = append(glyfs, glyf)
+	var p = turingfontparser.NewTuringFont("./assets/font/comic_sans.ttf", &opengl)
+	var glyfs = []*turingfontparser.Glyf{}
+	var test = p.ParseGlyf(uint32('a'))
+	var factor = test.CalcScaleFactor(12)
+
+	for _, x := range "Jetzt steh ich hier, ich armer Tor und bin so schlau als wie zuvor." {
+		var glyf = p.ParseGlyf(uint32(x))
+		glyf.Scale(factor)
+		glyfs = append(glyfs, &glyf)
 	}
 
 	var offset float32 = 0
 	for i := 0; i < len(glyfs); i++ {
-		/* 	for j := 0; j < len(glyfs[i].SimpleGlyfs); j++ {
+		for j := 0; j < len(glyfs[i].SimpleGlyfs); j++ {
 			glyfs[i].SimpleGlyfs[j].AddOffset(glm.Vec2{offset, 100})
-		} */
+		}
 		offset += glyfs[i].AdvanceWidth
 	}
 
@@ -43,11 +43,14 @@ func StartTTF() {
 	var pixelMesh = opengl.CreatePixelMesh()
 	var polys = []turingfontparser.Polygon2{}
 	var tri = opengl.CreateTriMesh()
+
 	for _, x := range glyfs {
-		polys = append(polys, turingfontparser.NewPolygon2(x.SimpleGlyfs[0], &opengl, &tri, &lines, &pixelMesh))
+		for _, y := range x.SimpleGlyfs {
+			polys = append(polys, turingfontparser.NewPolygon2(y, &opengl, &tri, &lines, &pixelMesh))
+		}
 	}
 
-	pixelMesh.SetPixelSize(10)
+	pixelMesh.SetPixelSize(4)
 	pixelMesh.Copy()
 
 	lines.Copy()

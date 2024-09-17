@@ -49,7 +49,7 @@ func (this *Line) GetIntersection(line Line) (glm.Vec2, bool) {
 
 // funktioniert wahrscheinlich nur für SS
 func (this *Line) IsOnLine(p glm.Vec2) bool {
-	var eps float32 = 0.001
+	var eps float32 = 0.005
 	if this.LineType == "vertical" {
 		var minY = math.Min(this.p1[1], this.p2[1])
 		var maxY = math.Max(this.p1[1], this.p2[1])
