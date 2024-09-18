@@ -1,4 +1,4 @@
-package turingfontparser
+package closedGL
 
 import (
 	"math"
@@ -6,7 +6,6 @@ import (
 	"unsafe"
 
 	"github.com/EngoEngine/glm"
-	"github.com/Zerou02/closedGL/closedGL"
 )
 
 type fword int16
@@ -20,7 +19,7 @@ type Reader struct {
 	smallLocATable    bool
 	nrGlyphs          uint16
 	loca              []uint32
-	ctx               *closedGL.ClosedGLContext
+	ctx               *ClosedGLContext
 	nrHMetrics        uint16
 	horizMetrics      []LongHorizMetric
 	remainingBearings []int16
@@ -31,8 +30,8 @@ type LongHorizMetric struct {
 	lsb          int16 //left-side-bearing
 }
 
-func NewReader(path string, ctx *closedGL.ClosedGLContext) Reader {
-	return Reader{
+func NewReader(path string, ctx *ClosedGLContext) Reader {
+	var r = Reader{
 		path:         path,
 		entries:      map[string]*DirEntry{},
 		offset:       0,
@@ -40,6 +39,8 @@ func NewReader(path string, ctx *closedGL.ClosedGLContext) Reader {
 		ctx:          ctx,
 		horizMetrics: []LongHorizMetric{},
 	}
+	r.init()
+	return r
 }
 
 type DirEntry struct {
@@ -371,7 +372,7 @@ func (this *Reader) readSimpleGlyph(header GlyfHeader) SimpleGlyf {
 
 	var currContour = []GlyfPoints{}
 	for i, x := range xCoordinates {
-		var endP = closedGL.Contains(&body.endOfContours, uint16(i))
+		var endP = Contains(&body.endOfContours, uint16(i))
 		var OnCurve = getBit(body.flags[i], 0) == 1
 		var cartPos = glm.Vec2{float32(x), float32(yCoordinates[i])}
 		var newP = GlyfPoints{
@@ -398,7 +399,7 @@ func printBezierPoints(points []glm.Vec2) {
 		if (i)%3 == 0 {
 			println("--------------")
 		}
-		closedGL.PrintlnVec2(x)
+		PrintlnVec2(x)
 	}
 }
 
@@ -447,7 +448,7 @@ func (this *Reader) transformPoints2(points [][]GlyfPoints, nrContours int16) []
 
 func (this *Reader) createOnCurveMiddlePoint(p1, p2 GlyfPoints) GlyfPoints {
 	return GlyfPoints{
-		Pos:      closedGL.LerpVec2(p1.Pos, p2.Pos, 0.5),
+		Pos:      LerpVec2(p1.Pos, p2.Pos, 0.5),
 		OnCurve:  false,
 		EndPoint: false,
 	}
@@ -474,7 +475,7 @@ func (this *Reader) transformPoints(points []GlyfPoints) []GlyfPoints {
 	for i := 0; i < len(points); i++ {
 		newPoints = append(newPoints, points[i])
 		if i < len(points)-1 && !points[i].OnCurve && !points[i+1].OnCurve {
-			var newPos = closedGL.LerpVec2(points[i].Pos, points[i+1].Pos, 0.5)
+			var newPos = LerpVec2(points[i].Pos, points[i+1].Pos, 0.5)
 			var newP = GlyfPoints{
 				OnCurve:  true,
 				EndPoint: points[i].EndPoint || points[i+1].EndPoint,
@@ -488,7 +489,7 @@ func (this *Reader) transformPoints(points []GlyfPoints) []GlyfPoints {
 	for i := 0; i < len(points); i++ {
 		newPoints = append(newPoints, points[i])
 		if i < len(points)-1 && points[i].OnCurve && points[i+1].OnCurve {
-			var newPos = closedGL.LerpVec2(points[i].Pos, points[i+1].Pos, 0.5)
+			var newPos = LerpVec2(points[i].Pos, points[i+1].Pos, 0.5)
 			var newP = GlyfPoints{
 				OnCurve:  false,
 				EndPoint: points[i].EndPoint || points[i+1].EndPoint,
@@ -536,17 +537,7 @@ func getBit[T uint32 | uint16 | uint8](val T, bit T) T {
 	return (val >> bit) & 1
 }
 
-/* func (this *Reader) printGlyfBody(b SimpleGlyfBody) {
-	println("body")
-	println("instLen", b.instructionLength)
-	println(len(b.instructions))
-	println("points")
-	for _, x := range b.Points {
-		closedGL.PrintlnVec2(x.Pos)
-	}
-} */
-
-func (this *Reader) readGlyf(unicodeVal uint32) Glyf {
+func (this *Reader) ReadGlyf(unicodeVal uint32) Glyf {
 	var entry = this.entries["glyf"]
 	var glyphId = this.mappings[int(unicodeVal)]
 	this.seek(entry.offset + this.loca[glyphId])

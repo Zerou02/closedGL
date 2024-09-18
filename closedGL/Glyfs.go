@@ -1,4 +1,4 @@
-package turingfontparser
+package closedGL
 
 import (
 	"github.com/EngoEngine/glm"
@@ -62,12 +62,6 @@ func (this SimpleGlyf) GetPoints() [][]glm.Vec2 {
 	return this.body.Points
 }
 
-func (this CompoundGlyf) AddOffset(y glm.Vec2) {
-	for i, x := range this.points {
-		this.points[i].Pos = x.Pos.Add(&y)
-	}
-}
-
 func (this SimpleGlyf) AddOffset(y glm.Vec2) {
 	for i, _ := range this.body.Points {
 		for j, _ := range this.body.Points[i] {
@@ -76,25 +70,11 @@ func (this SimpleGlyf) AddOffset(y glm.Vec2) {
 	}
 }
 
-func (this CompoundGlyf) GetPoints() []GlyfPoints {
-	return this.points
-}
-
-/* func (this *Glyf) Normalize() {
-	var xMin = math.Abs(this.header.xMin)
-	var yMin = math.Abs(this.header.yMin)
-	this.header.xMin += xMin
-	this.header.yMin += yMin
-	this.header.xMax += xMin
-	this.header.yMax += yMin
-	for i := 0; i < len(this.SimpleGlyfs); i++ {
-		for j := 0; j < len(this.SimpleGlyfs[i].body.Points); j++ {
-			this.SimpleGlyfs[i].body.Points[j].Pos[0] += xMin
-			this.SimpleGlyfs[i].body.Points[j].Pos[1] += yMin
-		}
+func (this Glyf) AddOffset(vec glm.Vec2) {
+	for _, x := range this.SimpleGlyfs {
+		x.AddOffset(vec)
 	}
-} */
-
+}
 func (this *Glyf) CalcScaleFactor(newHeight float32) float32 {
 	return newHeight / this.header.yMax
 }

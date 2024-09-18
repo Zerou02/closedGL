@@ -14,6 +14,7 @@ import (
 
 var text Text
 
+type TextMesh = TriangleMesh
 type Window struct {
 	Window *glfw.Window
 	Ww, Wh float32
@@ -48,6 +49,7 @@ type ClosedGLContext struct {
 	KeyBoardManager     *KeyBoardManager
 	FPSCounter          *FPSCounter
 	Logger              PerfLogger
+	TextManager         *TextManager
 	Config              map[string]string
 
 	mouseThisFramePressed      bool
@@ -92,6 +94,7 @@ func InitClosedGL(pWidth, pHeight float32, name string) ClosedGLContext {
 	if config["potato-friendliness"] != "" {
 		con.LimitFPS(strToBool(config["potato-friendliness"]))
 	}
+	con.LoadFont("./assets/font/jetbrains_mono_medium.ttf")
 
 	return con
 }
@@ -287,8 +290,8 @@ func (this *ClosedGLContext) CreateLineMesh() LineMesh {
 	return newLineMesh(this.shaderCameraManager.Shadermap["pixel"], this.shaderCameraManager.projection2D)
 }
 
-func (this *ClosedGLContext) CreateTriMesh() TriangleMesh {
-	return newTriMesh(this.shaderCameraManager.Shadermap["tri"], this.shaderCameraManager.projection2D)
+func (this *ClosedGLContext) CreateTextMesh() TextMesh {
+	return newTriMesh(this.shaderCameraManager.Shadermap["ttf"], this.shaderCameraManager.projection2D)
 }
 
 func (this *ClosedGLContext) NewCam2D() Camera2D {
@@ -301,4 +304,13 @@ func (this *ClosedGLContext) CartesianToSS(vec glm.Vec2) glm.Vec2 {
 
 func (this *ClosedGLContext) SSToCartesian(vec glm.Vec2) glm.Vec2 {
 	return SsToCartesian(vec, this.Window.Wh)
+}
+
+func (this *ClosedGLContext) LoadFont(path string) {
+	var t = newTextManager(path, this)
+	this.TextManager = &t
+}
+
+func (this *ClosedGLContext) DrawText(x, y float32, size float32, text string, textMesh *TextMesh) {
+	this.TextManager.drawText(x, y, size, text, textMesh)
 }

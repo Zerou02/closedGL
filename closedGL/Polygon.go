@@ -1,9 +1,8 @@
-package turingfontparser
+package closedGL
 
 import (
 	"github.com/EngoEngine/glm"
 	"github.com/EngoEngine/math"
-	"github.com/Zerou02/closedGL/closedGL"
 )
 
 type Polygon1 struct {
@@ -13,34 +12,33 @@ type Polygon1 struct {
 
 type Polygon2 struct {
 	polygons []*Polygon1
-	glyf     SimpleGlyf
 }
 
 // points in ss
-func (this *Polygon2) isPointRightOfLine(p1, p2 glm.Vec2, p glm.Vec2, ctx *closedGL.ClosedGLContext) bool {
+func (this *Polygon2) isPointRightOfLine(p1, p2 glm.Vec2, p glm.Vec2, ctx *ClosedGLContext) bool {
 
 	var first = p1
 	var second = p2
 	var control = p
 	//Ist CP rechts der Linie?
-	first = closedGL.SsToCartesian(first, ctx.Window.Wh)
-	control = closedGL.SsToCartesian(control, ctx.Window.Wh)
-	second = closedGL.SsToCartesian(second, ctx.Window.Wh)
+	first = SsToCartesian(first, ctx.Window.Wh)
+	control = SsToCartesian(control, ctx.Window.Wh)
+	second = SsToCartesian(second, ctx.Window.Wh)
 	var vec1 = second.Sub(&first)
 	var vec2 = control.Sub(&first)
 	vec1.Normalize()
 	vec2.Normalize()
 	var positiveY = glm.Vec2{0, 1}
-	var angle = closedGL.AngleTo(vec1, positiveY)
+	var angle = AngleTo(vec1, positiveY)
 	var other = 2*math.Pi - angle
 	var base = vec1
-	vec1 = closedGL.Rotate(angle, base)
+	vec1 = Rotate(angle, base)
 
 	if math.Abs(vec1[0]) < 0.1 {
-		vec2 = closedGL.Rotate(angle, vec2)
+		vec2 = Rotate(angle, vec2)
 	} else {
-		vec1 = closedGL.Rotate(other, base)
-		vec2 = closedGL.Rotate(other, vec2)
+		vec1 = Rotate(other, base)
+		vec2 = Rotate(other, vec2)
 	}
 	return vec2[0] > glm.Epsilon
 }
@@ -68,10 +66,16 @@ func (this *Polygon2) removePointsOnLine(vertices []glm.Vec2) []glm.Vec2 {
 	}
 	return newPoints
 }
-func NewPolygon2(glyf *SimpleGlyf, ctx *closedGL.ClosedGLContext, triMesh *closedGL.TriangleMesh, lineMesh *closedGL.LineMesh, pMesh *closedGL.PixelMesh) Polygon2 {
-	var retPolygon = Polygon2{
-		glyf: *glyf,
+
+func pointsToSS(points []glm.Vec2, wh float32) []glm.Vec2 {
+	var new = []glm.Vec2{}
+	for _, x := range points {
+		new = append(new, CartesianToSS(x, wh))
 	}
+	return new
+}
+func drawSimpleGlyf(glyf *SimpleGlyf, ctx *ClosedGLContext, triMesh *TriangleMesh) {
+	var retPolygon = Polygon2{}
 	var points = glyf.GetPoints()
 	for _, x := range points {
 		var vertices = []glm.Vec2{}
@@ -87,7 +91,10 @@ func NewPolygon2(glyf *SimpleGlyf, ctx *closedGL.ClosedGLContext, triMesh *close
 				vertices = append(vertices, control)
 			}
 			var uvCoords = [3]glm.Vec2{{0, 0}, {1.0 / 2.0, 0}, {1, 1}}
-			var sign = closedGL.Ternary(!isInside, float32(1), float32(-1))
+			var sign = Ternary(!isInside, float32(1), float32(-1))
+			if i == len(x)-3 {
+				control = second
+			}
 			triMesh.AddTri([3]glm.Vec2{first, control, second}, uvCoords, sign)
 		}
 		vertices = retPolygon.removePointsOnLine(vertices)
@@ -103,8 +110,6 @@ func NewPolygon2(glyf *SimpleGlyf, ctx *closedGL.ClosedGLContext, triMesh *close
 	for _, x := range retPolygon.polygons {
 		x.triangulateThisShit(triMesh)
 	}
-
-	return retPolygon
 }
 
 func (this *Polygon2) mergeContours() {
@@ -120,7 +125,7 @@ func (this *Polygon2) mergeContours() {
 	}
 	this.polygons = newPolys
 }
-func (this *Polygon1) polyFill(pMesh *closedGL.PixelMesh) {
+func (this *Polygon1) polyFill(pMesh *PixelMesh) {
 	for i := 0; i < 800; i++ {
 		for j := 0; j < 800; j++ {
 			var p = glm.Vec2{float32(i), float32(j)}
@@ -136,7 +141,7 @@ func (this *Polygon1) polyFill(pMesh *closedGL.PixelMesh) {
 }
 
 func (this *Polygon1) isVertex(p glm.Vec2) bool {
-	return closedGL.Contains(&this.vertices, p)
+	return Contains(&this.vertices, p)
 }
 func (this *Polygon1) isOnVertexVerticalLine(p glm.Vec2) bool {
 	for _, x := range this.vertices {
@@ -153,11 +158,11 @@ func (this *Polygon1) getIntersectionPointsInPolygon(p glm.Vec2) []glm.Vec2 {
 		return this.getIntersectionPointsInPolygon(glm.Vec2{p[0], p[1] - 0.01})
 
 	}
-	var ray = closedGL.CalculateLine(glm.Vec2{0, p[1]}, p)
+	var ray = CalculateLine(glm.Vec2{0, p[1]}, p)
 	for i := 0; i < len(this.edges)-1; i++ {
 		var first = this.vertices[this.edges[i]]
 		var second = this.vertices[this.edges[i+1]]
-		var line = closedGL.CalculateLine(first, second)
+		var line = CalculateLine(first, second)
 		var cp, valid = line.GetIntersection(ray)
 		if !valid {
 			continue
@@ -178,6 +183,7 @@ func (this *Polygon1) isOtherInsideOfThis(p *Polygon1) bool {
 	for _, x := range p.vertices {
 		if !this.isPointInPolygon(x) {
 			allInside = false
+			break
 		}
 	}
 	return allInside
@@ -205,12 +211,12 @@ func (this *Polygon1) enumerateVertices() {
 
 func (this *Polygon1) mergeOtherInThisToFillHoles(inner *Polygon1) {
 	var rightMost, rightMostIdx = inner.findRightmostPoint()
-	var ray = closedGL.CalculateLine(rightMost, glm.Vec2{1800, rightMost[1]})
+	var ray = CalculateLine(rightMost, glm.Vec2{0, rightMost[1]})
 	var newVertices = []glm.Vec2{}
 	for i := 0; i < len(this.vertices)-1; i++ {
 		var first = this.vertices[i]
 		var second = this.vertices[i+1]
-		var line = closedGL.CalculateLine(first, second)
+		var line = CalculateLine(first, second)
 		var cp, valid = line.GetIntersection(ray)
 		if this.isVertex(cp) {
 			panic("met vertex")
@@ -225,12 +231,6 @@ func (this *Polygon1) mergeOtherInThisToFillHoles(inner *Polygon1) {
 			var rightMostUpper = rightMost
 			var rightMostLower = rightMost
 
-			newVertexUpper[1] -= 0.1
-			newVertexLower[1] += 0.1
-			rightMostUpper[1] -= 0.1
-			rightMostLower[1] += 0.1
-
-			_ = rightMostIdx
 			var outerIdx = i
 			for j := 0; j < outerIdx+1; j++ {
 				newVertices = append(newVertices, this.vertices[j])
@@ -258,7 +258,7 @@ func (this *Polygon1) mergeOtherInThisToFillHoles(inner *Polygon1) {
 	this.enumerateVertices()
 }
 
-func (this *Polygon1) triangulateThisShit(triMesh *closedGL.TriangleMesh) {
+func (this *Polygon1) triangulateThisShit(triMesh *TriangleMesh) {
 	var i = 0
 	var edges = this.edges
 	var nrFound = 0
@@ -274,7 +274,7 @@ func (this *Polygon1) triangulateThisShit(triMesh *closedGL.TriangleMesh) {
 		var second = this.vertices[edges[(i+1)%edgeLen]]
 
 		var isInsidePoly = true
-		var line = closedGL.CalculateLine(first, second)
+		var line = CalculateLine(first, second)
 		if first[1] == tip[1] && tip[1] == second[1] || first[0] == tip[0] && tip[0] == second[0] {
 			continue
 		}
@@ -291,7 +291,7 @@ func (this *Polygon1) triangulateThisShit(triMesh *closedGL.TriangleMesh) {
 
 		if isInsidePoly {
 			triMesh.AddTri([3]glm.Vec2{first, tip, second}, [3]glm.Vec2{{1, 1}, {1, 1}, {1, 1}}, 1)
-			edges = closedGL.RemoveAt(edges, i%edgeLen)
+			edges = RemoveAt(edges, i%edgeLen)
 			nrFound++
 			i = 0
 		}
@@ -300,7 +300,7 @@ func (this *Polygon1) triangulateThisShit(triMesh *closedGL.TriangleMesh) {
 	triMesh.AddTri([3]glm.Vec2{this.vertices[edges[0]], this.vertices[edges[1]], this.vertices[edges[2]]}, [3]glm.Vec2{{1, 1}, {1, 1}, {1, 1}}, 1)
 }
 
-func (this *Polygon1) showVerticesAndLines(pMesh *closedGL.PixelMesh, lMesh *closedGL.LineMesh) {
+func (this *Polygon1) showVerticesAndLines(pMesh *PixelMesh, lMesh *LineMesh) {
 	for i := 0; i < len(this.edges)-1; i++ {
 		var a = this.vertices[this.edges[i]]
 		var b = this.vertices[this.edges[i+1]]
