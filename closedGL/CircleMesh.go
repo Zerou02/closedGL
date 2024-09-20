@@ -5,9 +5,9 @@ import (
 	"github.com/go-gl/gl/v4.6-core/gl"
 )
 
-type CircleManager struct {
+type CircleMesh struct {
 	shader         *Shader
-	projection     *glm.Mat4
+	projection     glm.Mat4
 	vao            uint32
 	amountCircles  uint32
 	baseVBO        BufferFloat
@@ -15,15 +15,15 @@ type CircleManager struct {
 	indices        []byte
 }
 
-func newCircleManger(shader *Shader, projection *glm.Mat4) CircleManager {
+func newCircleMesh(shader *Shader, projection glm.Mat4) CircleMesh {
 	var indices = []byte{0, 1, 2, 2, 1, 3}
-	var circleMan = CircleManager{shader: shader, projection: projection, amountCircles: 0, indices: indices}
-	circleMan.generateBuffers()
+	var mesh = CircleMesh{shader: shader, projection: projection, amountCircles: 0, indices: indices}
+	mesh.initBuffer()
 
-	return circleMan
+	return mesh
 }
 
-func (this *CircleManager) generateBuffers() {
+func (this *CircleMesh) initBuffer() {
 	this.vao = genVAO()
 	gl.BindVertexArray(0)
 	this.baseVBO = genSingularBufferFloat(this.vao, 0, 2, gl.FLOAT, false, 0)
@@ -41,19 +41,18 @@ func (this *CircleManager) generateBuffers() {
 	this.baseVBO.copyToGPU()
 }
 
-func (this *CircleManager) beginDraw() {
-	this.amountCircles = 0
+func (this *CircleMesh) Copy() {
+	gl.BindVertexArray(this.vao)
+	this.baseVBO.copyToGPU()
+	this.instanceBuffer.copyToGPU()
+}
+
+func (this *CircleMesh) Clear() {
 	this.instanceBuffer.clear()
+	this.amountCircles = 0
 }
 
-func (this *CircleManager) deleteBuffers() {
-	gl.DeleteBuffers(1, &this.vao)
-	gl.DeleteBuffers(1, &this.baseVBO.buffer)
-	gl.DeleteBuffers(1, &this.instanceBuffer.buffer)
-
-}
-
-func (this *CircleManager) createVertices(centre glm.Vec2, colour, borderColour glm.Vec4, radius, borderThickness float32) {
+func (this *CircleMesh) AddCircle(centre glm.Vec2, colour, borderColour glm.Vec4, radius, borderThickness float32) {
 	var stride uint32 = 12
 
 	this.instanceBuffer.resizeCPUData((int(this.amountCircles) + 1) * int(stride))
@@ -75,9 +74,9 @@ func (this *CircleManager) createVertices(centre glm.Vec2, colour, borderColour 
 	this.amountCircles++
 }
 
-func (this *CircleManager) draw() {
+func (this *CircleMesh) Draw() {
 	this.shader.use()
-	this.shader.setUniformMatrix4("projection", this.projection)
+	this.shader.setUniformMatrix4("projection", &this.projection)
 	gl.Disable(gl.DEPTH_TEST)
 	gl.BindVertexArray(this.vao)
 

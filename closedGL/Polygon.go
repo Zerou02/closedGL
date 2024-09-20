@@ -75,6 +75,7 @@ func pointsToSS(points []glm.Vec2, wh float32) []glm.Vec2 {
 	return new
 }
 func drawSimpleGlyf(glyf *SimpleGlyf, ctx *ClosedGLContext, triMesh *TriangleMesh) {
+
 	var retPolygon = Polygon2{}
 	var points = glyf.GetPoints()
 	for _, x := range points {

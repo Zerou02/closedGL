@@ -97,7 +97,13 @@ func ConvertToStandardForm(eq glm.Vec2) glm.Vec3 {
 	return glm.Vec3{-eq[0], 1, -eq[1]}
 }
 
+func IsCircleLineCollision(r float32, p1, p2 glm.Vec2, circlePos glm.Vec2, wh float32) bool {
+	var line = CalcLinearEquation(p1, p2)
+	return len(LineCircleIntersection(r, line, circlePos)) > 0
+}
+
 // https://cp-algorithms.com/geometry/circle-line-intersection.html
+// ausgelegt für SS
 func LineCircleIntersection(r float32, eq glm.Vec2, circlePos glm.Vec2) []glm.Vec2 {
 	var retArr []glm.Vec2 = []glm.Vec2{}
 

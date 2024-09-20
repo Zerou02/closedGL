@@ -154,6 +154,14 @@ func LerpVec2(a, b glm.Vec2, t float32) glm.Vec2 {
 	return glm.Vec2{Lerp(a[0], b[0], t), Lerp(a[1], b[1], t)}
 }
 
+func LerpVec4(a, b glm.Vec4, t float32) glm.Vec4 {
+	return glm.Vec4{
+		Lerp(a[0], b[0], t),
+		Lerp(a[1], b[1], t),
+		Lerp(a[2], b[2], t),
+		Lerp(a[3], b[3], t),
+	}
+}
 func BezierLerp(a, b, controlPoint glm.Vec2, t float32) glm.Vec2 {
 	var r = LerpVec2(a, controlPoint, t)
 	var s = LerpVec2(controlPoint, b, t)

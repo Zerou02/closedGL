@@ -282,6 +282,10 @@ func (this *ClosedGLContext) CreateRectMesh() RectangleMesh {
 	return newRectMesh(this.shaderCameraManager.Shadermap["rect"], this.shaderCameraManager.projection2D)
 }
 
+func (this *ClosedGLContext) CreateCircleMesh() CircleMesh {
+	return newCircleMesh(this.shaderCameraManager.Shadermap["circle"], this.shaderCameraManager.projection2D)
+}
+
 func (this *ClosedGLContext) CreatePixelMesh() PixelMesh {
 	return newPixelMesh(this.shaderCameraManager.Shadermap["pixel"], this.shaderCameraManager.projection2D)
 }
@@ -313,4 +317,8 @@ func (this *ClosedGLContext) LoadFont(path string) {
 
 func (this *ClosedGLContext) DrawText(x, y float32, size float32, text string, textMesh *TextMesh) {
 	this.TextManager.drawText(x, y, size, text, textMesh)
+}
+
+func (this *ClosedGLContext) GetDelta() float32 {
+	return float32(this.FPSCounter.Delta)
 }

@@ -14,6 +14,8 @@ type RectangleMesh struct {
 	instanceBuffer BufferFloat
 	baseVBO        BufferFloat
 	indices        []byte
+	dirty          bool
+	update         bool
 }
 
 func newRectMesh(shader *Shader, defaultProj glm.Mat4) RectangleMesh {
@@ -60,6 +62,9 @@ func (this *RectangleMesh) Clear() {
 	this.amountQuads = 0
 }
 
+func (this *RectangleMesh) AddQuad(q *Quad) {
+	this.AddRect(q.dim, q.colour)
+}
 func (this *RectangleMesh) AddRect(dim, colour glm.Vec4) {
 	var stride uint32 = 8
 
@@ -75,9 +80,13 @@ func (this *RectangleMesh) AddRect(dim, colour glm.Vec4) {
 	this.instanceBuffer.cpuArr[this.amountQuads*stride+7] = colour[3]
 
 	this.amountQuads++
+	this.dirty = true
 }
 
 func (this *RectangleMesh) Draw() {
+	if this.dirty {
+		this.Copy()
+	}
 	this.shader.use()
 	this.shader.setUniformMatrix4("projection", &this.projection)
 	//	this.shader.setUniformMatrix4("view", &this.view)
@@ -85,4 +94,20 @@ func (this *RectangleMesh) Draw() {
 	gl.BindVertexArray(this.vao)
 	gl.DrawElementsInstanced(gl.TRIANGLES, 6, gl.UNSIGNED_BYTE, gl.Ptr(this.indices), int32(this.amountQuads))
 	gl.Enable(gl.DEPTH_TEST)
+	if this.update {
+		this.update = false
+	}
+	if this.dirty {
+		this.update = true
+		this.dirty = false
+		this.Clear()
+	}
+}
+
+func (this *RectangleMesh) setDirty() {
+	this.dirty = true
+}
+
+func (this *RectangleMesh) isUpdate() bool {
+	return this.update
 }

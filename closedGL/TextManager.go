@@ -1,6 +1,8 @@
 package closedGL
 
-import "github.com/EngoEngine/glm"
+import (
+	"github.com/EngoEngine/glm"
+)
 
 type TextManager struct {
 	reader Reader
@@ -25,6 +27,7 @@ func (this *TextManager) drawText(x, y float32, size float32, text string, triMe
 	for _, x := range text {
 		glyfs = append(glyfs, this.readGlyf(uint32(x)))
 	}
+
 	this.setAdvanceWidth(&glyfs)
 	for i := 0; i < len(glyfs); i++ {
 		glyfs[i].Scale(scaleFactor)
