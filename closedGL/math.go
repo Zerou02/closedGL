@@ -154,6 +154,14 @@ func LerpVec2(a, b glm.Vec2, t float32) glm.Vec2 {
 	return glm.Vec2{Lerp(a[0], b[0], t), Lerp(a[1], b[1], t)}
 }
 
+func LerpVec3(a, b glm.Vec3, t float32) glm.Vec3 {
+	return glm.Vec3{
+		Lerp(a[0], b[0], t),
+		Lerp(a[1], b[1], t),
+		Lerp(a[2], b[2], t),
+	}
+}
+
 func LerpVec4(a, b glm.Vec4, t float32) glm.Vec4 {
 	return glm.Vec4{
 		Lerp(a[0], b[0], t),
@@ -328,4 +336,23 @@ func MiddlePoint(p1, p2 glm.Vec2) glm.Vec2 {
 func IsPointInCircle(p, circleCentre glm.Vec2, r float32) bool {
 	var dist = circleCentre.Sub(&p)
 	return dist.Len() <= r
+}
+
+// kp, warum das in ss funktioniert
+func GetReflectionVec(p1, p2, vec glm.Vec2) glm.Vec2 {
+	var line = p2.Sub(&p1)
+	var perp = line.Perp()
+	var dot = vec.Dot(&perp) / (perp.Dot(&perp))
+	var projNV = perp.Mul(dot)
+	projNV = projNV.Mul(-2)
+	var retVec = vec.Add(&projNV)
+	retVec.Normalize()
+
+	return retVec
+}
+
+func CalcPercentage(lower, upper, val float32) float32 {
+	var valAdjusted = val - lower
+	var rightAdjusted = upper - lower
+	return valAdjusted / rightAdjusted
 }

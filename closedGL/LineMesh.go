@@ -115,3 +115,8 @@ func (this *LineMesh) Copy() {
 	gl.BindVertexArray(this.vao)
 	this.buffer.copyToGPU()
 }
+
+func (this *LineMesh) Clear() {
+	this.buffer.clear()
+	this.amountPoints = 0
+}

@@ -48,10 +48,5 @@ func (this *Slider) Process() {
 }
 
 func (this *Slider) GetPercentage() float32 {
-	var baseX = this.bg.dim[0]
-	var rightMostX = this.bg.dim[0] + this.bg.dim[2]
-	var knobX = this.knob.dim[0]
-	var knobAdjusted = knobX - baseX
-	var rightAdjusted = rightMostX - baseX
-	return knobAdjusted / rightAdjusted
+	return CalcPercentage(this.bg.dim[0], this.bg.dim[0]+this.bg.dim[2], this.knob.dim[0])
 }

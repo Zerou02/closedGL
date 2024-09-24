@@ -144,10 +144,14 @@ func CalculateLine(p1, p2 glm.Vec2) Line {
 }
 
 func (this *Line) ClosestPoint(p glm.Vec2) glm.Vec2 {
-	var y2 = this.p2[1]
-	var y1 = this.p1[1]
-	var x1 = this.p1[0]
-	var x2 = this.p2[0]
+	return ClosestPointOnLine(this.p1, this.p2, p)
+}
+
+func ClosestPointOnLine(lp1, lp2, p glm.Vec2) glm.Vec2 {
+	var y2 = lp2[1]
+	var y1 = lp1[1]
+	var x1 = lp1[0]
+	var x2 = lp2[0]
 	var a1 = y2 - y1
 	var b1 = x1 - x2
 	var c1 = (y2-y1)*x1 + (x1-x2)*y1
@@ -163,5 +167,4 @@ func (this *Line) ClosestPoint(p glm.Vec2) glm.Vec2 {
 		cy = p[1]
 	}
 	return glm.Vec2{cx, cy}
-
 }
