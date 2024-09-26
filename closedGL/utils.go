@@ -241,3 +241,11 @@ func Ternary[T any](cond bool, pos, neg T) T {
 		return neg
 	}
 }
+
+func ArrSum[T GLType](arr *[]T) int {
+	var sum T = 0
+	for _, x := range *arr {
+		sum += x
+	}
+	return int(sum)
+}

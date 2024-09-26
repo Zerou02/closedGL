@@ -143,10 +143,10 @@ func (this *Cube) copyCurrMesh() CubeMesh {
 	this.currMesh.instanceBuffer.cpuBuffer = []uint32{}
 
 	var retMesh = CubeMesh{
-		amountCubes:    this.currMesh.amountCubes,
-		vao:            this.currMesh.vao,
-		instanceBuffer: this.currMesh.instanceBuffer.copy(),
-		ssbo:           this.currMesh.ssbo.copy(),
+		amountCubes: this.currMesh.amountCubes,
+		vao:         this.currMesh.vao,
+		//	instanceBuffer: this.currMesh.instanceBuffer.copy(),
+		ssbo: this.currMesh.ssbo.copy(),
 	}
 	this.currMesh = CubeMesh{}
 	return retMesh

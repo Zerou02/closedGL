@@ -4,14 +4,15 @@ import (
 	"github.com/go-gl/gl/v4.6-core/gl"
 )
 
-type BufferCompose interface {
+type IBuffer interface {
 	clear()
 	copyToGPU()
-	resizeCPUData(newLenEntries int)
+	resizeCPUData(newLen int)
+	//copy() *IBuffer
+	addVertices(vertices *[]any, stride uint32, amountElements uint32)
 }
-
 type GLType interface {
-	float32 | uint32 | uint64
+	float32 | uint32 | uint64 | int
 }
 
 type Buffer[T GLType] struct {
@@ -19,6 +20,13 @@ type Buffer[T GLType] struct {
 	gpuBuffer         uint32
 	bufferSize        int
 	sizeOfTypeInBytes int32
+}
+
+type SSBO[T GLType] struct {
+	gpuBuffer        uint32
+	cpuBuffer        []T
+	bindingPoint     uint32
+	elementsPerEntry int32
 }
 
 // dataType = gl.unsigned_short bspw.
@@ -33,6 +41,17 @@ func genSingularBuffer[T GLType](vao, index uint32, elementsPerEntry int32, data
 	return buf
 }
 
+func genInterleavedBufferGen(vao uint32, startIdx int, vertexAttribBytes []int, divisorValues []int, glType uint32) IBuffer {
+	if glType == gl.FLOAT {
+		var b = genInterleavedBuffer[float32](vao, startIdx, vertexAttribBytes, divisorValues, glType)
+		return &b
+	} else if glType == gl.UNSIGNED_INT {
+		var b = genInterleavedBuffer[uint32](vao, startIdx, vertexAttribBytes, divisorValues, glType)
+		return &b
+	} else {
+		panic("Not implemented")
+	}
+}
 func genInterleavedBuffer[T GLType](vao uint32, startIdx int, vertexAttribBytes []int, divisorValues []int, glType uint32) Buffer[T] {
 	var buf = Buffer[T]{
 		cpuBuffer:         []T{},
@@ -113,30 +132,6 @@ func generateInterleavedVBO(vao uint32, startIdx int, vertexAttribBytes []int, d
 	return vbo
 }
 
-func (this *Buffer[T]) resizeCPUData(newLenEntries int) {
-	extendArrayGen[T](&this.cpuBuffer, newLenEntries)
-}
-
-func (this *Buffer[T]) copyToGPU() {
-	setVerticesInVboGen(&this.cpuBuffer, &this.bufferSize, this.gpuBuffer, int(this.sizeOfTypeInBytes))
-}
-
-func (this *Buffer[T]) clear() {
-	this.cpuBuffer = []T{}
-	this.copyToGPU()
-}
-
-func (this *Buffer[T]) copy() Buffer[T] {
-	var newArr = make([]T, len(this.cpuBuffer))
-	copy(newArr, this.cpuBuffer)
-	return Buffer[T]{
-		cpuBuffer:         newArr,
-		gpuBuffer:         this.gpuBuffer,
-		bufferSize:        this.bufferSize,
-		sizeOfTypeInBytes: this.sizeOfTypeInBytes,
-	}
-}
-
 func setVerticesInVboGen[T GLType](vertices *[]T, vboSizeEntries *int, vbo uint32, dataTypeSizeInBytes int) {
 	if len(*vertices) == 0 {
 		return
@@ -158,13 +153,6 @@ func extendArrayGen[T GLType](arr *[]T, newLenEntries int) {
 		copy(newArr, *arr)
 		*arr = newArr
 	}
-}
-
-type SSBO[T GLType] struct {
-	gpuBuffer        uint32
-	cpuBuffer        []T
-	bindingPoint     uint32
-	elementsPerEntry int32
 }
 
 // u64 = gl.unsigned_int64_arb
@@ -224,4 +212,36 @@ func genVAO() uint32 {
 	gl.GenVertexArrays(1, &vao)
 	gl.BindVertexArray(vao)
 	return vao
+}
+
+func (this *Buffer[T]) resizeCPUData(newLenEntries int) {
+	extendArrayGen[T](&this.cpuBuffer, newLenEntries)
+}
+
+func (this *Buffer[T]) copyToGPU() {
+	setVerticesInVboGen(&this.cpuBuffer, &this.bufferSize, this.gpuBuffer, int(this.sizeOfTypeInBytes))
+}
+
+func (this *Buffer[T]) clear() {
+	this.cpuBuffer = []T{}
+	this.copyToGPU()
+}
+
+/* func (this *Buffer[T]) copy() IBuffer {
+	var newArr = make([]T, len(this.cpuBuffer))
+	copy(newArr, this.cpuBuffer)
+	var buf = Buffer[T]{
+		cpuBuffer:         newArr,
+		gpuBuffer:         this.gpuBuffer,
+		bufferSize:        this.bufferSize,
+		sizeOfTypeInBytes: this.sizeOfTypeInBytes,
+	}
+	return buf
+} */
+
+func (this *Buffer[T]) addVertices(vertices *[]any, stride uint32, amountElements uint32) {
+	this.resizeCPUData(int((amountElements + 1) * stride))
+	for i := 0; i < len(*vertices); i++ {
+		this.cpuBuffer[int(amountElements*stride)+i] = (*vertices)[i].(T) //type assertion
+	}
 }

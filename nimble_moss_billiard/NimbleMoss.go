@@ -166,7 +166,7 @@ func (this *NimbleMoss) loadLines() {
 	for i := 0; i < len(line); i += 2 {
 		this.lineMesh.AddLine(line[i], line[i+1], this.lineColours[i/2][0], this.lineColours[i/2][1])
 	}
-	this.lineMesh.Copy()
+	this.lineMesh.CopyToGPU()
 	this.currLine = line
 }
 

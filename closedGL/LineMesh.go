@@ -6,58 +6,26 @@ import (
 )
 
 type LineMesh struct {
-	lineShader       *Shader
-	projection, view glm.Mat4
-	indices          []uint16
-	vao              uint32
-	amountPoints     int
-	buffer           Buffer[float32]
+	mesh SimpleMesh
 }
 
 func newLineMesh(shader *Shader, projection glm.Mat4) LineMesh {
-	var LineMesh = LineMesh{lineShader: shader, projection: projection, vao: 0, view: glm.Ident4()}
-	LineMesh.generateBuffers()
+	var LineMesh = LineMesh{
+		mesh: newSimpleMesh(shader, projection, glm.Ident4()),
+	}
+	LineMesh.mesh.InitBuffer([]uint16{}, [][]int{{2, 4}}, [][]int{{0, 0}}, []uint32{gl.FLOAT})
 	return LineMesh
 }
 
-func (this *LineMesh) beginDraw() {
-	this.indices = []uint16{}
-
-	this.amountPoints = 0
-}
-
-func (this *LineMesh) generateBuffers() {
-	this.vao = genVAO()
-	this.buffer = genInterleavedBuffer[float32](this.vao, 0, []int{2, 4}, []int{0, 0}, gl.FLOAT)
-}
-
 func (this *LineMesh) Draw() {
-	if this.amountPoints < 1 {
-		return
-	}
-	gl.Disable(gl.DEPTH_TEST)
-	this.lineShader.use()
-	this.lineShader.setUniformMatrix4("projection", &this.projection)
-	this.lineShader.setUniformMatrix4("view", &this.view)
-
-	gl.BindVertexArray(this.vao)
-	gl.DrawElements(gl.LINES, int32(len(this.indices)), gl.UNSIGNED_SHORT, gl.Ptr(this.indices))
-	gl.Enable(gl.DEPTH_TEST)
-
+	this.mesh.Draw()
 }
 
 func (this *LineMesh) AddPoint(pos glm.Vec2, colour glm.Vec4) {
-	this.buffer.resizeCPUData((this.amountPoints + 1) * 6)
-
-	this.indices = append(this.indices, uint16(this.amountPoints))
-
-	this.buffer.cpuBuffer[this.amountPoints*6+0] = pos[0]
-	this.buffer.cpuBuffer[this.amountPoints*6+1] = pos[1]
-	this.buffer.cpuBuffer[this.amountPoints*6+2] = colour[0]
-	this.buffer.cpuBuffer[this.amountPoints*6+3] = colour[1]
-	this.buffer.cpuBuffer[this.amountPoints*6+4] = colour[2]
-	this.buffer.cpuBuffer[this.amountPoints*6+5] = colour[3]
-	this.amountPoints++
+	var vertices = []any{pos[0], pos[1], colour[0], colour[1], colour[2], colour[3]}
+	var indices = []uint16{uint16(this.mesh.amountElements)}
+	var test = []*[]any{&vertices}
+	addVertices(&this.mesh, test, &indices)
 }
 
 func (this *LineMesh) AddLine(pos1, pos2 glm.Vec2, colour1, colour2 glm.Vec4) {
@@ -72,7 +40,7 @@ func (this *LineMesh) AddPath(pos []glm.Vec2, colours []glm.Vec4) {
 	}
 	this.AddPoint(pos[0], colours[0])
 	for i := 1; i < len(pos)-1; i++ {
-		this.indices = append(this.indices, uint16(this.amountPoints))
+		this.mesh.indices = append(this.mesh.indices, uint16(this.mesh.amountElements))
 		this.AddPoint(pos[i], colours[i])
 	}
 	this.AddPoint(pos[len(pos)-1], colours[len(pos)-1])
@@ -107,12 +75,10 @@ func (this *LineMesh) AddQuadraticBezierLerp(p1, p2, controlPoint glm.Vec2, colo
 	}
 }
 
-func (this *LineMesh) Copy() {
-	gl.BindVertexArray(this.vao)
-	this.buffer.copyToGPU()
+func (this *LineMesh) CopyToGPU() {
+	this.mesh.CopyToGPU()
 }
 
 func (this *LineMesh) Clear() {
-	this.buffer.clear()
-	this.amountPoints = 0
+	this.mesh.Clear()
 }
