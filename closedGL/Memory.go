@@ -2,6 +2,17 @@ package closedGL
 
 import "github.com/EngoEngine/glm"
 
+func extendArrayGen[T GLType](arr *[]T, newLenEntries int) {
+	if newLenEntries != 0 && len(*arr) == 0 {
+		*arr = make([]T, 1)
+	}
+	for newLenEntries >= len(*arr) {
+		var newArr = make([]T, len(*arr)*2)
+		copy(newArr, *arr)
+		*arr = newArr
+	}
+}
+
 func extendArray(arr *[]float32, lenWithNewEntriesFloats int) {
 	if lenWithNewEntriesFloats != 0 && len(*arr) == 0 {
 		*arr = make([]float32, 1)

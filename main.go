@@ -2,60 +2,38 @@ package main
 
 import (
 	_ "image/png"
+
+	"github.com/EngoEngine/glm"
+	"github.com/Zerou02/closedGL/closedGL"
+	"github.com/Zerou02/closedGL/tuwuing_complete"
 )
 
 func main() {
 	//StartClosedGL()
-	/* StartTuwuing() */
-	NimbleMoss()
+	StartTuwuing()
 }
 
-/* func NimbleMoss() {
-	var openGL = closedGL.InitClosedGL(800, 600, "nimble moss")
-	openGL.LimitFPS(true)
-
-	var moose = nimblemossbilliard.NewNimbleMoss(&openGL)
-	openGL.LimitFPS(false)
-
-	/* for i := 0; i < 100; i++ {
-		for j := 0; j < 100; j++ {
-			moose.ProcessNTimes(glm.Vec2{100 + float32(i), 100 + float32(j)}, 4, 1.0/60.0)
-		}
-	}
-	for !openGL.WindowShouldClose() {
-		var delta = openGL.GetDelta()
-		moose.ProcessUntil(5, delta)
-
-		openGL.ClearBG(glm.Vec4{0, 0})
-		openGL.BeginDrawing()
-		moose.Draw(delta)
-		openGL.DrawFPS(0, 0, 1)
-
-		openGL.EndDrawing()
-
-	}
-	openGL.Free()
-} */
-
-/* func StartTuwuing() {
+func StartTuwuing() {
 	var openGL = closedGL.InitClosedGL(1400, 800, "demo")
 
-	openGL.LimitFPS(true)
-	var complete = tuwuing_complete.NewTuwuingComplete(&openGL)
+	var tuwuing = tuwuing_complete.StartTuwuing(&openGL)
+	openGL.LimitFPS(false)
+	//var complete = tuwuing_complete.NewTuwuingComplete(&openGL)
 
 	for !openGL.WindowShouldClose() {
-		complete.Process()
+		//	complete.Process()
 
 		openGL.ClearBG(glm.Vec4{0, 0, 0, 0})
 		openGL.BeginDrawing()
-		complete.Draw()
+		tuwuing.Draw()
+		//	complete.Draw()
 
 		openGL.DrawFPS(500, 0, 1)
 
 		openGL.EndDrawing()
 	}
 	openGL.Free()
-} */
+}
 
 /*
 func StartClosedGL() {

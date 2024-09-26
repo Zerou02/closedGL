@@ -430,3 +430,137 @@ func setVerticesInVboU8(vertices *[]uint8, vboSizeEntries *int, vbo uint32) {
 		gl.BufferSubData(gl.ARRAY_BUFFER, 0, len(*vertices)*bytesPerEntry, gl.Ptr(*vertices))
 	}
 }
+
+type GLType interface {
+	float32 | uint32
+}
+
+type Buffer[T GLType] struct {
+	cpuBuffer         []T
+	gpuBuffer         uint32
+	bufferSize        int
+	sizeOfTypeInBytes int32
+}
+
+// dataType = gl.unsigned_short bspw.
+func genSingularBuffer[T GLType](vao, index uint32, elementsPerEntry int32, dataType uint32, normalized bool, instanceCount uint32) Buffer[T] {
+	return Buffer[T]{
+		cpuBuffer:         []T{},
+		gpuBuffer:         genSingularVBO(vao, index, elementsPerEntry, dataType, normalized, instanceCount),
+		bufferSize:        0,
+		sizeOfTypeInBytes: getByteLenOfGLDataType(dataType),
+	}
+}
+
+func genInterleavedBuffer[T GLType](vao uint32, startIdx int, vertexAttribBytes []int, divisorValues []int, glType uint32) Buffer[T] {
+	return Buffer[T]{
+		cpuBuffer:         []T{},
+		gpuBuffer:         generateInterleavedVBO(vao, startIdx, vertexAttribBytes, divisorValues, glType),
+		bufferSize:        0,
+		sizeOfTypeInBytes: getByteLenOfGLDataType(glType),
+	}
+}
+
+func getByteLenOfGLDataType(glDataType uint32) int32 {
+	var dataSizes map[uint32]int32 = map[uint32]int32{}
+	dataSizes[gl.UNSIGNED_BYTE] = 1
+	dataSizes[gl.UNSIGNED_SHORT] = 2
+	dataSizes[gl.UNSIGNED_INT] = 4
+	dataSizes[gl.INT] = 4
+	dataSizes[gl.FLOAT] = 4
+	return dataSizes[glDataType]
+}
+
+func isGLIntType(dataType uint32) bool {
+	return dataType == gl.UNSIGNED_SHORT || dataType == gl.UNSIGNED_BYTE || dataType == gl.UNSIGNED_INT || dataType == gl.INT
+
+}
+
+// dataType = gl.unsigned_short bspw.
+func genSingularVBOGeneric(vao, index uint32, elementsPerEntry int32, dataType uint32, normalized bool, instanceCount uint32) uint32 {
+	var vbo uint32 = 0
+	gl.BindVertexArray(vao)
+
+	gl.GenBuffers(1, &vbo)
+	gl.EnableVertexAttribArray(index)
+	gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
+
+	var dataSize = getByteLenOfGLDataType(dataType)
+	var isInt = isGLIntType(dataType)
+
+	if isInt {
+		gl.VertexAttribIPointerWithOffset(index, elementsPerEntry, dataType, dataSize*elementsPerEntry, 0)
+	} else {
+		gl.VertexAttribPointerWithOffset(index, elementsPerEntry, dataType, normalized, dataSize*elementsPerEntry, 0)
+	}
+	gl.VertexAttribDivisor(index, instanceCount)
+	return vbo
+}
+
+// Kein Plan, ob das hier funktioniert...
+// glType = gl.float,...
+// startIdx = shader layout locations
+// vertexBytes = elementsPerEntry?
+func generateInterleavedVBO(vao uint32, startIdx int, vertexAttribBytes []int, divisorValues []int, glType uint32) uint32 {
+	gl.BindVertexArray(vao)
+	var vbo uint32
+	gl.GenBuffers(1, &vbo)
+	gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
+
+	var stride int32 = 0
+	for i := 0; i < len(vertexAttribBytes); i++ {
+		stride += int32(vertexAttribBytes[i])
+	}
+
+	var currOffset int32 = 0
+	var isInt = isGLIntType(glType)
+
+	var typeByteSize = getByteLenOfGLDataType(glType)
+	for i := startIdx; i < startIdx+len(vertexAttribBytes); i++ {
+		gl.EnableVertexAttribArray(uint32(i))
+		if isInt {
+			gl.VertexAttribIPointerWithOffset(uint32(i), int32(vertexAttribBytes[i-startIdx]), glType, stride*typeByteSize, uintptr(currOffset*typeByteSize))
+		} else {
+			gl.VertexAttribPointerWithOffset(uint32(i), int32(vertexAttribBytes[i-startIdx]), glType, false, stride*typeByteSize, uintptr(currOffset*typeByteSize))
+		}
+		gl.VertexAttribDivisor(uint32(i), uint32(divisorValues[i-startIdx]))
+		currOffset += int32(vertexAttribBytes[i-startIdx])
+	}
+	return vbo
+}
+
+func (this *Buffer[T]) resizeCPUData(newLenEntries int) {
+	extendArrayGen[T](&this.cpuBuffer, newLenEntries)
+}
+
+func (this *Buffer[T]) copyToGPU() {
+	setVerticesInVboGen(&this.cpuBuffer, &this.bufferSize, this.gpuBuffer, int(this.sizeOfTypeInBytes))
+}
+
+func (this *Buffer[T]) clear() {
+	this.cpuBuffer = []T{}
+}
+
+func (this *Buffer[T]) copy() Buffer[T] {
+	var newArr = make([]T, len(this.cpuBuffer))
+	copy(newArr, this.cpuBuffer)
+	return Buffer[T]{
+		cpuBuffer:         newArr,
+		gpuBuffer:         this.gpuBuffer,
+		bufferSize:        this.bufferSize,
+		sizeOfTypeInBytes: this.sizeOfTypeInBytes,
+	}
+}
+
+func setVerticesInVboGen[T GLType](vertices *[]T, vboSizeEntries *int, vbo uint32, dataTypeSizeInBytes int) {
+	if len(*vertices) == 0 {
+		return
+	}
+	gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
+	if len(*vertices)*dataTypeSizeInBytes >= *vboSizeEntries {
+		*vboSizeEntries = len(*vertices) * dataTypeSizeInBytes
+		gl.BufferData(gl.ARRAY_BUFFER, *vboSizeEntries, gl.Ptr(*vertices), gl.DYNAMIC_DRAW)
+	} else {
+		gl.BufferSubData(gl.ARRAY_BUFFER, 0, len(*vertices)*dataTypeSizeInBytes, gl.Ptr(*vertices))
+	}
+}

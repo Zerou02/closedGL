@@ -57,6 +57,7 @@ type ClosedGLContext struct {
 	mouseRightThisFramePressed bool
 	mouseRightLastFramePressed bool
 	drawWireframe              bool
+	Ww, Wh                     float32
 }
 
 func InitClosedGL(pWidth, pHeight float32, name string) ClosedGLContext {
@@ -90,6 +91,8 @@ func InitClosedGL(pWidth, pHeight float32, name string) ClosedGLContext {
 		Config:     config,
 		audio:      newAudio(),
 		Logger:     NewLogger(),
+		Ww:         width,
+		Wh:         height,
 	}
 	if config["potato-friendliness"] != "" {
 		con.LimitFPS(strToBool(config["potato-friendliness"]))
