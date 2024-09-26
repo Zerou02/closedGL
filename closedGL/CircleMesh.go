@@ -6,78 +6,48 @@ import (
 )
 
 type CircleMesh struct {
-	shader         *Shader
-	projection     glm.Mat4
-	vao            uint32
-	amountCircles  uint32
-	baseVBO        Buffer[float32]
-	instanceBuffer Buffer[float32]
-	indices        []byte
+	mesh SimpleMesh
 }
 
 func newCircleMesh(shader *Shader, projection glm.Mat4) CircleMesh {
-	var indices = []byte{0, 1, 2, 2, 1, 3}
-	var mesh = CircleMesh{shader: shader, projection: projection, amountCircles: 0, indices: indices}
-	mesh.initBuffer()
+	var indices = []uint16{0, 1, 2, 2, 1, 3}
+	var mesh = CircleMesh{
+		mesh: newSimpleMesh(shader, projection, glm.Ident4()),
+	}
+	mesh.mesh.InitBuffer(indices, [][]int{{2}, {4, 4, 4}}, [][]int{{0}, {1, 1, 1}}, []uint32{gl.FLOAT, gl.FLOAT})
+	var one float32 = 1.0
+	var zero float32 = 0.0
+	var first = []any{one, zero}
+	var second = []any{zero, zero}
+	var third = []any{one, one}
+	var fourth = []any{zero, one}
+
+	addVertices(&mesh.mesh, []*[]any{&first, {}}, &[]uint16{})
+	addVertices(&mesh.mesh, []*[]any{&second, {}}, &[]uint16{})
+	addVertices(&mesh.mesh, []*[]any{&third, {}}, &[]uint16{})
+	addVertices(&mesh.mesh, []*[]any{&fourth, {}}, &[]uint16{})
 
 	return mesh
 }
 
-func (this *CircleMesh) initBuffer() {
-	this.vao = genVAO()
-	gl.BindVertexArray(0)
-	this.baseVBO = genSingularBuffer[float32](this.vao, 0, 2, gl.FLOAT, false, 0)
-	this.instanceBuffer = genInterleavedBuffer[float32](this.vao, 1, []int{4, 4, 4}, []int{1, 1, 1}, gl.FLOAT) //centre,colour
-
-	var quadBaseData = []float32{
-		1.0, 0.0, //top r
-		0.0, 0.0, // top l
-		1.0, 1.0, // bottom r
-		0.0, 1.0, // bottom l,
-	}
-	this.baseVBO.cpuBuffer = quadBaseData
-	this.baseVBO.copyToGPU()
-}
-
-func (this *CircleMesh) Copy() {
-	gl.BindVertexArray(this.vao)
-	this.baseVBO.copyToGPU()
-	this.instanceBuffer.copyToGPU()
+func (this *CircleMesh) CopyToGPU() {
+	this.mesh.CopyToGPU()
 }
 
 func (this *CircleMesh) Clear() {
-	this.instanceBuffer.clear()
-	this.amountCircles = 0
+	this.mesh.Clear()
 }
 
 func (this *CircleMesh) AddCircle(centre glm.Vec2, colour, borderColour glm.Vec4, radius, borderThickness float32) {
-	var stride uint32 = 12
-
-	this.instanceBuffer.resizeCPUData((int(this.amountCircles) + 1) * int(stride))
-
-	this.instanceBuffer.cpuBuffer[this.amountCircles*stride+0] = centre[0]
-	this.instanceBuffer.cpuBuffer[this.amountCircles*stride+1] = centre[1]
-	this.instanceBuffer.cpuBuffer[this.amountCircles*stride+2] = radius
-	this.instanceBuffer.cpuBuffer[this.amountCircles*stride+3] = borderThickness
-	this.instanceBuffer.cpuBuffer[this.amountCircles*stride+4] = colour[0]
-	this.instanceBuffer.cpuBuffer[this.amountCircles*stride+5] = colour[1]
-	this.instanceBuffer.cpuBuffer[this.amountCircles*stride+6] = colour[2]
-	this.instanceBuffer.cpuBuffer[this.amountCircles*stride+7] = colour[3]
-	this.instanceBuffer.cpuBuffer[this.amountCircles*stride+8] = borderColour[0]
-	this.instanceBuffer.cpuBuffer[this.amountCircles*stride+9] = borderColour[1]
-	this.instanceBuffer.cpuBuffer[this.amountCircles*stride+10] = borderColour[2]
-	this.instanceBuffer.cpuBuffer[this.amountCircles*stride+11] = borderColour[3]
-	this.amountCircles++
+	var values = []any{
+		centre[0], centre[1],
+		radius, borderThickness,
+		colour[0], colour[1], colour[2], colour[3],
+		borderColour[0], borderColour[1], borderColour[2], borderColour[3],
+	}
+	addVertices(&this.mesh, []*[]any{{}, &values}, &[]uint16{})
 }
 
 func (this *CircleMesh) Draw() {
-	this.shader.use()
-	this.shader.setUniformMatrix4("projection", &this.projection)
-	gl.Disable(gl.DEPTH_TEST)
-	gl.BindVertexArray(this.vao)
-
-	this.instanceBuffer.copyToGPU()
-
-	gl.DrawElementsInstanced(gl.TRIANGLES, 6, gl.UNSIGNED_BYTE, gl.Ptr(this.indices), int32(this.amountCircles))
-	gl.Enable(gl.DEPTH_TEST)
+	this.mesh.Draw()
 }

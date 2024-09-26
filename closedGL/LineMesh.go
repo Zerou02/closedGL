@@ -24,8 +24,8 @@ func (this *LineMesh) Draw() {
 func (this *LineMesh) AddPoint(pos glm.Vec2, colour glm.Vec4) {
 	var vertices = []any{pos[0], pos[1], colour[0], colour[1], colour[2], colour[3]}
 	var indices = []uint16{uint16(this.mesh.amountElements)}
-	var test = []*[]any{&vertices}
-	addVertices(&this.mesh, test, &indices)
+	var arr = []*[]any{&vertices}
+	addVertices(&this.mesh, arr, &indices)
 }
 
 func (this *LineMesh) AddLine(pos1, pos2 glm.Vec2, colour1, colour2 glm.Vec4) {

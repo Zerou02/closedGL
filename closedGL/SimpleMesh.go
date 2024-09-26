@@ -58,7 +58,21 @@ func (this *SimpleMesh) Draw() {
 	this.shader.setUniformMatrix4("view", &this.view)
 
 	gl.BindVertexArray(this.vao)
-	gl.DrawElements(gl.LINES, int32(len(this.indices)), gl.UNSIGNED_SHORT, gl.Ptr(this.indices))
+	if len(this.buffer) > 1 {
+		if len(this.indices) > 0 {
+			gl.DrawElementsInstanced(gl.TRIANGLES, int32(len(this.indices)), gl.UNSIGNED_SHORT, gl.Ptr(this.indices), int32(this.amountElements))
+		} else {
+			println("not impl")
+		}
+	} else {
+		if len(this.indices) > 0 {
+
+			gl.DrawElements(gl.LINES, int32(len(this.indices)), gl.UNSIGNED_SHORT, gl.Ptr(this.indices))
+		} else {
+			println("not impl")
+		}
+	}
+
 	gl.Enable(gl.DEPTH_TEST)
 	if this.update {
 		this.update = false
