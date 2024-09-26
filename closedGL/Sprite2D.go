@@ -10,10 +10,10 @@ type SpriteManager struct {
 	projection     *glm.Mat4
 	vao            uint32
 	amountQuads    uint32
-	instanceBuffer BufferFloat
-	baseVBO        BufferFloat
+	instanceBuffer Buffer[float32]
+	baseVBO        Buffer[float32]
+	ssbo           SSBO[uint64]
 	indices        []byte
-	ssbo           SSBOU64
 	textureMane    TextureMane
 }
 
@@ -22,20 +22,13 @@ func newSpriteMane(shader *Shader, projection *glm.Mat4) SpriteManager {
 	var rect = SpriteManager{shader: shader, projection: projection, amountQuads: 0, indices: indices, textureMane: newTextureMane()}
 
 	rect.vao = genVAO()
-	rect.baseVBO = generateInterleavedVBOFloat2(rect.vao, 0, []int{4})
-	gl.BindBuffer(gl.ARRAY_BUFFER, rect.baseVBO.buffer)
-	gl.VertexAttribDivisor(0, 0)
-	rect.instanceBuffer = generateInterleavedVBOFloat2(rect.vao, 1, []int{4, 4, 2})
+	rect.baseVBO = genInterleavedBuffer[float32](rect.vao, 0, []int{4}, []int{0}, gl.FLOAT)
+	rect.instanceBuffer = genInterleavedBuffer[float32](rect.vao, 1, []int{4, 4, 2}, []int{1, 1, 1}, gl.FLOAT)
 
-	gl.BindBuffer(gl.ARRAY_BUFFER, rect.instanceBuffer.buffer)
-	gl.VertexAttribDivisor(1, 1)
-	gl.VertexAttribDivisor(2, 1)
-	gl.VertexAttribDivisor(3, 1)
-
-	rect.ssbo = genSSBOU64(1)
+	rect.ssbo = genSSBOGen[uint64](1, gl.UNSIGNED_INT64_ARB)
 
 	var cArr = []uint64{0}
-	rect.ssbo.cpuArr = cArr
+	rect.ssbo.cpuBuffer = cArr
 
 	var quadBaseData = []float32{
 		//pos,uv
@@ -44,7 +37,7 @@ func newSpriteMane(shader *Shader, projection *glm.Mat4) SpriteManager {
 		1.0, 1.0, 1.0, 1.0, // bottom r
 		0.0, 1.0, 0.0, 1.0, // bottom l,
 	}
-	rect.baseVBO.cpuArr = quadBaseData
+	rect.baseVBO.cpuBuffer = quadBaseData
 	rect.baseVBO.copyToGPU()
 
 	return rect
@@ -58,8 +51,8 @@ func (this *SpriteManager) beginDraw() {
 
 func (this *SpriteManager) deleteBuffers() {
 	gl.DeleteBuffers(1, &this.vao)
-	gl.DeleteBuffers(1, &this.baseVBO.buffer)
-	gl.DeleteBuffers(1, &this.instanceBuffer.buffer)
+	gl.DeleteBuffers(1, &this.baseVBO.gpuBuffer)
+	gl.DeleteBuffers(1, &this.instanceBuffer.gpuBuffer)
 
 }
 
@@ -69,27 +62,27 @@ func (this *SpriteManager) createVertices(dim glm.Vec4, texPath string, uv glm.V
 	this.instanceBuffer.resizeCPUData(int(this.amountQuads+1) * int(stride))
 	this.ssbo.resizeCPUData(int(this.amountQuads+1) * 1)
 
-	this.instanceBuffer.cpuArr[this.amountQuads*stride+0] = dim[0]
-	this.instanceBuffer.cpuArr[this.amountQuads*stride+1] = dim[1]
-	this.instanceBuffer.cpuArr[this.amountQuads*stride+2] = dim[2]
-	this.instanceBuffer.cpuArr[this.amountQuads*stride+3] = dim[3]
+	this.instanceBuffer.cpuBuffer[this.amountQuads*stride+0] = dim[0]
+	this.instanceBuffer.cpuBuffer[this.amountQuads*stride+1] = dim[1]
+	this.instanceBuffer.cpuBuffer[this.amountQuads*stride+2] = dim[2]
+	this.instanceBuffer.cpuBuffer[this.amountQuads*stride+3] = dim[3]
 	//uvData
-	this.instanceBuffer.cpuArr[this.amountQuads*stride+4] = uv[0]
-	this.instanceBuffer.cpuArr[this.amountQuads*stride+5] = uv[1]
-	this.instanceBuffer.cpuArr[this.amountQuads*stride+6] = uv[2]
-	this.instanceBuffer.cpuArr[this.amountQuads*stride+7] = uv[3]
+	this.instanceBuffer.cpuBuffer[this.amountQuads*stride+4] = uv[0]
+	this.instanceBuffer.cpuBuffer[this.amountQuads*stride+5] = uv[1]
+	this.instanceBuffer.cpuBuffer[this.amountQuads*stride+6] = uv[2]
+	this.instanceBuffer.cpuBuffer[this.amountQuads*stride+7] = uv[3]
 	//cellSprite
-	this.instanceBuffer.cpuArr[this.amountQuads*stride+8] = cellSpriteSize[0]
-	this.instanceBuffer.cpuArr[this.amountQuads*stride+9] = cellSpriteSize[1]
+	this.instanceBuffer.cpuBuffer[this.amountQuads*stride+8] = cellSpriteSize[0]
+	this.instanceBuffer.cpuBuffer[this.amountQuads*stride+9] = cellSpriteSize[1]
 
 	this.textureMane.loadTex(texPath)
-	this.ssbo.cpuArr[this.amountQuads] = this.textureMane.getHandle(texPath)
+	this.ssbo.cpuBuffer[this.amountQuads] = this.textureMane.getHandle(texPath)
 
 	this.amountQuads++
 }
 
 func (this *SpriteManager) draw() {
-	if len(this.ssbo.cpuArr) == 0 {
+	if len(this.ssbo.cpuBuffer) == 0 {
 		return
 	}
 	this.shader.use()

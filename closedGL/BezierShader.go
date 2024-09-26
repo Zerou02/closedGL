@@ -10,8 +10,8 @@ type BezierShader struct {
 	shader         *Shader
 	projection     *glm.Mat4
 	vao            uint32
-	baseBuffer     BufferFloat
-	instanceBuffer BufferFloat
+	baseBuffer     Buffer[float32]
+	instanceBuffer Buffer[float32]
 	amountLines    uint32
 	indices        []byte
 }
@@ -31,15 +31,11 @@ func (this *BezierShader) genBuffers() {
 		1.0, 1.0, // bottom r
 		0.0, 1.0, // bottom l,
 	}
-	this.baseBuffer = genSingularBufferFloat(this.vao, 0, 2, gl.FLOAT, false, 0)
-	this.baseBuffer.cpuArr = quadBaseData
+	this.baseBuffer = genSingularBuffer[float32](this.vao, 0, 2, gl.FLOAT, false, 0)
+	this.baseBuffer.cpuBuffer = quadBaseData
 	this.baseBuffer.copyToGPU()
-	this.instanceBuffer = BufferFloat{
-		buffer:     generateInterleavedVBOFloat(this.vao, 1, []int{4, 2, 2, 2}, []int{1, 1, 1, 1}),
-		bufferSize: 0,
-		cpuArr:     []float32{},
-	}
-	gl.BindBuffer(gl.ARRAY_BUFFER, this.instanceBuffer.buffer)
+	this.instanceBuffer = genInterleavedBuffer[float32](this.vao, 1, []int{4, 2, 2, 2}, []int{1, 1, 1, 1}, gl.FLOAT)
+	gl.BindBuffer(gl.ARRAY_BUFFER, this.instanceBuffer.gpuBuffer)
 
 }
 
@@ -63,19 +59,16 @@ func (this *BezierShader) createVertices(p1, p2, cp glm.Vec2) {
 
 	this.instanceBuffer.resizeCPUData(int(this.amountLines+1) * int(stride))
 
-	this.instanceBuffer.cpuArr[this.amountLines*stride+0] = dim[0]
-	this.instanceBuffer.cpuArr[this.amountLines*stride+1] = dim[1]
-	this.instanceBuffer.cpuArr[this.amountLines*stride+2] = dim[2]
-	this.instanceBuffer.cpuArr[this.amountLines*stride+3] = dim[3]
-
-	this.instanceBuffer.cpuArr[this.amountLines*stride+4] = p1[0]
-	this.instanceBuffer.cpuArr[this.amountLines*stride+5] = p1[1]
-
-	this.instanceBuffer.cpuArr[this.amountLines*stride+6] = p2[0]
-	this.instanceBuffer.cpuArr[this.amountLines*stride+7] = p2[1]
-
-	this.instanceBuffer.cpuArr[this.amountLines*stride+8] = cp[0]
-	this.instanceBuffer.cpuArr[this.amountLines*stride+9] = cp[1]
+	this.instanceBuffer.cpuBuffer[this.amountLines*stride+0] = dim[0]
+	this.instanceBuffer.cpuBuffer[this.amountLines*stride+1] = dim[1]
+	this.instanceBuffer.cpuBuffer[this.amountLines*stride+2] = dim[2]
+	this.instanceBuffer.cpuBuffer[this.amountLines*stride+3] = dim[3]
+	this.instanceBuffer.cpuBuffer[this.amountLines*stride+4] = p1[0]
+	this.instanceBuffer.cpuBuffer[this.amountLines*stride+5] = p1[1]
+	this.instanceBuffer.cpuBuffer[this.amountLines*stride+6] = p2[0]
+	this.instanceBuffer.cpuBuffer[this.amountLines*stride+7] = p2[1]
+	this.instanceBuffer.cpuBuffer[this.amountLines*stride+8] = cp[0]
+	this.instanceBuffer.cpuBuffer[this.amountLines*stride+9] = cp[1]
 
 	this.amountLines++
 }

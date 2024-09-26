@@ -19,7 +19,7 @@ type Text struct {
 	shader      *Shader
 	charInfo    []CharacterInfo
 	vao         uint32
-	dataBuffer  BufferFloat
+	dataBuffer  Buffer[float32]
 	projection  *glm.Mat4
 	amountChars int
 }
@@ -28,7 +28,7 @@ func NewText(font string, shader *Shader, projection *glm.Mat4) Text {
 	var text = Text{shader: shader, projection: projection}
 	text.deserializeIglbmt(font)
 	text.vao = genVAO()
-	text.dataBuffer = genSingularBufferFloat(text.vao, 0, 4, gl.FLOAT, false, 0)
+	text.dataBuffer = genSingularBuffer[float32](text.vao, 0, 4, gl.FLOAT, false, 0)
 	return text
 }
 
@@ -67,7 +67,7 @@ func (this *Text) createVertices(text string, posX, posY float32, scale float32)
 			posX, posY + letterHeight, startX, endY, //bl
 		}
 		for i := 0; i < len(newVertices); i++ {
-			this.dataBuffer.cpuArr[this.amountChars*stride+i] = newVertices[i]
+			this.dataBuffer.cpuBuffer[this.amountChars*stride+i] = newVertices[i]
 		}
 
 		this.amountChars++

@@ -11,7 +11,7 @@ type PixelMesh struct {
 	amountQuads int32
 	projection  glm.Mat4
 	View        glm.Mat4
-	buffer      BufferFloat
+	buffer      Buffer[float32]
 	indices     []byte
 	pointSize   float32
 }
@@ -32,12 +32,7 @@ func newPixelMesh(shader *Shader, defaultProj glm.Mat4) PixelMesh {
 
 func (this *PixelMesh) initBuffer() {
 	this.vao = genVAO()
-	this.buffer = BufferFloat{
-		buffer:     generateInterleavedVBOFloat(this.vao, 0, []int{2, 4}, []int{0, 0}),
-		bufferSize: 0,
-		cpuArr:     []float32{},
-	}
-	gl.BindBuffer(gl.ARRAY_BUFFER, this.buffer.buffer)
+	this.buffer = genInterleavedBuffer[float32](this.vao, 0, []int{2, 4}, []int{0, 0}, gl.FLOAT)
 }
 
 func (this *PixelMesh) Copy() {
@@ -55,12 +50,12 @@ func (this *PixelMesh) AddPixel(pos glm.Vec2, colour glm.Vec4) {
 
 	this.buffer.resizeCPUData(int(this.amountQuads+1) * int(stride))
 
-	this.buffer.cpuArr[this.amountQuads*stride+0] = pos[0]
-	this.buffer.cpuArr[this.amountQuads*stride+1] = pos[1]
-	this.buffer.cpuArr[this.amountQuads*stride+2] = colour[0]
-	this.buffer.cpuArr[this.amountQuads*stride+3] = colour[1]
-	this.buffer.cpuArr[this.amountQuads*stride+4] = colour[2]
-	this.buffer.cpuArr[this.amountQuads*stride+5] = colour[3]
+	this.buffer.cpuBuffer[this.amountQuads*stride+0] = pos[0]
+	this.buffer.cpuBuffer[this.amountQuads*stride+1] = pos[1]
+	this.buffer.cpuBuffer[this.amountQuads*stride+2] = colour[0]
+	this.buffer.cpuBuffer[this.amountQuads*stride+3] = colour[1]
+	this.buffer.cpuBuffer[this.amountQuads*stride+4] = colour[2]
+	this.buffer.cpuBuffer[this.amountQuads*stride+5] = colour[3]
 
 	this.amountQuads++
 }

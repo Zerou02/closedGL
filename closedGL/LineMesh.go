@@ -11,7 +11,7 @@ type LineMesh struct {
 	indices          []uint16
 	vao              uint32
 	amountPoints     int
-	buffer           BufferFloat
+	buffer           Buffer[float32]
 }
 
 func newLineMesh(shader *Shader, projection glm.Mat4) LineMesh {
@@ -28,11 +28,7 @@ func (this *LineMesh) beginDraw() {
 
 func (this *LineMesh) generateBuffers() {
 	this.vao = genVAO()
-	this.buffer = BufferFloat{
-		buffer:     generateInterleavedVBOFloat(this.vao, 0, []int{2, 4}, []int{0, 0}),
-		bufferSize: 0,
-		cpuArr:     []float32{},
-	}
+	this.buffer = genInterleavedBuffer[float32](this.vao, 0, []int{2, 4}, []int{0, 0}, gl.FLOAT)
 }
 
 func (this *LineMesh) Draw() {
@@ -55,12 +51,12 @@ func (this *LineMesh) AddPoint(pos glm.Vec2, colour glm.Vec4) {
 
 	this.indices = append(this.indices, uint16(this.amountPoints))
 
-	this.buffer.cpuArr[this.amountPoints*6+0] = pos[0]
-	this.buffer.cpuArr[this.amountPoints*6+1] = pos[1]
-	this.buffer.cpuArr[this.amountPoints*6+2] = colour[0]
-	this.buffer.cpuArr[this.amountPoints*6+3] = colour[1]
-	this.buffer.cpuArr[this.amountPoints*6+4] = colour[2]
-	this.buffer.cpuArr[this.amountPoints*6+5] = colour[3]
+	this.buffer.cpuBuffer[this.amountPoints*6+0] = pos[0]
+	this.buffer.cpuBuffer[this.amountPoints*6+1] = pos[1]
+	this.buffer.cpuBuffer[this.amountPoints*6+2] = colour[0]
+	this.buffer.cpuBuffer[this.amountPoints*6+3] = colour[1]
+	this.buffer.cpuBuffer[this.amountPoints*6+4] = colour[2]
+	this.buffer.cpuBuffer[this.amountPoints*6+5] = colour[3]
 	this.amountPoints++
 }
 

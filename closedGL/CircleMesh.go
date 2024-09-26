@@ -10,8 +10,8 @@ type CircleMesh struct {
 	projection     glm.Mat4
 	vao            uint32
 	amountCircles  uint32
-	baseVBO        BufferFloat
-	instanceBuffer BufferFloat
+	baseVBO        Buffer[float32]
+	instanceBuffer Buffer[float32]
 	indices        []byte
 }
 
@@ -26,10 +26,8 @@ func newCircleMesh(shader *Shader, projection glm.Mat4) CircleMesh {
 func (this *CircleMesh) initBuffer() {
 	this.vao = genVAO()
 	gl.BindVertexArray(0)
-	this.baseVBO = genSingularBufferFloat(this.vao, 0, 2, gl.FLOAT, false, 0)
-	this.instanceBuffer = BufferFloat{
-		buffer: generateInterleavedVBOFloat(this.vao, 1, []int{4, 4, 4}, []int{1, 1, 1}), //centre,colour
-	}
+	this.baseVBO = genSingularBuffer[float32](this.vao, 0, 2, gl.FLOAT, false, 0)
+	this.instanceBuffer = genInterleavedBuffer[float32](this.vao, 1, []int{4, 4, 4}, []int{1, 1, 1}, gl.FLOAT) //centre,colour
 
 	var quadBaseData = []float32{
 		1.0, 0.0, //top r
@@ -37,7 +35,7 @@ func (this *CircleMesh) initBuffer() {
 		1.0, 1.0, // bottom r
 		0.0, 1.0, // bottom l,
 	}
-	this.baseVBO.cpuArr = quadBaseData
+	this.baseVBO.cpuBuffer = quadBaseData
 	this.baseVBO.copyToGPU()
 }
 
@@ -57,20 +55,18 @@ func (this *CircleMesh) AddCircle(centre glm.Vec2, colour, borderColour glm.Vec4
 
 	this.instanceBuffer.resizeCPUData((int(this.amountCircles) + 1) * int(stride))
 
-	this.instanceBuffer.cpuArr[this.amountCircles*stride+0] = centre[0]
-	this.instanceBuffer.cpuArr[this.amountCircles*stride+1] = centre[1]
-	this.instanceBuffer.cpuArr[this.amountCircles*stride+2] = radius
-	this.instanceBuffer.cpuArr[this.amountCircles*stride+3] = borderThickness
-
-	this.instanceBuffer.cpuArr[this.amountCircles*stride+4] = colour[0]
-	this.instanceBuffer.cpuArr[this.amountCircles*stride+5] = colour[1]
-	this.instanceBuffer.cpuArr[this.amountCircles*stride+6] = colour[2]
-	this.instanceBuffer.cpuArr[this.amountCircles*stride+7] = colour[3]
-
-	this.instanceBuffer.cpuArr[this.amountCircles*stride+8] = borderColour[0]
-	this.instanceBuffer.cpuArr[this.amountCircles*stride+9] = borderColour[1]
-	this.instanceBuffer.cpuArr[this.amountCircles*stride+10] = borderColour[2]
-	this.instanceBuffer.cpuArr[this.amountCircles*stride+11] = borderColour[3]
+	this.instanceBuffer.cpuBuffer[this.amountCircles*stride+0] = centre[0]
+	this.instanceBuffer.cpuBuffer[this.amountCircles*stride+1] = centre[1]
+	this.instanceBuffer.cpuBuffer[this.amountCircles*stride+2] = radius
+	this.instanceBuffer.cpuBuffer[this.amountCircles*stride+3] = borderThickness
+	this.instanceBuffer.cpuBuffer[this.amountCircles*stride+4] = colour[0]
+	this.instanceBuffer.cpuBuffer[this.amountCircles*stride+5] = colour[1]
+	this.instanceBuffer.cpuBuffer[this.amountCircles*stride+6] = colour[2]
+	this.instanceBuffer.cpuBuffer[this.amountCircles*stride+7] = colour[3]
+	this.instanceBuffer.cpuBuffer[this.amountCircles*stride+8] = borderColour[0]
+	this.instanceBuffer.cpuBuffer[this.amountCircles*stride+9] = borderColour[1]
+	this.instanceBuffer.cpuBuffer[this.amountCircles*stride+10] = borderColour[2]
+	this.instanceBuffer.cpuBuffer[this.amountCircles*stride+11] = borderColour[3]
 	this.amountCircles++
 }
 

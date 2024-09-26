@@ -6,8 +6,8 @@ import (
 )
 
 type CubeMesh struct {
-	instanceBuffer BufferU32
-	ssbo           SSBOU32
+	instanceBuffer Buffer[uint32]
+	ssbo           SSBO[uint32]
 	amountCubes    uint32
 	vao            uint32
 }
@@ -19,7 +19,7 @@ type Cube struct {
 	currMesh        CubeMesh
 	textureMane     TextureMane
 	indices         []byte
-	baseMeshSSBO    SSBOU32
+	baseMeshSSBO    SSBO[uint32]
 	textureContains []string
 }
 
@@ -35,9 +35,9 @@ func NewCube(shader *Shader, camera *Camera, projection *glm.Mat4) Cube {
 		20, 21, 22, 22, 23, 20,
 	}
 
-	var baseMeshSSBO = genSSBOU32(0)
+	var baseMeshSSBO = genSSBOGen[uint32](0, gl.UNSIGNED_INT)
 	for _, x := range CompressedCubeVertices {
-		baseMeshSSBO.cpuArr = append(baseMeshSSBO.cpuArr, uint32(x))
+		baseMeshSSBO.cpuBuffer = append(baseMeshSSBO.cpuBuffer, uint32(x))
 	}
 	retCube.baseMeshSSBO = baseMeshSSBO
 
@@ -46,17 +46,14 @@ func NewCube(shader *Shader, camera *Camera, projection *glm.Mat4) Cube {
 
 func (this *Cube) initMesh(anchor glm.Vec3) {
 	var vao = genVAO()
-	var ssbo = genSSBOU32(1)
-	var meshData = generateInterleavedVBOU32(vao, 0, []int{2})
-	ssbo.cpuArr = append(ssbo.cpuArr, uint32(anchor[0]))
-	ssbo.cpuArr = append(ssbo.cpuArr, uint32(anchor[1]))
-	ssbo.cpuArr = append(ssbo.cpuArr, uint32(anchor[2]))
+	var ssbo = genSSBOGen[uint32](1, gl.UNSIGNED_INT)
+	var meshData = genInterleavedBuffer[uint32](vao, 0, []int{2}, []int{1}, gl.UNSIGNED_INT)
+	ssbo.cpuBuffer = append(ssbo.cpuBuffer, uint32(anchor[0]))
+	ssbo.cpuBuffer = append(ssbo.cpuBuffer, uint32(anchor[1]))
+	ssbo.cpuBuffer = append(ssbo.cpuBuffer, uint32(anchor[2]))
 
-	var instanceBuffer = generateInterleavedVBOFloat2(vao, 2, []int{2})
-	gl.BindBuffer(gl.ARRAY_BUFFER, instanceBuffer.buffer)
-	gl.VertexAttribDivisor(2, 1)
-	gl.BindBuffer(gl.ARRAY_BUFFER, meshData.buffer)
-	gl.VertexAttribDivisor(0, 1)
+	var instanceBuffer = genInterleavedBuffer[float32](vao, 2, []int{2}, []int{1}, gl.FLOAT)
+	_ = instanceBuffer
 
 	this.currMesh = CubeMesh{
 		vao:            vao,
@@ -81,8 +78,8 @@ func (this *Cube) createVertices(pos glm.Vec3, size glm.Vec3, texPath string, si
 	var lower uint32 = uint32(handle & 0xffff_ffff)
 	var upper uint32 = uint32((handle >> 32) & 0xffff_ffff)
 	if !this.doesSSBOContainTex(texPath) {
-		this.baseMeshSSBO.cpuArr = append(this.baseMeshSSBO.cpuArr, lower)
-		this.baseMeshSSBO.cpuArr = append(this.baseMeshSSBO.cpuArr, upper)
+		this.baseMeshSSBO.cpuBuffer = append(this.baseMeshSSBO.cpuBuffer, lower)
+		this.baseMeshSSBO.cpuBuffer = append(this.baseMeshSSBO.cpuBuffer, upper)
 		this.textureContains = append(this.textureContains, texPath)
 	}
 
@@ -105,7 +102,7 @@ func (this *Cube) createVertices(pos glm.Vec3, size glm.Vec3, texPath string, si
 	entry |= uint32(pos[2])
 	entry <<= 3
 	entry |= uint32(side)
-	this.currMesh.instanceBuffer.cpuArr[this.currMesh.amountCubes*uint32(stride)+0] = entry
+	this.currMesh.instanceBuffer.cpuBuffer[this.currMesh.amountCubes*uint32(stride)+0] = entry
 
 	var entry2 uint32 = 0
 	entry2 |= uint32(size[0])
@@ -113,7 +110,7 @@ func (this *Cube) createVertices(pos glm.Vec3, size glm.Vec3, texPath string, si
 	entry2 |= uint32(size[1])
 	entry2 <<= 6
 	entry2 |= uint32(size[2])
-	this.currMesh.instanceBuffer.cpuArr[this.currMesh.amountCubes*uint32(stride)+1] = entry2
+	this.currMesh.instanceBuffer.cpuBuffer[this.currMesh.amountCubes*uint32(stride)+1] = entry2
 
 	this.currMesh.amountCubes++
 }
@@ -143,7 +140,7 @@ func (this *Cube) copyCurrMesh() CubeMesh {
 
 	gl.BindVertexArray(this.currMesh.vao)
 	this.currMesh.instanceBuffer.copyToGPU()
-	this.currMesh.instanceBuffer.cpuArr = []uint32{}
+	this.currMesh.instanceBuffer.cpuBuffer = []uint32{}
 
 	var retMesh = CubeMesh{
 		amountCubes:    this.currMesh.amountCubes,
@@ -189,4 +186,15 @@ func (this *Cube) drawMesh(mesh *CubeMesh) {
 	gl.DrawArraysInstanced(gl.TRIANGLES, 0, 6, int32(mesh.amountCubes))
 	this.textureMane.makeNonResident()
 
+}
+
+func (this *SSBO[T]) copy() SSBO[T] {
+	var newArr = make([]T, len(this.cpuBuffer))
+	copy(newArr, this.cpuBuffer)
+	return SSBO[T]{
+		cpuBuffer:        newArr,
+		gpuBuffer:        this.gpuBuffer,
+		bindingPoint:     this.bindingPoint,
+		elementsPerEntry: this.elementsPerEntry,
+	}
 }
